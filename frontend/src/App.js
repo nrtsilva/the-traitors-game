@@ -4,6 +4,7 @@ import Lobby from './components/Lobby';
 import RoomSettings from './components/RoomSettings';
 import WaitingRoom from './components/WaitingRoom';
 import GameBoard from './components/GameBoard';
+import RoleReveal from './components/RoleReveal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -32,7 +33,7 @@ function App() {
     
     newSocket.on('game_started', (playerState) => {
       setGameData(playerState);
-      setCurrentScreen('game');
+      setCurrentScreen('roleReveal');
     });
 
     return () => newSocket.close();
@@ -72,6 +73,13 @@ function App() {
 
         {connected && currentScreen === 'waiting' && !isHost && (
           <WaitingRoom socket={socket} roomData={roomData} onBack={() => setCurrentScreen('lobby')} />
+        )}
+
+        {connected && currentScreen === 'roleReveal' && gameData && (
+          <RoleReveal 
+            playerState={gameData} 
+            onContinue={() => setCurrentScreen('game')} 
+          />
         )}
 
         {connected && currentScreen === 'game' && gameData && (
