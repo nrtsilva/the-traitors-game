@@ -49,6 +49,10 @@ function App() {
     newSocket.on('connect', () => setConnected(true));
     newSocket.on('disconnect', () => setConnected(false));
     
+    newSocket.on('room_update', (data) => {
+      setRoomData(prev => ({ ...prev, players: data.players, settings: data.settings }));
+    });
+    
     newSocket.on('game_started', (playerState) => {
         setGameData(playerState);
         setRoomData(prev => ({ ...prev, roomCode: playerState.roomCode }));
@@ -65,9 +69,8 @@ function App() {
     });
 
     newSocket.on('phase_intro', (data) => {
-        // Basta definir o phaseIntro. O GameBoard renderiza o que for mais prioritário.
         setPhaseIntro(data);
-        setIsEvaluation(false); // Força a saída da avaliação se o servidor mandar a intro da fase seguinte
+        setIsEvaluation(false);
     });
 
     newSocket.on('phase_started', (data) => {

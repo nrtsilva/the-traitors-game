@@ -159,7 +159,10 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
                 <span className="text-[#F3EBDD] font-medium">{index + 1}. {item.name}</span>
               </div>
             ))}
-            <button onClick={onEndMission} className="mt-8 w-full py-4 bg-[#D8B66C] text-[#291923] font-display font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">CONCLUIR MISSÃO</button>
+            <button onClick={onEndMission} className="mt-8 w-full py-4 bg-[#D8B66C] text-[#291923] font-display font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">
+              CONCLUIR MISSÃO
+            </button>
+            <p className="text-xs text-[#F3EBDD]/60 mt-2 text-center">Todos os jogadores vivos têm de concordar.</p>
           </div>
         </div>
 

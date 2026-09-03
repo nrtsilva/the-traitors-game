@@ -47,6 +47,7 @@ function createInitialRoomState(hostId, hostName) {
         phaseTimer: null,
         currentMissionData: null,
         readyCount: 0,
+		endMissionVotes: 0,
         phaseIntroData: null
     };
 }
@@ -107,6 +108,8 @@ io.on('connection', (socket) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
+			room.endMissionVotes = 0;
+			room.players.forEach(p => p.hasEndMissionVote = false);
             if (!room || room.hostId !== socket.id) return;
             if (room.players.length < 2) return callback({ success: false, message: "Mínimo 2 jogadores para testes." });
 
@@ -276,17 +279,27 @@ io.on('connection', (socket) => {
 	});
 
     // --- AVALIAÇÃO DA MISSÃO (Fiel dá estrelas, Traidor confirma) ---
-    socket.on('submit_evaluation', ({ roomCode, data }) => {
+	socket.on('submit_evaluation', ({ roomCode, data }) => {
         try {
-			console.log(`[DEBUG] Avaliação recebida de ${player.name}. Votos: ${allEvaluated ? 'Todos responderam' : 'Aguardando'}`);
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
             if (!room) return;
 
-            const player = room.players.find(p => p.id === socket.id);
+            // Procura o jogador atual
+            let player = room.players.find(p => p.id === socket.id);
+
+            // Se não encontrar, procura um jogador vivo que ainda não tenha respondido
+            if (!player) {
+                player = room.players.find(p => p.alive && p.evaluation === undefined);
+                if (player) {
+                    player.id = socket.id; // Atualiza o ID
+                }
+            }
+
             if (!player || !player.alive) return;
 
             player.evaluation = data;
+            console.log(`[DEBUG Avaliação] Recebida de ${player.name}.`);
 
             // Verifica se todos os vivos responderam
             const alivePlayers = room.players.filter(p => p.alive);
@@ -311,9 +324,6 @@ io.on('connection', (socket) => {
                     if (player.role !== 'traitor') delete introData.secretMission;
                     io.to(player.id).emit('phase_intro', introData);
                 });
-                
-                // PREPARAR O CRONÓMETRO DA EXPULSÃO (mas só começa quando todos clicarem em "Iniciar Fase")
-                // O timer será acionado no player_ready
             }
         } catch (error) {
             console.error("Erro no submit_evaluation:", error);
@@ -359,11 +369,23 @@ io.on('connection', (socket) => {
 		const room = rooms[cleanCode];
 		if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
 
-		if (room.phaseTimer) clearTimeout(room.phaseTimer); // Para o cronómetro
-		room.phaseTimer = null;
+		const player = room.players.find(p => p.id === socket.id);
+		if (!player || !player.alive) return;
 
-		console.log(`[Missão] Um jogador terminou a missão antecipadamente na sala ${cleanCode}`);
-		io.to(cleanCode).emit('mission_evaluation'); // Avança para a avaliação
+		if (!player.hasEndMissionVote) {
+			player.hasEndMissionVote = true;
+			room.endMissionVotes++;
+			console.log(`[Missão] Voto para terminar de ${player.name}. Votos: ${room.endMissionVotes}`);
+
+			const aliveCount = room.players.filter(p => p.alive).length;
+			io.to(cleanCode).emit('end_mission_vote_update', { votes: room.endMissionVotes, total: aliveCount });
+
+			if (room.endMissionVotes >= aliveCount) {
+				if (room.phaseTimer) clearTimeout(room.phaseTimer); // Para o cronómetro
+				room.phaseTimer = null;
+				io.to(cleanCode).emit('mission_evaluation');
+			}
+		}
 	});
 
     // --- DESCONEXÃO ---
