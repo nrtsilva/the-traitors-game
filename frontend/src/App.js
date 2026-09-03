@@ -17,8 +17,10 @@ function App() {
   const [gameData, setGameData] = useState(null);
 
   useEffect(() => {
+    // Criar a ligação ao servidor
     const newSocket = io(BACKEND_URL);
-    setSocket(newSocket);
+    setSocket(newSocket); // Guardamos o socket no estado
+
     newSocket.on('connect', () => setConnected(true));
     newSocket.on('disconnect', () => setConnected(false));
     
@@ -53,6 +55,7 @@ function App() {
           </div>
         )}
 
+        {/* Passamos o socket para os componentes */}
         {connected && currentScreen === 'lobby' && (
           <Lobby socket={socket} setPlayerName={setPlayerName} playerName={playerName} onRoomCreated={handleRoomCreated} onRoomJoined={handleRoomJoined} />
         )}
