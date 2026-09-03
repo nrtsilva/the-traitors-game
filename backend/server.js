@@ -569,56 +569,96 @@ function endMurderPhase(room) {
 }
 
 function processBanishment(room) {
-    // Contagem de votos (agora com suporte para Adaga - 2 votos)
+    // 1. Contagem de votos
     const voteCount = {};
     room.players.filter(p => p.alive).forEach(p => {
         if (p.voteCast) {
             if (Array.isArray(p.voteCast)) {
-                // Se for um array (Adaga), contamos cada elemento
-                p.voteCast.forEach(id => {
-                    voteCount[id] = (voteCount[id] || 0) + 1;
-                });
+                p.voteCast.forEach(id => { voteCount[id] = (voteCount[id] || 0) + 1; });
             } else {
-                // Voto normal
                 voteCount[p.voteCast] = (voteCount[p.voteCast] || 0) + 1;
             }
         }
     });
 
+    // 2. Determinar o mais votado e o empate
     let maxVotes = 0;
-    let banishedId = null;
-    for (const [id, count] of Object.entries(voteCount)) {
-        if (count > maxVotes) { maxVotes = count; banishedId = id; }
-        else if (count === maxVotes && count > 0) banishedId = null;
-    }
+    let topPlayersIds = []; // Todos os que têm o máximo de votos
 
-    let banishedPlayer = null;
-    if (banishedId) {
-        banishedPlayer = room.players.find(p => p.id === banishedId);
-        if (banishedPlayer) {
-            banishedPlayer.alive = false;
-            if (room.settings.banishedLoseGold) banishedPlayer.gold = Math.max(0, banishedPlayer.gold - 2);
+    for (const [id, count] of Object.entries(voteCount)) {
+        if (count > maxVotes) {
+            maxVotes = count;
+            topPlayersIds = [id]; // Novo máximo, reinicia a lista
+        } else if (count === maxVotes && count > 0) {
+            topPlayersIds.push(id); // Empate no topo
         }
     }
 
-    // Dados para a Revelação
+    const isTie = topPlayersIds.length > 1;
+    let lostGoldMessage = "";
+
+    if (maxVotes === 0) {
+        // Ninguém votou (não devia acontecer, mas por segurança)
+        isTie = true; // Trata como empate sem vencedor
+        topPlayersIds = [];
+        lostGoldMessage = "Ninguém foi expulso (nenhum voto).";
+    } else if (isTie) {
+        // Todos os empatados perdem 1 moeda
+        topPlayersIds.forEach(id => {
+            const player = room.players.find(p => p.id === id);
+            if (player) {
+                player.gold = Math.max(0, player.gold - 1);
+            }
+        });
+        lostGoldMessage = "Os jogadores empatados perderam 1 moeda cada.";
+    } else {
+        // Um vencedor claro
+        const banishedPlayer = room.players.find(p => p.id === topPlayersIds[0]);
+        if (banishedPlayer) {
+            banishedPlayer.alive = false;
+            if (room.settings.banishedLoseGold) banishedPlayer.gold = Math.max(0, banishedPlayer.gold - 2);
+            lostGoldMessage = `${banishedPlayer.name} perdeu ${room.settings.banishedLoseGold ? 2 : 0} moedas.`;
+        }
+    }
+
+	// 3. Construir a Revelação
+    let banishedName = null;
+    let actualLostGold = 0;
+
+    if (isTie) {
+        // Empate: todos perdem 1 moeda
+        actualLostGold = 1;
+    } else if (topPlayersIds.length === 1) {
+        // Vencedor único
+        const p = room.players.find(p => p.id === topPlayersIds[0]);
+        if (p) {
+            banishedName = p.name;
+            actualLostGold = room.settings.banishedLoseGold ? 2 : 0;
+        }
+    }
+
     const revealData = {
         title: "O RESULTADO DA EXPULSÃO",
-        description: banishedPlayer ? `O jogador ${banishedPlayer.name} foi expulso da mansão.` : "Ninguém foi expulso (houve um empate).",
-        banishedName: banishedPlayer ? banishedPlayer.name : null,
-        lostGold: banishedPlayer ? 2 : 0
+        description: isTie ? "Todos os jogadores empatados perderam 1 moeda." : (banishedName ? `${banishedName} perdeu ${actualLostGold} moedas.` : "Ninguém foi expulso."),
+        banishedName: banishedName, 
+        lostGold: actualLostGold,
+        isTie: isTie
     };
 
+    // 4. Avançar para o Arsenal
     room.phase = GAME_PHASES.PHASE_3_ARMOURY;
 
-    // Emitir revelação para todos
+    // Limpar votos para a próxima fase
+    room.players.forEach(p => p.voteCast = null);
+
+    // Emitir a revelação para todos
     io.to(room.roomCode).emit('banishment_reveal', revealData);
 
-    // Após 5 segundos, avançar para o Arsenal
+    // 5. Agendar a transição para o Arsenal (5 segundos depois)
     setTimeout(() => {
         room.phaseIntroData = {
             title: "O Arsenal",
-            description: "Competição individual! O vencedor recebe uma carta de recompensa (Escudo, Adaga ou Ouro).",
+            description: "Competição individual! O vencedor recebe uma carta de recompensa.",
             secretMission: null
         };
         room.players.forEach(player => {

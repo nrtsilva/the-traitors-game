@@ -76,8 +76,10 @@ function App() {
     });
 
     newSocket.on('phase_intro', (data) => {
-        setPhaseIntro(data);
-        setIsEvaluation(false);
+      setPhaseIntro(data);
+      setBanishmentReveal(null);
+      setArsenalResult(null);
+      setIsEvaluation(false);
     });
 
     newSocket.on('phase_started', (data) => {

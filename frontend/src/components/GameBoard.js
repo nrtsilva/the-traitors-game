@@ -23,40 +23,30 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
 
   // 1. REVELAÇÃO DA EXPULSÃO
   if (banishmentReveal) {
-    const isTie = banishmentReveal.isTie;
-    const isNoVotes = banishmentReveal.banishedName === null && banishmentReveal.isTie === false;
+    const { isTie, banishedName, lostGold } = banishmentReveal;
 
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div className="text-center animate-pulse">
           {/* Efeito de "tocha" ou brilho */}
-          <div className="w-32 h-32 mx-auto mb-8 rounded-full bg-[#D8B66C]/20 blur-3xl"></div>
+          <div className="w-40 h-40 mx-auto mb-8 rounded-full bg-[#D8B66C]/20 blur-3xl"></div>
           
-          {isTie && (
+          {isTie ? (
             <>
               <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">EMPATE</h1>
-              <p className="text-2xl text-white mb-4">NINGUÉM FOI EXPULSO</p>
-              <p className="text-xl text-white/60 mb-8">Todos os jogadores empatados perderam 1 moeda.</p>
+              <p className="text-3xl text-white mb-4">NINGUÉM FOI EXPULSO</p>
+              <p className="text-xl text-white/70 mb-8">Todos os jogadores empatados perderam <span className="font-bold text-[#D8B66C]">1 moeda</span>.</p>
             </>
-          )}
-          
-          {!isTie && !isNoVotes && (
+          ) : (
             <>
               <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">EXPULSÃO</h1>
-              <p className="text-4xl text-red-400 font-bold mb-4">{banishmentReveal.banishedName} FOI EXPULSO</p>
-              <p className="text-xl text-white/60 mb-8">Perdeu {banishmentReveal.lostGold} moedas.</p>
-            </>
-          )}
-
-          {isNoVotes && (
-            <>
-              <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">SURPRESA</h1>
-              <p className="text-2xl text-white mb-8">Ninguém foi expulso! (Nenhum voto foi registado)</p>
+              <p className="text-4xl text-red-400 font-bold mb-4">{banishedName} FOI EXPULSO</p>
+              <p className="text-xl text-white/70 mb-8">Perdeu <span className="font-bold text-[#D8B66C]">{lostGold} moedas</span>.</p>
             </>
           )}
 
           {/* Indicador de progresso para o Arsenal */}
-          <p className="text-lg text-[#D8B66C] mt-10 animate-bounce">A preparar o Arsenal...</p>
+          <p className="text-lg text-[#D8B66C] mt-12 animate-bounce">A preparar o Arsenal...</p>
         </div>
       </div>
     );
@@ -152,37 +142,46 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     const hasDagger = playerState.inventory && playerState.inventory.includes('dagger');
 
     return (
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-[#E5C982] mb-2">A EXPULSÃO</h1>
-        <div className="text-6xl font-bold text-[#D8B66C] mb-4">{timer}</div>
-        <p className="text-sm mb-8">Tempo restante para votar</p>
-
-        <div className="space-y-4 mb-6">
-          {votablePlayers.map(player => (
-            <div 
-              key={player.id} 
-              onClick={() => setSelectedVote(player.id)}
-              className={`bg-[#291923] border-2 p-4 cursor-pointer transition ${selectedVote === player.id ? 'border-[#D8B66C] bg-[#412734]' : 'border-[#D8B66C]/30'}`}
-            >
-              <span className="text-xl text-white font-bold">{player.name}</span>
-            </div>
-          ))}
-        </div>
-
-        {hasDagger && (
-          <div className="mb-6">
-            <label className="text-[#E5C982]">Usar Adaga (2 Votos): </label>
-            <input type="checkbox" checked={useDagger} onChange={(e) => setUseDagger(e.target.checked)} className="w-5 h-5" />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
+        {/* Efeito de fundo místico */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#D8B66C]/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div className="relative z-10 text-center">
+          <h1 className="font-display text-5xl font-bold text-[#E5C982] mb-4 tracking-widest">A EXPULSÃO</h1>
+          <p className="text-[#F3EBDD] text-xl mb-8">Quem será o traidor? A decisão está nas tuas mãos.</p>
+          
+          <div className="mb-8">
+            <div className="text-7xl font-bold text-[#D8B66C] font-display drop-shadow-lg">{timer}</div>
+            <p className="text-sm text-[#F3EBDD]/60 uppercase tracking-widest mt-2">Tempo restante</p>
           </div>
-        )}
 
-        <button 
-          onClick={() => onVote(selectedVote, useDagger)}
-          disabled={!selectedVote}
-          className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm disabled:opacity-50"
-        >
-          CONFIRMAR VOTO
-        </button>
+          <div className="space-y-4 mb-8 max-w-md mx-auto">
+            {votablePlayers.map(player => (
+              <div 
+                key={player.id} 
+                onClick={() => setSelectedVote(player.id)}
+                className={`bg-[#291923] border-2 p-5 rounded-lg cursor-pointer transition-all duration-300 ${selectedVote === player.id ? 'border-[#D8B66C] bg-[#412734] scale-105 shadow-lg' : 'border-[#D8B66C]/30 hover:border-[#D8B66C] hover:bg-[#291923]/80'}`}
+              >
+                <span className="text-2xl text-white font-bold">{player.name}</span>
+              </div>
+            ))}
+          </div>
+
+          {hasDagger && (
+            <div className="mb-6 flex items-center justify-center gap-3 text-[#E5C982]">
+              <span className="text-lg">Usar Adaga (2 Votos):</span>
+              <input type="checkbox" checked={useDagger} onChange={(e) => setUseDagger(e.target.checked)} className="w-6 h-6 accent-[#D8B66C] cursor-pointer" />
+            </div>
+          )}
+
+          <button 
+            onClick={() => onVote(selectedVote, useDagger)}
+            disabled={!selectedVote}
+            className="px-12 py-4 bg-[#D8B66C] text-[#291923] font-bold text-2xl rounded-lg shadow-soft hover:bg-[#E5C982] transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            CONFIRMAR VOTO
+          </button>
+        </div>
       </div>
     );
   }
