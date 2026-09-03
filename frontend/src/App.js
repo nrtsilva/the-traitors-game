@@ -10,6 +10,7 @@ import GameTutorial from './components/GameTutorial';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 function App() {
+  const [banishmentReveal, setBanishmentReveal] = useState(null);
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('lobby'); // 'lobby', 'settings', 'waiting', 'tutorial', 'roleReveal', 'game'
@@ -65,6 +66,12 @@ function App() {
     newSocket.on('mission_evaluation', () => {
       setIsEvaluation(true);
       setPhaseIntro(null);
+    });
+
+    newSocket.on('banishment_reveal', (data) => {
+      setBanishmentReveal(data);  // Definir estado para mostrar no UI
+      setPhaseIntro(null);
+      setIsEvaluation(false);
     });
 
     return () => newSocket.close();
@@ -145,6 +152,13 @@ function App() {
             onOpenHelp={openHelp} 
             socket={socket}
             phaseIntro={phaseIntro} // Passa a intro apenas quando for para o jogo
+            banishmentReveal={banishmentReveal}
+            playerId={socket.id}
+            onVote={(targetPlayerId) => {
+                if (roomData && roomData.roomCode) {
+                    socket.emit('submit_banishment_vote', { roomCode: roomData.roomCode, targetPlayerId });
+                }
+            }}
             isEvaluation={isEvaluation}
             onReady={() => {
               if (roomData && roomData.roomCode) {

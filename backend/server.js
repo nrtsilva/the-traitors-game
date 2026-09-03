@@ -120,14 +120,27 @@ io.on('connection', (socket) => {
             console.log(`[DEBUG] Configuração de Traidores: ${room.settings.numTraitors}`);
             console.log(`[DEBUG] Traidores a atribuir: ${traitorCount}`);
 
-            for (let i = 0; i < traitorCount; i++) {
-                const t = shuffled[i];
-                const pObj = room.players.find(p => p.id === t.id);
-                if (pObj) {
-                    pObj.role = 'traitor';
-                    pObj.secretMissions = ["Sabotar a missão sem ser apanhado", "Dizer 'Está difícil' 3 vezes"];
-                }
-            }
+            // Substitua o loop inteiro dos Traidores por isto:
+			for (let i = 0; i < traitorCount; i++) {
+				const t = shuffled[i];
+				const pObj = room.players.find(p => p.id === t.id);
+				if (pObj) {
+					pObj.role = 'traitor';
+					
+					// GERAR TAREFAS ESPECÍFICAS CONSOANTE O MODO
+					if (gameMode === 'in_person') {
+						pObj.secretMissions = [
+							"Escolher o objeto amarelo para último",
+							"Dizer 'Está difícil' 3 vezes"
+						];
+					} else {
+						pObj.secretMissions = [
+							"Colocar um país errado no topo da lista",
+							"Dizer 'Está difícil' 3 vezes"
+						];
+					}
+				}
+			}
 
             console.log(`[DEBUG] Roles finais: ${room.players.map(p => p.name + ': ' + p.role).join(', ')}`);
 
@@ -244,12 +257,21 @@ io.on('connection', (socket) => {
 				io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
 
 				if (room.readyCount >= aliveCount) {
-					room.players.forEach(p => p.isReadyForPhase = false);
-					room.readyCount = 0;
-					
-					io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
-					startMissionTimer(room);
-				}
+                    room.players.forEach(p => p.isReadyForPhase = false);
+                    room.readyCount = 0;
+                    
+                    if (room.phase === GAME_PHASES.PHASE_2_BANISHMENT) {
+                        const debateTime = room.settings.debateTime || 60;
+                        io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: debateTime });
+                        
+                        // Iniciar timer de debate
+                        clearTimeout(room.phaseTimer);
+                        room.phaseTimer = setTimeout(() => processBanishment(room), debateTime * 1000);
+                    } else {
+                        io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
+                        startMissionTimer(room);
+                    }
+                }
 			}
 		} catch (error) {
 			console.error("Erro no player_ready:", error);
@@ -272,11 +294,10 @@ io.on('connection', (socket) => {
             const alivePlayers = room.players.filter(p => p.alive);
             const allEvaluated = alivePlayers.every(p => p.evaluation !== undefined);
 
-            if (allEvaluated) {
-                // (Opcional) Lógica para ver se traidor completou, recompensas etc.
+			if (allEvaluated) {
                 room.players.forEach(p => p.evaluation = undefined);
                 
-                // Avançar para a Fase II (Banishment)
+                // Avançar para a Fase II (Expulsão)
                 room.phase = GAME_PHASES.PHASE_2_BANISHMENT;
                 room.phaseIntroData = {
                     title: "A Expulsão",
@@ -284,7 +305,6 @@ io.on('connection', (socket) => {
                     secretMission: null
                 };
                 
-                // Limpar votos
                 room.players.forEach(p => p.voteCast = null);
 
                 // Enviar intro da Fase II
@@ -293,6 +313,9 @@ io.on('connection', (socket) => {
                     if (player.role !== 'traitor') delete introData.secretMission;
                     io.to(player.id).emit('phase_intro', introData);
                 });
+                
+                // PREPARAR O CRONÓMETRO DA EXPULSÃO (mas só começa quando todos clicarem em "Iniciar Fase")
+                // O timer será acionado no player_ready
             }
         } catch (error) {
             console.error("Erro no submit_evaluation:", error);
@@ -312,7 +335,10 @@ io.on('connection', (socket) => {
             player.voteCast = targetPlayerId;
             const allVoted = room.players.filter(p => p.alive).every(p => p.voteCast !== null);
 
-            if (allVoted) processBanishment(room);
+			if (allVoted) {
+                clearTimeout(room.phaseTimer); // Limpa o timer se todos votarem cedo
+                processBanishment(room);
+            }
             if (typeof callback === 'function') callback({ success: true });
         } catch (error) {
             console.error("Erro no voto:", error);
@@ -372,7 +398,7 @@ function startMissionTimer(room) {
 }
 
 function processBanishment(room) {
-    // Lógica do banimento (cálculo de votos)
+    // Contagem de votos
     const voteCount = {};
     room.players.filter(p => p.alive).forEach(p => {
         if (p.voteCast) voteCount[p.voteCast] = (voteCount[p.voteCast] || 0) + 1;
@@ -385,42 +411,38 @@ function processBanishment(room) {
         else if (count === maxVotes && count > 0) banishedId = null;
     }
 
+    let banishedPlayer = null;
     if (banishedId) {
-        const banished = room.players.find(p => p.id === banishedId);
-        if (banished) {
-            banished.alive = false;
-            if (room.settings.banishedLoseGold) banished.gold = Math.max(0, banished.gold - 2);
+        banishedPlayer = room.players.find(p => p.id === banishedId);
+        if (banishedPlayer) {
+            banishedPlayer.alive = false;
+            if (room.settings.banishedLoseGold) banishedPlayer.gold = Math.max(0, banishedPlayer.gold - 2);
         }
     }
 
-    room.phase = GAME_PHASES.PHASE_3_ARMOURY;
-    room.phaseIntroData = {
-        title: "O Arsenal",
-        description: "Competição individual! O vencedor recebe uma carta de recompensa (Escudo, Adaga ou Ouro).",
-        secretMission: null
+    // Dados para a Revelação
+    const revealData = {
+        title: "O RESULTADO DA EXPULSÃO",
+        description: banishedPlayer ? `O jogador ${banishedPlayer.name} foi expulso da mansão.` : "Ninguém foi expulso (houve um empate).",
+        banishedName: banishedPlayer ? banishedPlayer.name : null,
+        lostGold: banishedPlayer ? 2 : 0
     };
 
-    room.players.forEach(player => {
-        const introData = { ...room.phaseIntroData };
-        io.to(player.id).emit('phase_intro', introData);
-    });
-    // (Timer para fins de teste)
+    room.phase = GAME_PHASES.PHASE_3_ARMOURY;
+
+    // Emitir revelação para todos
+    io.to(room.roomCode).emit('banishment_reveal', revealData);
+
+    // Após 5 segundos, avançar para o Arsenal
     setTimeout(() => {
-        io.to(room.roomCode).emit('phase_started', { phase: room.phase });
-        // Após Arsenal, avançar para Murder
-        setTimeout(() => {
-            room.phase = GAME_PHASES.PHASE_4_MURDER;
-            room.phaseIntroData = {
-                title: "O Assassinato",
-                description: "A noite caiu! O Traidor escolhe a sua vítima em segredo.",
-                secretMission: null
-            };
-            room.players.forEach(player => {
-                const introData = { ...room.phaseIntroData };
-                if (player.role !== 'traitor') delete introData.secretMission;
-                io.to(player.id).emit('phase_intro', introData);
-            });
-        }, 5000);
+        room.phaseIntroData = {
+            title: "O Arsenal",
+            description: "Competição individual! O vencedor recebe uma carta de recompensa (Escudo, Adaga ou Ouro).",
+            secretMission: null
+        };
+        room.players.forEach(player => {
+            io.to(player.id).emit('phase_intro', { ...room.phaseIntroData });
+        });
     }, 5000);
 }
 
