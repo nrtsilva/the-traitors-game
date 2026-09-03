@@ -165,11 +165,17 @@ io.on('connection', (socket) => {
     });
 
     // --- EVENTO: INICIAR JOGO ---
-    socket.on('start_game', ({ roomCode }, callback) => {
-        const room = rooms[roomCode];
-        if (!room || room.hostId !== socket.id) {
-            return callback({ success: false, message: "Apenas o anfitrião pode iniciar o jogo." });
-        }
+	
+	socket.on('start_game', ({ roomCode }, callback) => {
+		const room = rooms[roomCode];
+		if (!room || room.hostId !== socket.id) {
+			return callback({ success: false, message: "Apenas o anfitrião pode iniciar o jogo." });
+		}
+
+		// Verificar se há jogadores suficientes (mínimo 4)
+		if (room.players.length < 4) {
+			return callback({ success: false, message: "É necessário pelo menos 4 jogadores para iniciar." });
+		}
 
         // 1. Atribuir Roles (Traidores)
         const shuffledPlayers = [...room.players].sort(() => Math.random() - 0.5);
