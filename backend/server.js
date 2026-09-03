@@ -82,7 +82,7 @@ io.on('connection', (socket) => {
             console.log(`[Entrada na Sala] ${newPlayer.name} entrou em ${cleanCode}`);
 
             io.to(cleanCode).emit('room_update', { players: room.players, settings: room.settings });
-            callback({ success: true, players: room.players, settings: room.settings });
+            callback({ success: true, roomCode: cleanCode, players: room.players, settings: room.settings });
         } catch (error) {
             callback({ success: false, message: "Erro ao entrar." });
         }
@@ -186,6 +186,7 @@ io.on('connection', (socket) => {
                     currentMission: room.currentMissionData,
                     role: player.role, // Adicionado para o Role Reveal
                     gameMode: gameMode, // Adicionado para o frontend saber o modo
+					roomCode: cleanCode,
                     players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null })),
                     secretMissions: (player.role === 'traitor') ? player.secretMissions : []
                 };

@@ -45,10 +45,11 @@ function App() {
     newSocket.on('disconnect', () => setConnected(false));
     
     newSocket.on('game_started', (playerState) => {
-      setGameData(playerState);
-      setTutorialStep(0);
-      setCurrentScreen('tutorial');
-      setPhaseIntro(null);
+        setGameData(playerState);
+        setRoomData(prev => ({ ...prev, roomCode: playerState.roomCode })); // FIX: Garante que roomData tem o código
+        setTutorialStep(0);
+        setCurrentScreen('tutorial');
+        setPhaseIntro(null);
     });
 
     newSocket.on('phase_intro', (data) => {
