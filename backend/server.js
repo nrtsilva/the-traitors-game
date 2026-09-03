@@ -203,7 +203,7 @@ io.on('connection', (socket) => {
                 
                 const aliveCount = room.players.filter(p => p.alive).length;
                 
-                // Log de DEBUG no sítio certo (depois das variáveis serem criadas)
+                // Log de DEBUG (Agora está no sítio certo, depois das variáveis existirem)
                 console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
 
                 io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
