@@ -65,11 +65,8 @@ function App() {
     });
 
     newSocket.on('phase_intro', (data) => {
-        // Usar isEvaluationRef.current em vez de isEvaluation
-        if (data && data.title === "A Expulsão" && isEvaluationRef.current) {
-            console.log("Ignorando phase_intro porque ainda estamos em avaliação.");
-            return;
-        }
+        // Se estivermos em avaliação, o GameBoard mostrará a avaliação primeiro (devido à ordem dos ifs).
+        // Portanto, podemos simplesmente definir o phaseIntro sem bloquear, ele só será visível quando a avaliação terminar.
         setPhaseIntro(data);
     });
 
@@ -172,6 +169,10 @@ function App() {
               }}
               onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
               onEvaluation={(data) => {
+                  // Forçar a saída do ecrã de avaliação imediatamente
+                  setIsEvaluation(false);
+                  setBanishmentReveal(null);
+
                   const code = (roomData && roomData.roomCode) || (gameData && gameData.roomCode);
                   if (code) {
                       socket.emit('submit_evaluation', { roomCode: code, data });

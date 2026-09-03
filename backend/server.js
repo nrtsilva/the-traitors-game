@@ -278,6 +278,7 @@ io.on('connection', (socket) => {
     // --- AVALIAÇÃO DA MISSÃO (Fiel dá estrelas, Traidor confirma) ---
     socket.on('submit_evaluation', ({ roomCode, data }) => {
         try {
+			console.log(`[DEBUG] Avaliação recebida de ${player.name}. Votos: ${allEvaluated ? 'Todos responderam' : 'Aguardando'}`);
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
             if (!room) return;
