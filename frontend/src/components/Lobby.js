@@ -40,7 +40,7 @@ export default function Lobby({ socket, playerName, setPlayerName, onRoomCreated
             value={playerName} 
             onChange={(e) => setPlayerName(e.target.value)}
             className="w-full p-4 bg-[#291923] border border-[#D8B66C]/50 text-[#F3EBDD] font-medium rounded-sm focus:outline-none focus:border-[#E5C982] placeholder-[#F3EBDD]/40"
-            placeholder="O nome que será anunciado à mansão"
+            placeholder="O teu nome na mansão"
           />
         </div>
 

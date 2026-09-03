@@ -472,6 +472,16 @@ function endMurderPhase(room) {
 }
 
 // --- 7. INICIAR O SERVIDOR ---
+// Manter o servidor acordado (evita o "sleep" do Render Free)
+setInterval(() => {
+    http.get(`http://localhost:${PORT}`, (res) => {
+        // apenas para manter o servidor ativo
+    }).on('error', (e) => {
+        // ignora erros silenciosamente
+    });
+}, 300000); // A cada 5 minutos (300000 milissegundos)
+
+
 server.listen(PORT, () => {
     console.log(`[Servidor] The Traitors Backend está a correr na porta ${PORT}`);
 });
