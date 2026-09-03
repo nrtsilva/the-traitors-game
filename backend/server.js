@@ -42,7 +42,7 @@ function createInitialRoomState(hostId, hostName) {
         phase: GAME_PHASES.WAITING_LOBBY,
         roundNumber: 0,
         settings: { maxPlayers: 6, numTraitors: 1, sabotageActive: true, recruitingActive: false, debateTime: 60, banishedLoseGold: true, eliminatedAsSpectator: true, tutorialMode: true, gameMode: 'remote' },
-        players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
+        players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 },
         phaseTimer: null,
         currentMissionData: null,
@@ -187,7 +187,9 @@ io.on('connection', (socket) => {
                     role: player.role, // Adicionado para o Role Reveal
                     gameMode: gameMode, // Adicionado para o frontend saber o modo
 					roomCode: cleanCode,
-                    players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null })),
+					gold: player.gold,
+					bars: player.bars,
+                    players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })),
                     secretMissions: (player.role === 'traitor') ? player.secretMissions : []
                 };
                 io.to(player.id).emit('game_started', pState);

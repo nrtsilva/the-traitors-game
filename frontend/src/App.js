@@ -151,6 +151,7 @@ function App() {
                 socket.emit('player_ready', { roomCode: roomData.roomCode });
               }
             }}
+            onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
             onEvaluation={(data) => socket.emit('submit_evaluation', { roomCode: roomData.roomCode, data })}
           />
         )}
