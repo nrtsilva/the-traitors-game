@@ -27,7 +27,50 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
       </div>
 
       <div className="space-y-6">
-        
+        {/* DESTAQUE: TIPO DE JOGO (Presencial vs Remoto) */}
+        <div className="bg-[#291923] p-6 rounded-sm border-2 border-[#E5C982] mb-6 shadow-lg">
+          <label className="block text-xl font-display font-bold mb-2 text-[#E5C982] text-center tracking-widest">
+            ONDE ESTÃO OS JOGADORES?
+          </label>
+          <p className="text-sm text-[#F3EBDD]/70 mb-4 text-center">
+            Isto determina o tipo de missões que serão geradas.
+          </p>
+          
+          <div className="flex gap-4">
+            <button
+              onClick={() => updateSetting('gameMode', 'in_person')}
+              className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${
+                settings.gameMode === 'in_person' 
+                  ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]' 
+                  : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'
+              }`}
+            >
+              <div className="text-3xl mb-2">🏠</div>
+              <div className="text-lg">Presencial</div>
+              <div className="text-xs font-normal mt-1 opacity-80">Mesmo espaço físico<br/>(Missões de objetos e cores)</div>
+            </button>
+
+            <button
+              onClick={() => updateSetting('gameMode', 'remote')}
+              className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${
+                settings.gameMode === 'remote' 
+                  ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]' 
+                  : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'
+              }`}
+            >
+              <div className="text-3xl mb-2">💻</div>
+              <div className="text-lg">Remoto</div>
+              <div className="text-xs font-normal mt-1 opacity-80">Jogadores à distância<br/>(Missões digitais e de conhecimento)</div>
+            </button>
+          </div>
+          
+          {/* Texto dinâmico de aviso */}
+          <div className="mt-4 p-3 bg-[#412734] border border-[#D8B66C]/30 rounded-sm text-center">
+            <span className="text-[#E5C982] font-bold uppercase tracking-wider text-sm">
+              {settings.gameMode === 'in_person' ? '⚠️ Missões Físicas Ativas' : '🌐 Missões Digitais Ativas'}
+            </span>
+          </div>
+        </div>
         {/* Nº de Jogadores */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
           <div className="flex justify-between mb-2">

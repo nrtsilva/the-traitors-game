@@ -41,7 +41,7 @@ function createInitialRoomState(hostId, hostName) {
         hostId: hostId,
         phase: GAME_PHASES.WAITING_LOBBY,
         roundNumber: 0,
-        settings: { maxPlayers: 6, numTraitors: 1, sabotageActive: true, recruitingActive: false, debateTime: 60, banishedLoseGold: true, eliminatedAsSpectator: true, tutorialMode: true },
+        settings: { maxPlayers: 6, numTraitors: 1, sabotageActive: true, recruitingActive: false, debateTime: 60, banishedLoseGold: true, eliminatedAsSpectator: true, tutorialMode: true, gameMode: 'remote' },
         players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 },
         phaseTimer: null,
@@ -102,7 +102,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- INICIAR JOGO ---
+   // --- INICIAR JOGO ---
     socket.on('start_game', ({ roomCode }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -115,10 +115,10 @@ io.on('connection', (socket) => {
             if (!traitorCount || traitorCount < 1 || traitorCount >= room.players.length) traitorCount = 1;
 
             room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
-			
-			console.log(`[DEBUG] Jogadores na sala: ${room.players.length}`);
-			console.log(`[DEBUG] Configuração de Traidores: ${room.settings.numTraitors}`);
-			console.log(`[DEBUG] Traidores a atribuir: ${traitorCount}`);
+            
+            console.log(`[DEBUG] Jogadores na sala: ${room.players.length}`);
+            console.log(`[DEBUG] Configuração de Traidores: ${room.settings.numTraitors}`);
+            console.log(`[DEBUG] Traidores a atribuir: ${traitorCount}`);
 
             for (let i = 0; i < traitorCount; i++) {
                 const t = shuffled[i];
@@ -129,49 +129,70 @@ io.on('connection', (socket) => {
                 }
             }
 
-			console.log(`[DEBUG] Roles finais: ${room.players.map(p => p.name + ': ' + p.role).join(', ')}`);
+            console.log(`[DEBUG] Roles finais: ${room.players.map(p => p.name + ': ' + p.role).join(', ')}`);
 
             room.roundNumber = 1;
             room.phase = GAME_PHASES.PHASE_1_MISSION;
             room.prizeFund = { bars: 0, coins: 0 };
             room.readyCount = 0;
 
-            // Simulação da Missão
-            room.currentMissionData = {
-                type: 'RANKING',
-                title: 'Ranking de Países',
-                timeLimit: 120,
-                items: [{ id: 1, name: 'Japão', correctPosition: 4 }, { id: 2, name: 'Polónia', correctPosition: 8 }, { id: 3, name: 'Suécia', correctPosition: 10 }, { id: 4, name: 'França', correctPosition: 5 }, { id: 5, name: 'EUA', correctPosition: 2 }, { id: 6, name: 'Índia', correctPosition: 1 }, { id: 7, name: 'Vietname', correctPosition: 6 }, { id: 8, name: 'Nigéria', correctPosition: 3 }, { id: 9, name: 'Coreia do Sul', correctPosition: 7 }, { id: 10, name: 'Austrália', correctPosition: 9 }]
-            };
+            // --- NOVO: Lógica para escolher a missão baseada no modo de jogo ---
+            const gameMode = room.settings.gameMode || 'remote'; // Padrão remoto se não estiver definido
+
+            let missionData;
+            if (gameMode === 'in_person') {
+                // Missão para jogadores no mesmo espaço físico
+                missionData = {
+                    type: 'PHYSICAL_OBJECT_HUNT',
+                    title: 'Caça aos Objetos',
+                    timeLimit: 120,
+                    description: "Encontrem objetos com as cores indicadas na sala!",
+                    items: [
+                        { id: 1, name: 'Objeto Azul', description: 'Encontrem um objeto azul na sala.' },
+                        { id: 2, name: 'Objeto Vermelho', description: 'Encontrem um objeto vermelho na sala.' },
+                        { id: 3, name: 'Objeto de Papel', description: 'Encontrem um objeto de papel na sala.' }
+                    ]
+                };
+            } else {
+                // Missão para jogadores remotos (digitais)
+                missionData = {
+                    type: 'RANKING',
+                    title: 'Ranking de Países',
+                    timeLimit: 120,
+                    items: [{ id: 1, name: 'Japão', correctPosition: 4 }, { id: 2, name: 'Polónia', correctPosition: 8 }, { id: 3, name: 'Suécia', correctPosition: 10 }, { id: 4, name: 'França', correctPosition: 5 }, { id: 5, name: 'EUA', correctPosition: 2 }, { id: 6, name: 'Índia', correctPosition: 1 }, { id: 7, name: 'Vietname', correctPosition: 6 }, { id: 8, name: 'Nigéria', correctPosition: 3 }, { id: 9, name: 'Coreia do Sul', correctPosition: 7 }, { id: 10, name: 'Austrália', correctPosition: 9 }]
+                };
+            }
+
+            room.currentMissionData = missionData;
 
             room.phaseIntroData = {
                 title: "Missão I",
-                description: "Cooperem para ordenar os países por população. Ganhem ouro para o cofre.",
-                secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0] // Apenas para traidor
+                description: missionData.title === 'Caça aos Objetos' 
+                    ? "Encontrem os objetos pedidos na sala. Trabalhem em equipa para ganhar ouro!" 
+                    : "Cooperem para ordenar os países por população. Ganhem ouro para o cofre.",
+                secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
+                gameMode: gameMode // Enviamos o modo de jogo na intro
             };
 
-            console.log(`[Jogo Iniciado] ${cleanCode} | Ronda: 1`);
+            console.log(`[Jogo Iniciado] ${cleanCode} | Ronda: 1 | Modo: ${gameMode}`);
 
+            // Envia o estado para cada jogador
             room.players.forEach(player => {
-				const pState = {
-					phase: room.phase,
-					roundNumber: room.roundNumber,
-					settings: room.settings,
-					prizeFund: room.prizeFund,
-					currentMission: room.currentMissionData,
-					role: player.role,  // <-- ADICIONAR ESTA LINHA (mostra a role do próprio jogador)
-					players: room.players.map(p => ({
-						id: p.id,
-						name: p.name,
-						alive: p.alive,
-						role: (p.id === player.id) ? p.role : null // Isto está correto para a lista de jogadores
-					})),
-					secretMissions: (player.role === 'traitor') ? player.secretMissions : []
-				};
+                const pState = {
+                    phase: room.phase, 
+                    roundNumber: room.roundNumber, 
+                    settings: room.settings, 
+                    prizeFund: room.prizeFund,
+                    currentMission: room.currentMissionData,
+                    role: player.role, // Adicionado para o Role Reveal
+                    gameMode: gameMode, // Adicionado para o frontend saber o modo
+                    players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null })),
+                    secretMissions: (player.role === 'traitor') ? player.secretMissions : []
+                };
                 io.to(player.id).emit('game_started', pState);
             });
 
-            // Envia a intro para todos (com base no papel de cada um)
+            // Envia a intro para todos (com base no papel e no modo de jogo)
             room.players.forEach(player => {
                 const introData = { ...room.phaseIntroData };
                 if (player.role !== 'traitor') {
@@ -189,37 +210,48 @@ io.on('connection', (socket) => {
 
 	// --- JOGADOR PRONTO PARA A FASE ---
     socket.on('player_ready', ({ roomCode }) => {
-        try {
-            const cleanCode = (roomCode || "").trim().toUpperCase();
-            const room = rooms[cleanCode];
-            if (!room) return;
+		try {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room) return;
 
-            const player = room.players.find(p => p.id === socket.id);
-            if (!player || !player.alive) return;
+			// Procura o jogador pelo socket.id atual
+			let player = room.players.find(p => p.id === socket.id);
 
-            if (!player.isReadyForPhase) {
-                player.isReadyForPhase = true;
-                room.readyCount++;
-                
-                const aliveCount = room.players.filter(p => p.alive).length;
-                
-                // Log de DEBUG (Agora está no sítio certo, depois das variáveis existirem)
-                console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
+			// Se não encontrar (porque o socket.id mudou), procura um jogador
+			// que ainda não tenha pressionado "Iniciar Fase" e atualiza o ID dele
+			if (!player) {
+				player = room.players.find(p => !p.isReadyForPhase);
+				if (player) {
+					console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
+					player.id = socket.id; // Atualiza o ID para o novo socket
+				}
+			}
 
-                io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
+			if (!player || !player.alive) return;
 
-                if (room.readyCount >= aliveCount) {
-                    room.players.forEach(p => p.isReadyForPhase = false);
-                    room.readyCount = 0;
-                    
-                    io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
-                    startMissionTimer(room);
-                }
-            }
-        } catch (error) {
-            console.error("Erro no player_ready:", error);
-        }
-    });
+			if (!player.isReadyForPhase) {
+				player.isReadyForPhase = true;
+				room.readyCount++;
+				
+				const aliveCount = room.players.filter(p => p.alive).length;
+				
+				console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
+
+				io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
+
+				if (room.readyCount >= aliveCount) {
+					room.players.forEach(p => p.isReadyForPhase = false);
+					room.readyCount = 0;
+					
+					io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
+					startMissionTimer(room);
+				}
+			}
+		} catch (error) {
+			console.error("Erro no player_ready:", error);
+		}
+	});
 
     // --- AVALIAÇÃO DA MISSÃO (Fiel dá estrelas, Traidor confirma) ---
     socket.on('submit_evaluation', ({ roomCode, data }) => {

@@ -45,12 +45,20 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
         )}
       </div>
     );
-  }
-
+  }  
+  
   // Se houver uma Introdução de Fase (Ex: Missão I), mostrar o modal
   if (phaseIntro) {
     return (
       <div className="w-full max-w-2xl mx-auto p-8 bg-[#291923] border-2 border-[#D8B66C] rounded-lg shadow-soft text-center relative">
+        
+        {/* ETIQUETA DO MODO DE JOGO (Dentro do modal!) */}
+        <div className="flex justify-center mb-4">
+          <span className="bg-[#412734] border border-[#D8B66C]/30 text-[#F3EBDD] text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+            {phaseIntro.gameMode === 'in_person' ? '🏠 Missão Presencial' : '💻 Missão Remota'}
+          </span>
+        </div>
+
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
         
         <h2 className="font-display text-4xl text-[#E5C982] mb-4">{phaseIntro.title}</h2>
