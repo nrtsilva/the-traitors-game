@@ -102,13 +102,16 @@ io.on('connection', (socket) => {
         }
     });
 
-   // --- INICIAR JOGO ---
+    // --- INICIAR JOGO ---
     socket.on('start_game', ({ roomCode }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
             if (!room || room.hostId !== socket.id) return;
             if (room.players.length < 2) return callback({ success: false, message: "Mínimo 2 jogadores para testes." });
+
+            // 1. DEFINIR O MODO DE JOGO LOGO NO INÍCIO!
+            const gameMode = room.settings.gameMode || 'remote';
 
             const shuffled = [...room.players].sort(() => Math.random() - 0.5);
             let traitorCount = room.settings.numTraitors;
@@ -120,27 +123,27 @@ io.on('connection', (socket) => {
             console.log(`[DEBUG] Configuração de Traidores: ${room.settings.numTraitors}`);
             console.log(`[DEBUG] Traidores a atribuir: ${traitorCount}`);
 
-            // Substitua o loop inteiro dos Traidores por isto:
-			for (let i = 0; i < traitorCount; i++) {
-				const t = shuffled[i];
-				const pObj = room.players.find(p => p.id === t.id);
-				if (pObj) {
-					pObj.role = 'traitor';
-					
-					// GERAR TAREFAS ESPECÍFICAS CONSOANTE O MODO
-					if (gameMode === 'in_person') {
-						pObj.secretMissions = [
-							"Escolher o objeto amarelo para último",
-							"Dizer 'Está difícil' 3 vezes"
-						];
-					} else {
-						pObj.secretMissions = [
-							"Colocar um país errado no topo da lista",
-							"Dizer 'Está difícil' 3 vezes"
-						];
-					}
-				}
-			}
+            // Atribuir papéis de Traidor (agora gameMode já existe!)
+            for (let i = 0; i < traitorCount; i++) {
+                const t = shuffled[i];
+                const pObj = room.players.find(p => p.id === t.id);
+                if (pObj) {
+                    pObj.role = 'traitor';
+                    
+                    // GERAR TAREFAS ESPECÍFICAS CONSOANTE O MODO
+                    if (gameMode === 'in_person') {
+                        pObj.secretMissions = [
+                            "Escolher o objeto amarelo para último",
+                            "Dizer 'Está difícil' 3 vezes"
+                        ];
+                    } else {
+                        pObj.secretMissions = [
+                            "Colocar um país errado no topo da lista",
+                            "Dizer 'Está difícil' 3 vezes"
+                        ];
+                    }
+                }
+            }
 
             console.log(`[DEBUG] Roles finais: ${room.players.map(p => p.name + ': ' + p.role).join(', ')}`);
 
@@ -149,12 +152,9 @@ io.on('connection', (socket) => {
             room.prizeFund = { bars: 0, coins: 0 };
             room.readyCount = 0;
 
-            // --- NOVO: Lógica para escolher a missão baseada no modo de jogo ---
-            const gameMode = room.settings.gameMode || 'remote'; // Padrão remoto se não estiver definido
-
+            // 2. CRIAR A MISSÃO BASEADA NO MODO
             let missionData;
             if (gameMode === 'in_person') {
-                // Missão para jogadores no mesmo espaço físico
                 missionData = {
                     type: 'PHYSICAL_OBJECT_HUNT',
                     title: 'Caça aos Objetos',
@@ -167,7 +167,6 @@ io.on('connection', (socket) => {
                     ]
                 };
             } else {
-                // Missão para jogadores remotos (digitais)
                 missionData = {
                     type: 'RANKING',
                     title: 'Ranking de Países',
@@ -184,12 +183,11 @@ io.on('connection', (socket) => {
                     ? "Encontrem os objetos pedidos na sala. Trabalhem em equipa para ganhar ouro!" 
                     : "Cooperem para ordenar os países por população. Ganhem ouro para o cofre.",
                 secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
-                gameMode: gameMode // Enviamos o modo de jogo na intro
+                gameMode: gameMode
             };
 
             console.log(`[Jogo Iniciado] ${cleanCode} | Ronda: 1 | Modo: ${gameMode}`);
 
-            // Envia o estado para cada jogador
             room.players.forEach(player => {
                 const pState = {
                     phase: room.phase, 
@@ -197,22 +195,21 @@ io.on('connection', (socket) => {
                     settings: room.settings, 
                     prizeFund: room.prizeFund,
                     currentMission: room.currentMissionData,
-                    role: player.role, // Adicionado para o Role Reveal
-                    gameMode: gameMode, // Adicionado para o frontend saber o modo
-					roomCode: cleanCode,
-					gold: player.gold,
-					bars: player.bars,
+                    role: player.role,
+                    gameMode: gameMode,
+                    roomCode: cleanCode,
+                    gold: player.gold,
+                    bars: player.bars,
                     players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })),
                     secretMissions: (player.role === 'traitor') ? player.secretMissions : []
                 };
                 io.to(player.id).emit('game_started', pState);
             });
 
-            // Envia a intro para todos (com base no papel e no modo de jogo)
             room.players.forEach(player => {
                 const introData = { ...room.phaseIntroData };
                 if (player.role !== 'traitor') {
-                    delete introData.secretMission; // Remove para os fiéis
+                    delete introData.secretMission;
                 }
                 io.to(player.id).emit('phase_intro', introData);
             });
