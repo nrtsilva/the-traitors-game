@@ -65,9 +65,9 @@ function App() {
     });
 
     newSocket.on('phase_intro', (data) => {
-        // Se estivermos em avaliação, o GameBoard mostrará a avaliação primeiro (devido à ordem dos ifs).
-        // Portanto, podemos simplesmente definir o phaseIntro sem bloquear, ele só será visível quando a avaliação terminar.
+        // Basta definir o phaseIntro. O GameBoard renderiza o que for mais prioritário.
         setPhaseIntro(data);
+        setIsEvaluation(false); // Força a saída da avaliação se o servidor mandar a intro da fase seguinte
     });
 
     newSocket.on('phase_started', (data) => {
@@ -169,13 +169,10 @@ function App() {
               }}
               onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
               onEvaluation={(data) => {
-                  // Forçar a saída do ecrã de avaliação imediatamente
-                  setIsEvaluation(false);
-                  setBanishmentReveal(null);
-
                   const code = (roomData && roomData.roomCode) || (gameData && gameData.roomCode);
                   if (code) {
                       socket.emit('submit_evaluation', { roomCode: code, data });
+                      // Não definimos isEvaluation para false aqui; esperamos que o servidor envie a próxima fase.
                   } else {
                       console.error("Erro: roomCode não encontrado. roomData:", roomData, "gameData:", gameData);
                   }

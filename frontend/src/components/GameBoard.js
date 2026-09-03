@@ -7,7 +7,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
   const [selectedVote, setSelectedVote] = useState(null);
   const [timer, setTimer] = useState(0);
 
-  // Iniciar cronómetro local
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
       setTimer(playerState.timer);
@@ -21,7 +20,59 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     }
   }, [playerState.timer]);
 
-  // AVALIAÇÃO
+  // PRIORIDADE 1: REVELAÇÃO DA EXPULSÃO
+  if (banishmentReveal) {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-8 bg-[#291923] border-2 border-[#D8B66C] rounded-lg shadow-soft text-center relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
+        <h2 className="font-display text-4xl text-[#E5C982] mb-6">{banishmentReveal.title}</h2>
+        
+        {banishmentReveal.banishedName ? (
+          <div className="mb-6">
+            <p className="text-2xl text-white mb-2">O jogador <span className="font-bold text-red-400">{banishmentReveal.banishedName}</span> foi expulso!</p>
+            <p className="text-[#F3EBDD]/70">Consequências: Perdeu <span className="font-bold text-[#D8B66C]">{banishmentReveal.lostGold} moedas</span></p>
+          </div>
+        ) : (
+          <p className="text-2xl text-white mb-6">Ninguém foi expulso (Empate)</p>
+        )}
+        
+        <button onClick={() => window.location.reload()} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">AVANÇAR PARA O ARSENAL</button>
+      </div>
+    );
+  }
+
+  // PRIORIDADE 2: INTRODUÇÃO DE FASE (Ex: "A Expulsão")
+  if (phaseIntro) {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-8 bg-[#291923] border-2 border-[#D8B66C] rounded-lg shadow-soft text-center relative">
+        <div className="flex justify-center mb-4">
+          <span className="bg-[#412734] border border-[#D8B66C]/30 text-[#F3EBDD] text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
+            {phaseIntro.gameMode === 'in_person' ? '🏠 Missão Presencial' : '💻 Missão Remota'}
+          </span>
+        </div>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
+        
+        <h2 className="font-display text-4xl text-[#E5C982] mb-4">{phaseIntro.title}</h2>
+        <p className="text-[#F3EBDD] text-lg leading-relaxed mb-8">{phaseIntro.description}</p>
+
+        {isTraitor && phaseIntro.secretMission && (
+          <div className="bg-red-900/30 border border-red-500 rounded p-4 mb-8">
+            <p className="text-red-400 font-bold mb-2">🤫 TAREFA SECRETA DO TRAIDOR</p>
+            <ul className="list-disc pl-5 text-left text-[#F3EBDD]">
+              <li className="mb-1">{phaseIntro.secretMission}</li>
+              <li>Dizer 'Está difícil' 3 vezes</li>
+            </ul>
+          </div>
+        )}
+
+        <button onClick={onReady} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">INICIAR FASE</button>
+        <p className="text-xs text-[#F3EBDD]/60 mt-4">Aguarda que todos os jogadores estejam prontos...</p>
+        <button onClick={() => onOpenHelp(0)} className="absolute top-4 right-4 text-[#E5C982] font-bold">?</button>
+      </div>
+    );
+  }
+
+  // PRIORIDADE 3: AVALIAÇÃO (Só aparece se não houver intro nem revelação)
   if (isEvaluation) {
     return (
       <div className="w-full max-w-6xl mx-auto p-4 text-center">
@@ -51,63 +102,8 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // REVELAÇÃO DA EXPULSÃO
-  if (banishmentReveal) {
-    return (
-      <div className="w-full max-w-2xl mx-auto p-8 bg-[#291923] border-2 border-[#D8B66C] rounded-lg shadow-soft text-center relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
-        <h2 className="font-display text-4xl text-[#E5C982] mb-6">{banishmentReveal.title}</h2>
-        
-        {banishmentReveal.banishedName ? (
-          <div className="mb-6">
-            <p className="text-2xl text-white mb-2">O jogador <span className="font-bold text-red-400">{banishmentReveal.banishedName}</span> foi expulso!</p>
-            <p className="text-[#F3EBDD]/70">Consequências: Perdeu <span className="font-bold text-[#D8B66C]">{banishmentReveal.lostGold} moedas</span></p>
-          </div>
-        ) : (
-          <p className="text-2xl text-white mb-6">Ninguém foi expulso (Empate)</p>
-        )}
-        
-        <button onClick={() => window.location.reload()} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">AVANÇAR PARA O ARSENAL</button>
-      </div>
-    );
-  }
-
-  // INTRODUÇÃO DE FASE
-  if (phaseIntro) {
-    return (
-      <div className="w-full max-w-2xl mx-auto p-8 bg-[#291923] border-2 border-[#D8B66C] rounded-lg shadow-soft text-center relative">
-        <div className="flex justify-center mb-4">
-          <span className="bg-[#412734] border border-[#D8B66C]/30 text-[#F3EBDD] text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
-            {phaseIntro.gameMode === 'in_person' ? '🏠 Missão Presencial' : '💻 Missão Remota'}
-          </span>
-        </div>
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
-        
-        <h2 className="font-display text-4xl text-[#E5C982] mb-4">{phaseIntro.title}</h2>
-        <p className="text-[#F3EBDD] text-lg leading-relaxed mb-8">{phaseIntro.description}</p>
-
-        {/* Listar tarefas específicas para o traidor */}
-        {isTraitor && phaseIntro.secretMission && (
-          <div className="bg-red-900/30 border border-red-500 rounded p-4 mb-8">
-            <p className="text-red-400 font-bold mb-2">🤫 TAREFA SECRETA DO TRAIDOR</p>
-            <ul className="list-disc pl-5 text-left text-[#F3EBDD]">
-              <li className="mb-1">{phaseIntro.secretMission}</li>
-              {/* Adicionar aqui a segunda tarefa se existir no backend */}
-              <li>Dizer 'Está difícil' 3 vezes</li>
-            </ul>
-          </div>
-        )}
-
-        <button onClick={onReady} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">INICIAR FASE</button>
-        <p className="text-xs text-[#F3EBDD]/60 mt-4">Aguarda que todos os jogadores estejam prontos...</p>
-        <button onClick={() => onOpenHelp(0)} className="absolute top-4 right-4 text-[#E5C982] font-bold">?</button>
-      </div>
-    );
-  }
-
-  // FASE DE VOTAÇÃO (Expulsão)
+  // PRIORIDADE 4: FASE DE VOTAÇÃO (Expulsão)
   if (playerState.phase === 'PHASE_2_BANISHMENT') {
-    // Filtrar jogadores para excluir o próprio
     const votablePlayers = playerState.players.filter(p => p.id !== playerId && p.alive);
 
     return (
@@ -141,7 +137,7 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // CASO NORMAL - TABULEIRO
+  // PRIORIDADE 5: CASO NORMAL - TABULEIRO (Missão Ativa)
   return (
     <div className="w-full max-w-6xl mx-auto p-4 relative">
       <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982] hover:text-[#F3EBDD] font-display font-bold transition z-20" title="Ajuda">?</button>
