@@ -143,7 +143,11 @@ function App() {
             socket={socket}
             phaseIntro={phaseIntro} // Passa a intro apenas quando for para o jogo
             isEvaluation={isEvaluation}
-            onReady={() => socket.emit('player_ready', { roomCode: roomData.roomCode })}
+            onReady={() => {
+              if (roomData && roomData.roomCode) {
+                socket.emit('player_ready', { roomCode: roomData.roomCode });
+              }
+            }}
             onEvaluation={(data) => socket.emit('submit_evaluation', { roomCode: roomData.roomCode, data })}
           />
         )}

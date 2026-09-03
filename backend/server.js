@@ -115,6 +115,10 @@ io.on('connection', (socket) => {
             if (!traitorCount || traitorCount < 1 || traitorCount >= room.players.length) traitorCount = 1;
 
             room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
+			
+			console.log(`[DEBUG] Jogadores na sala: ${room.players.length}`);
+			console.log(`[DEBUG] Configuração de Traidores: ${room.settings.numTraitors}`);
+			console.log(`[DEBUG] Traidores a atribuir: ${traitorCount}`);
 
             for (let i = 0; i < traitorCount; i++) {
                 const t = shuffled[i];
@@ -124,6 +128,8 @@ io.on('connection', (socket) => {
                     pObj.secretMissions = ["Sabotar a missão sem ser apanhado", "Dizer 'Está difícil' 3 vezes"];
                 }
             }
+
+			console.log(`[DEBUG] Roles finais: ${room.players.map(p => p.name + ': ' + p.role).join(', ')}`);
 
             room.roundNumber = 1;
             room.phase = GAME_PHASES.PHASE_1_MISSION;
@@ -175,6 +181,7 @@ io.on('connection', (socket) => {
     // --- JOGADOR PRONTO PARA A FASE ---
     socket.on('player_ready', ({ roomCode }) => {
         try {
+			console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
             if (!room) return;
