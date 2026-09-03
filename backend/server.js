@@ -328,6 +328,19 @@ io.on('connection', (socket) => {
     socket.on('traitor_murder_choice', ({ roomCode, targetPlayerId }, callback) => {
         // Implementar seleção
     });
+	
+	// --- EVENTO: TERMINAR MISSÃO ANTECIPADAMENTE ---
+	socket.on('end_mission', ({ roomCode }) => {
+		const cleanCode = (roomCode || "").trim().toUpperCase();
+		const room = rooms[cleanCode];
+		if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
+
+		if (room.phaseTimer) clearTimeout(room.phaseTimer); // Para o cronómetro
+		room.phaseTimer = null;
+
+		console.log(`[Missão] Um jogador terminou a missão antecipadamente na sala ${cleanCode}`);
+		io.to(cleanCode).emit('mission_evaluation'); // Avança para a avaliação
+	});
 
     // --- DESCONEXÃO ---
     socket.on('disconnect', () => {
