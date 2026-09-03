@@ -20,10 +20,11 @@ function App() {
   useEffect(() => {
     // Criar a ligação ao servidor
     const newSocket = io(BACKEND_URL, {
-        transports: ['polling'],
+        transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 10,
+        reconnectionAttempts: 5,
         reconnectionDelay: 2000,
+        reconnectionDelayMax: 5000,
         timeout: 20000
     });
     setSocket(newSocket); // Guardamos o socket no estado
