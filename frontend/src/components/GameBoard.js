@@ -8,7 +8,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
   const [arsenalNumber, setArsenalNumber] = useState(1);
   const [timer, setTimer] = useState(0);
 
-  // Atualizar Timer
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
       setTimer(playerState.timer);
@@ -28,6 +27,7 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
       <div className="text-center">
         <h1 className="text-5xl font-bold mb-8 text-white">{banishmentReveal.banishedName} foi expulso!</h1>
         <p className="text-xl">Perdeu {banishmentReveal.lostGold} moedas.</p>
+        <p className="mt-10 text-lg text-[#F3EBDD]/70">A preparar o Arsenal...</p>
       </div>
     );
   }
@@ -51,7 +51,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
   // 2. INTRODUÇÃO DE FASE
   if (phaseIntro) {
     return (
-      // ... (manter como está, mas remover o timer daqui) ...
       <div className="text-center">
         <h1 className="text-4xl font-bold text-[#E5C982] mb-4">{phaseIntro.title}</h1>
         <p className="text-xl mb-8">{phaseIntro.description}</p>
@@ -61,7 +60,37 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // 3. ARSENAL (Mini-jogo Individual)
+  // 3. AVALIAÇÃO DA MISSÃO (Fiéis dão estrelas, Traidor confirma)
+  if (isEvaluation) {
+    return (
+      <div className="w-full max-w-6xl mx-auto p-4 text-center">
+        <h2 className="font-display text-3xl text-[#E5C982] mb-6">MISSÃO TERMINADA</h2>
+        <p className="text-[#F3EBDD] text-lg mb-10">A missão terminou. Todos devem avaliar esta missão.</p>
+        
+        {isTraitor ? (
+          <div className="mb-8">
+            <h3 className="text-2xl text-red-400 mb-4">Completaste a tua missão secreta?</h3>
+            <div className="flex justify-center gap-4">
+              <button onClick={() => onEvaluation({ type: 'traitor_answer', value: true })} className="px-8 py-4 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Sim, completei</button>
+              <button onClick={() => onEvaluation({ type: 'traitor_answer', value: false })} className="px-8 py-4 bg-[#291923] text-[#F3EBDD] border border-[#D8B66C] rounded-sm">Não, falhei</button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-8">
+            <h3 className="text-2xl text-[#F3EBDD] mb-4">Avalia a missão (1 a 5 estrelas)</h3>
+            <div className="flex justify-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setSelectedRating(star)} className={`text-5xl transition ${selectedRating >= star ? 'text-[#D8B66C]' : 'text-[#F3EBDD]/30'}`}>★</button>
+              ))}
+            </div>
+            <button onClick={() => onEvaluation({ type: 'faithful_rating', value: selectedRating })} disabled={selectedRating === 0} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50">Confirmar Avaliação</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // 4. ARSENAL (Mini-jogo Individual)
   if (playerState.phase === 'PHASE_3_ARMOURY') {
     return (
       <div className="text-center">
@@ -87,7 +116,7 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // 4. FASE DE VOTAÇÃO (Expulsão com Dagger)
+  // 5. FASE DE VOTAÇÃO (Expulsão com Dagger)
   if (playerState.phase === 'PHASE_2_BANISHMENT') {
     const votablePlayers = playerState.players.filter(p => p.id !== playerId && p.alive);
     const hasDagger = playerState.inventory && playerState.inventory.includes('dagger');
@@ -128,7 +157,7 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // 5. TABULEIRO NORMAL (Missão)
+  // 6. TABULEIRO NORMAL (Missão)
   return (
     <div className="relative">
       <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982]">?</button>

@@ -70,6 +70,21 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           </div>
         </div>
 
+        {/* NÚMERO DE FASES (AVENTURA) */}
+        <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
+          <div className="flex justify-between mb-2">
+            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Nº de Fases da Aventura</label>
+            <span className="font-bold text-[#D8B66C] text-lg">{settings.numPhases || 2}</span>
+          </div>
+          <input 
+            type="range" min="1" max="4" 
+            value={settings.numPhases || 2} 
+            onChange={(e) => updateSetting('numPhases', parseInt(e.target.value))}
+            className="w-full accent-[#D8B66C]" 
+          />
+          <p className="text-xs text-[#F3EBDD]/50 mt-2">Cada fase inclui: Missão → Expulsão → Arsenal → Assassinato</p>
+        </div>
+
         {/* Opções Toggle */}
         <div className="grid grid-cols-1 gap-3">
           {[
