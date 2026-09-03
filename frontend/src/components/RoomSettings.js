@@ -80,7 +80,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
 
         {/* Tempo de Debate */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
-          <label className="block mb-2 text-[#F3EBDD]">Tempo de Debate (Banimento)</label>
+          <label className="block mb-2 text-[#F3EBDD]">Tempo de Debate (Expulsão)</label>
           <select 
             value={settings.debateTime} 
             onChange={(e) => updateSetting('debateTime', e.target.value)}
