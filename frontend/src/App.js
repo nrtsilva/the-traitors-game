@@ -148,25 +148,25 @@ function App() {
         {/* JOGO (Apenas se a tela atual for 'game') */}
         {connected && currentScreen === 'game' && gameData && (
           <GameBoard 
-            playerState={gameData} 
-            onOpenHelp={openHelp} 
-            socket={socket}
-            phaseIntro={phaseIntro} // Passa a intro apenas quando for para o jogo
-            banishmentReveal={banishmentReveal}
-            playerId={socket.id}
-            onVote={(targetPlayerId) => {
+              playerState={gameData} 
+              onOpenHelp={openHelp} 
+              socket={socket}
+              phaseIntro={phaseIntro}
+              banishmentReveal={banishmentReveal}
+              playerId={socket.id}
+              onVote={(targetPlayerId) => {
+                  if (roomData && roomData.roomCode) {
+                      socket.emit('submit_banishment_vote', { roomCode: roomData.roomCode, targetPlayerId });
+                  }
+              }}
+              isEvaluation={isEvaluation}
+              onReady={() => {
                 if (roomData && roomData.roomCode) {
-                    socket.emit('submit_banishment_vote', { roomCode: roomData.roomCode, targetPlayerId });
+                  socket.emit('player_ready', { roomCode: roomData.roomCode });
                 }
-            }}
-            isEvaluation={isEvaluation}
-            onReady={() => {
-              if (roomData && roomData.roomCode) {
-                socket.emit('player_ready', { roomCode: roomData.roomCode });
-              }
-            }}
-            onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
-            onEvaluation={(data) => socket.emit('submit_evaluation', { roomCode: roomData.roomCode, data })}
+              }}
+              onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
+              onEvaluation={(data) => socket.emit('submit_evaluation', { roomCode: roomData.roomCode, data })}
           />
         )}
 

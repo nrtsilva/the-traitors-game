@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, banishmentReveal, playerId }) {
+export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, banishmentReveal, playerId, onEndMission }) {
   const isTraitor = playerState.role === 'traitor';
   const [selectedRating, setSelectedRating] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
