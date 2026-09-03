@@ -1,38 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import logo from '../images/logo.svg'; // Importa o seu logo
 
 export default function RoleReveal({ playerState, onContinue }) {
-  const [step, setStep] = useState(0); // 0: Logo, 1: "Tu és...", 2: Papel, 3: Descrição + Botão
+  const [step, setStep] = useState(0); 
 
   const isTraitor = playerState.role === 'traitor';
 
   useEffect(() => {
-    // Sequência de animações (tempos em milissegundos)
     const timers = [
-      setTimeout(() => setStep(1), 1500), // Logo aparece 1.5s
-      setTimeout(() => setStep(2), 3000), // "Tu és..." aparece
-      setTimeout(() => setStep(3), 4500), // O papel aparece
-      setTimeout(() => setStep(4), 6000)  // Descrição e botão aparecem
+      setTimeout(() => setStep(1), 1500),
+      setTimeout(() => setStep(2), 3000),
+      setTimeout(() => setStep(3), 4500),
+      setTimeout(() => setStep(4), 6000)
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
   return (
     <div className="min-h-screen bg-[#291923] flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
-      
-      {/* Efeito de brilho no fundo */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#D8B66C]/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-lg">
-        
-        {/* PASSO 0: O Logótipo */}
-        <div className={`transition-opacity duration-1000 ${step >= 0 ? 'opacity-100' : 'opacity-0'} absolute flex flex-col items-center justify-center`}>
-          <img src={logo} alt="Emblema" className="w-40 h-auto mb-8 emblema-appear" />
-        </div>
-
-        {/* PASSO 1, 2, 3: A Revelação */}
+        {/* PASSO 0,1,2,3,4: A Revelação (sem logo) */}
         <div className={`transition-opacity duration-1000 ${step >= 1 ? 'opacity-100' : 'opacity-0'}`}>
-          
           {step >= 1 && (
             <h2 className="font-display text-3xl tracking-[0.3em] text-[#F3EBDD]/80 mb-4 uppercase">Tu és...</h2>
           )}
@@ -66,7 +55,6 @@ export default function RoleReveal({ playerState, onContinue }) {
             </button>
           )}
         </div>
-
       </div>
     </div>
   );

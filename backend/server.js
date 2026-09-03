@@ -212,9 +212,45 @@ io.on('connection', (socket) => {
                 return callback({ success: false, message: "É necessário pelo menos 4 jogadores para iniciar." });
             }
 
-            // Atribuir Roles
-            const shuffledPlayers = [...room.players].sort(() => Math.random() - 0.5);
-            const traitorCount = room.settings.numTraitors;
+			// Atribuir Roles
+			const shuffledPlayers = [...room.players].sort(() => Math.random() - 0.5);
+
+			// GARANTIR QUE EXISTE PELO MENOS 1 TRAIDOR
+			// Se as configurações estiverem corrompidas (0 ou undefined), forçamos para 1.
+			let traitorCount = room.settings.numTraitors;
+			if (!traitorCount || traitorCount < 1 || traitorCount >= room.players.length) {
+				traitorCount = 1;
+			}
+
+			console.log(`[Config] Número de Traidores a atribuir: ${traitorCount}`);
+
+			// Reinicia estados dos jogadores
+			room.players.forEach(p => {
+				p.role = 'faithful';
+				p.alive = true;
+				p.gold = 3;
+				p.inventory = [];
+				p.secretMissions = [];
+				p.secretMissionsCompleted = [];
+				p.voteCast = null;
+				p.isReady = false;
+			});
+
+			// Atribui a role de Traidor
+			for (let i = 0; i < traitorCount && i < shuffledPlayers.length; i++) {
+				const traitor = shuffledPlayers[i];
+				const playerObj = room.players.find(p => p.id === traitor.id);
+				if (playerObj) {
+					playerObj.role = 'traitor';
+					playerObj.secretMissions = [
+						"Sabotar a missão de ordenação colocando um país errado no topo",
+						"Dizer 'Isto é difícil' 3 vezes durante o debate"
+					];
+					playerObj.secretMissionsCompleted = [false, false];
+					
+					console.log(`[Role] ${playerObj.name} foi escolhido como TRAIDOR!`);
+				}
+			}
             
             room.players.forEach(p => {
                 p.role = 'faithful';

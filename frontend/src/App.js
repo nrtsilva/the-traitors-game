@@ -5,6 +5,7 @@ import RoomSettings from './components/RoomSettings';
 import WaitingRoom from './components/WaitingRoom';
 import GameBoard from './components/GameBoard';
 import RoleReveal from './components/RoleReveal';
+import GameTutorial from './components/GameTutorial';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -17,24 +18,28 @@ function App() {
   const [isHost, setIsHost] = useState(false);
   const [gameData, setGameData] = useState(null);
 
+  // Estados para o Tutorial
+  const [isTutorialOverlay, setIsTutorialOverlay] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+
   useEffect(() => {
-    // Criar a ligação ao servidor
     const newSocket = io(BACKEND_URL, {
         transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 3, // Tenta apenas 3 vezes
-        reconnectionDelay: 3000, // Espera 3 segundos entre tentativas
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
         reconnectionDelayMax: 5000,
-        timeout: 15000 // Desiste se demorar mais de 15 segundos
+        timeout: 20000
     });
-    setSocket(newSocket); // Guardamos o socket no estado
+    setSocket(newSocket);
 
     newSocket.on('connect', () => setConnected(true));
     newSocket.on('disconnect', () => setConnected(false));
     
     newSocket.on('game_started', (playerState) => {
       setGameData(playerState);
-      setCurrentScreen('roleReveal');
+      setTutorialStep(0); // Começa o tutorial do início
+      setCurrentScreen('tutorial'); // Vai primeiro para o tutorial
     });
 
     return () => newSocket.close();
@@ -52,6 +57,21 @@ function App() {
     setCurrentScreen('waiting');
   };
 
+  // Fecha o tutorial (volta ao RoleReveal se for o início, ou fecha o pop-up)
+  const handleTutorialClose = () => {
+    if (currentScreen === 'tutorial') {
+      setCurrentScreen('roleReveal');
+    } else {
+      setIsTutorialOverlay(false);
+    }
+  };
+
+  // Abre o tutorial como pop-up durante o jogo
+  const openHelp = (step) => {
+    setTutorialStep(step || 0);
+    setIsTutorialOverlay(true);
+  };
+
   return (
     <div className="min-h-screen">
       <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen">
@@ -63,7 +83,6 @@ function App() {
           </div>
         )}
 
-        {/* Passamos o socket para os componentes */}
         {connected && currentScreen === 'lobby' && (
           <Lobby socket={socket} setPlayerName={setPlayerName} playerName={playerName} onRoomCreated={handleRoomCreated} onRoomJoined={handleRoomJoined} />
         )}
@@ -76,6 +95,10 @@ function App() {
           <WaitingRoom socket={socket} roomData={roomData} onBack={() => setCurrentScreen('lobby')} />
         )}
 
+        {connected && currentScreen === 'tutorial' && (
+          <GameTutorial onClose={handleTutorialClose} initialStep={0} />
+        )}
+
         {connected && currentScreen === 'roleReveal' && gameData && (
           <RoleReveal 
             playerState={gameData} 
@@ -84,7 +107,14 @@ function App() {
         )}
 
         {connected && currentScreen === 'game' && gameData && (
-          <GameBoard playerState={gameData} />
+          <GameBoard playerState={gameData} onOpenHelp={openHelp} />
+        )}
+
+        {/* Overlay do Tutorial (Ajuda durante o jogo) */}
+        {isTutorialOverlay && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm">
+            <GameTutorial onClose={handleTutorialClose} initialStep={tutorialStep} />
+          </div>
         )}
 
       </div>

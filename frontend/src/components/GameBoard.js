@@ -1,16 +1,25 @@
 import React from 'react';
 
-export default function GameBoard({ playerState }) {
+export default function GameBoard({ playerState, onOpenHelp }) { // Adicione onOpenHelp
   const isTraitor = playerState.role === 'traitor';
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
+    <div className="w-full max-w-6xl mx-auto p-4 relative">
+      
+      {/* Botão de Ajuda no topo direito */}
+      <button 
+        onClick={() => onOpenHelp(0)}
+        className="absolute top-0 right-4 text-3xl text-[#E5C982] hover:text-[#F3EBDD] font-display font-bold transition z-20"
+        title="Ajuda"
+      >
+        ?
+      </button>
+
       <div className="flex flex-col md:flex-row gap-8">
         
         {/* Área Principal (70%) */}
         <div className="flex-1 bg-[#291923] border border-[#D8B66C] p-8 rounded-md shadow-soft relative overflow-hidden">
           
-          {/* Ornamento Superior */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
 
           <div className="text-center mb-8">
@@ -22,7 +31,7 @@ export default function GameBoard({ playerState }) {
             <p className="text-[#F3EBDD]/60 text-sm">Tempo: {playerState.currentMission.timeLimit} segundos</p>
           </div>
 
-          {/* Exemplo de Mini-Jogo: Ranking (Lista de Países) */}
+          {/* Exemplo de Mini-Jogo */}
           <div className="space-y-4">
             <p className="text-[#F3EBDD] font-display text-lg">Ordena os países por população (do maior para o menor):</p>
             {playerState.currentMission.items.map((item, index) => (
@@ -36,7 +45,6 @@ export default function GameBoard({ playerState }) {
             ))}
           </div>
 
-          {/* Botão para confirmar */}
           <button className="mt-8 w-full py-4 bg-[#D8B66C] text-[#291923] font-display font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">
             CONFIRMAR DECISÃO
           </button>
@@ -46,7 +54,6 @@ export default function GameBoard({ playerState }) {
         {/* Barra Lateral (30%) */}
         <div className="w-full md:w-1/3 space-y-6">
           
-          {/* Cofre */}
           <div className="bg-[#291923] border border-[#D8B66C] p-6 rounded-md text-center relative">
             <h3 className="font-display text-xl font-bold text-[#E5C982] mb-4">O COFRE</h3>
             <div className="flex justify-center items-center gap-6">
@@ -64,7 +71,6 @@ export default function GameBoard({ playerState }) {
             </div>
           </div>
 
-          {/* Jogadores Vivos (Dossiers) */}
           <div className="bg-[#291923] border border-[#D8B66C] p-6 rounded-md">
             <h3 className="font-display text-xl font-bold text-[#E5C982] mb-4">OS JOGADORES</h3>
             <ul className="space-y-3">
@@ -86,7 +92,6 @@ export default function GameBoard({ playerState }) {
             </ul>
           </div>
 
-          {/* Painel Secreto do Traidor */}
           {isTraitor && (
             <div className="bg-[#291923] border-2 border-[#D8B66C] p-6 rounded-md relative overflow-hidden shadow-soft">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
