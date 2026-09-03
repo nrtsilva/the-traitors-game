@@ -22,10 +22,10 @@ function App() {
     const newSocket = io(BACKEND_URL, {
         transports: ['websocket', 'polling'],
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 2000,
+        reconnectionAttempts: 3, // Tenta apenas 3 vezes
+        reconnectionDelay: 3000, // Espera 3 segundos entre tentativas
         reconnectionDelayMax: 5000,
-        timeout: 20000
+        timeout: 15000 // Desiste se demorar mais de 15 segundos
     });
     setSocket(newSocket); // Guardamos o socket no estado
 

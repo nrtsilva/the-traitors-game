@@ -15,10 +15,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*", // Permite qualquer frontend (Vercel ou local)
-        methods: ["GET", "POST"]
+        origin: ["http://localhost:3000", "https://the-traitors-game.vercel.app"], 
+        methods: ["GET", "POST"],
+        credentials: true // Adicione isto!
     },
-    transports: ['polling'] // Força Long Polling (evita crash de WebSocket no Render Free)
+    transports: ['websocket', 'polling'] 
 });
 
 const PORT = process.env.PORT || 3001;
@@ -468,6 +469,23 @@ function endMurderPhase(room) {
 }
 
 // --- 7. INICIAR O SERVIDOR ---
+
+// Configuração para evitar que o Render desligue a ligação por inatividade
+server.keepAliveTimeout = 120000; // 2 minutos
+server.headersTimeout = 120000; // 2 minutos
+
 server.listen(PORT, () => {
     console.log(`[Servidor] The Traitors Backend está a correr na porta ${PORT}`);
+    
+    // PING INTERNO: Mantém o servidor acordado no Render Free
+    // Tem de apontar para o URL público, não para localhost!
+    const PUBLIC_URL = process.env.RENDER_EXTERNAL_URL || `https://the-traitors-game.onrender.com`;
+    
+    setInterval(() => {
+        http.get(PUBLIC_URL, (res) => {
+            // Apenas para "acordar" o servidor
+        }).on('error', (e) => {
+            // Ignora erros silenciosamente
+        });
+    }, 240000); // A cada 4 minutos (240000 milissegundos)
 });
