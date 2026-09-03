@@ -2,7 +2,6 @@ import React from 'react';
 
 export default function GameBoard({ playerState }) {
   const isTraitor = playerState.role === 'traitor';
-  const isRoundEnd = playerState.phase === 'END_GAME';
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
