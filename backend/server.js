@@ -110,7 +110,7 @@ io.on('connection', (socket) => {
 
     // --- EVENTO: ENTRAR NA SALA ---
     socket.on('join_room', ({ roomCode, playerName }, callback) => {
-        const room = rooms[roomCode];
+        const room = rooms[roomCode.trim().toUpperCase()];
 
         if (!room) {
             return callback({ success: false, message: "Sala não encontrada." });

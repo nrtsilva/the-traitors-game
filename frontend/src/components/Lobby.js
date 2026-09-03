@@ -16,7 +16,7 @@ export default function Lobby({ socket, playerName, setPlayerName, onRoomCreated
   const handleJoin = () => {
     if (!playerName.trim()) return setError("Insira o seu nome");
     if (!roomCode.trim()) return setError("Insira o código da sala");
-    socket.emit('join_room', { roomCode: roomCode.toUpperCase(), playerName }, (response) => {
+    socket.emit('join_room', { roomCode: roomCode.trim().toUpperCase(), playerName }, (response) => {
       if (response.success) onRoomJoined(response);
       else setError(response.message);
     });
