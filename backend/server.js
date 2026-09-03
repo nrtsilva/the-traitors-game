@@ -41,8 +41,7 @@ function createInitialRoomState(hostId, hostName) {
         hostId: hostId,
         phase: GAME_PHASES.WAITING_LOBBY,
         roundNumber: 0,
-        settings: { maxPlayers: 6, numTraitors: 1, sabotageActive: true, recruitingActive: false, debateTime: 60, banishedLoseGold: true, eliminatedAsSpectator: true, tutorialMode: true, gameMode: 'remote' },
-        players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
+        settings: { maxPlayers: 6, numTraitors: 1, sabotageActive: true, recruitingActive: false, debateTime: 60, banishedLoseGold: true, eliminatedAsSpectator: true, tutorialMode: true, gameMode: 'remote', numPhases: 2 },players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 },
         phaseTimer: null,
         currentMissionData: null,
@@ -151,6 +150,7 @@ io.on('connection', (socket) => {
             console.log(`[DEBUG] Roles finais: ${room.players.map(p => p.name + ': ' + p.role).join(', ')}`);
 
             room.roundNumber = 1;
+			room.totalRounds = room.settings.numPhases || 2;
             room.phase = GAME_PHASES.PHASE_1_MISSION;
             room.prizeFund = { bars: 0, coins: 0 };
             room.readyCount = 0;
@@ -330,8 +330,55 @@ io.on('connection', (socket) => {
         }
     });
 
+	function processArsenal(room) {
+		// 1. Encontrar Vencedor (maior número único)
+		const choices = {};
+		room.players.filter(p => p.alive).forEach(p => {
+			if (p.arsenalChoice !== undefined) {
+				choices[p.arsenalChoice] = choices[p.arsenalChoice] || [];
+				choices[p.arsenalChoice].push(p);
+			}
+		});
+
+		let winner = null;
+		// Encontrar o número mais alto que só tem 1 jogador
+		for (let num = 6; num >= 1; num--) {
+			if (choices[num] && choices[num].length === 1) {
+				winner = choices[num][0];
+				break;
+			}
+		}
+
+		// 2. Atribuir Prémio Aleatório
+		const rewards = ['2_coins', '1_coin', 'shield', 'dagger'];
+		const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
+
+		if (winner) {
+			if (randomReward === '2_coins') winner.gold += 2;
+			else if (randomReward === '1_coin') winner.gold += 1;
+			else winner.inventory.push(randomReward);
+
+			console.log(`[Arsenal] Vencedor: ${winner.name} | Prémio: ${randomReward}`);
+		}
+
+		// 3. Emitir Resultado
+		io.to(room.roomCode).emit('arsenal_result', {
+			winnerName: winner ? winner.name : 'Ninguém',
+			reward: winner ? randomReward : null
+		});
+
+		// 4. Limpar escolhas e avançar para Assassinato
+        room.players.forEach(p => p.arsenalChoice = undefined);
+
+        // Avançar automaticamente para a próxima fase (assassinato -> nova ronda)
+        // Como ainda não temos a interface do traidor, avançamos direto para a próxima ronda
+        setTimeout(() => {
+            endMurderPhase(room);
+        }, 5000);
+	}
+
     // --- VOTO DE EXPULSÃO ---
-    socket.on('submit_banishment_vote', ({ roomCode, targetPlayerId }, callback) => {
+    socket.on('submit_banishment_vote', ({ roomCode, targetPlayerId, useDagger }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
@@ -341,6 +388,13 @@ io.on('connection', (socket) => {
             if (!player || !player.alive) return;
 
             player.voteCast = targetPlayerId;
+			
+			if (useDagger) {
+				player.voteCast = [targetPlayerId, targetPlayerId]; // Dois votos para o mesmo
+			} else {
+				player.voteCast = targetPlayerId; // Um voto
+			}		
+		
             const allVoted = room.players.filter(p => p.alive).every(p => p.voteCast !== null);
 
 			if (allVoted) {
@@ -355,12 +409,42 @@ io.on('connection', (socket) => {
 
     // --- ARSENAL (Competitivo) ---
     socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
-        // Implementar mini-jogo do arsenal aqui
-    });
+        try {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || room.phase !== GAME_PHASES.PHASE_3_ARMOURY) return;
+
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+
+            player.arsenalChoice = actionData.value; // Número escolhido (1-6)
+            console.log(`[Arsenal] ${player.name} escolheu ${player.arsenalChoice}`);
+
+            // Verifica se todos escolheram
+            const alivePlayers = room.players.filter(p => p.alive);
+            const allChose = alivePlayers.every(p => p.arsenalChoice !== undefined);
+
+            if (allChose) {
+                processArsenal(room);
+            }
+            if (typeof callback === 'function') callback({ success: true });
+        } catch (error) {
+            console.error("Erro no submit_arsenal_action:", error);
+        }
+    });	
 
     // --- ASSASSINATO (Traidor escolhe) ---
     socket.on('traitor_murder_choice', ({ roomCode, targetPlayerId }, callback) => {
-        // Implementar seleção
+        // Por agora, para testar, se o traidor não escolher, avançamos automaticamente.
+        // Implementar a escolha real mais tarde.
+        const cleanCode = (roomCode || "").trim().toUpperCase();
+        const room = rooms[cleanCode];
+        if (!room) return;
+
+        room.murderedThisRound = targetPlayerId || null; // Se ninguém for escolhido, ninguém morre
+        endMurderPhase(room); // Chama a função que avança para a próxima ronda!
+        
+        if (typeof callback === 'function') callback({ success: true });
     });
 	
 	// --- EVENTO: TERMINAR MISSÃO ANTECIPADAMENTE ---
@@ -407,7 +491,6 @@ io.on('connection', (socket) => {
 });
 
 // --- 6. FUNÇÕES DE LÓGICA DO JOGO ---
-
 function startMissionTimer(room) {
     if (room.phaseTimer) clearTimeout(room.phaseTimer);
     const timeLimitMs = (room.currentMissionData.timeLimit || 120) * 1000;
@@ -417,11 +500,89 @@ function startMissionTimer(room) {
     }, timeLimitMs);
 }
 
+function endMurderPhase(room) {
+    // Verifica a vítima (se houver)
+    const victim = room.murderedThisRound ? room.players.find(p => p.id === room.murderedThisRound) : null;
+    if (victim) {
+        victim.alive = false;
+        if (room.settings.banishedLoseGold) victim.gold = Math.max(0, victim.gold - 2);
+    }
+
+    room.roundNumber++;
+    
+    // Verificar fim da aventura
+    if (room.roundNumber > room.totalRounds) {
+        room.phase = GAME_PHASES.GAME_OVER;
+        io.to(room.roomCode).emit('game_over', { message: "A aventura terminou! Iniciando a votação final." });
+        return;
+    }
+
+    // PREPARAR NOVA RONDA
+    room.phase = GAME_PHASES.PHASE_1_MISSION;
+    room.prizeFund = { bars: 0, coins: 0 }; // (Opcional: resetar o cofre, ou manter acumulado)
+    room.endMissionVotes = 0;
+    room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; });
+
+    // Gerar nova missão (aqui reutilizamos a lógica do start_game, mas simplificado para teste)
+    const gameMode = room.settings.gameMode || 'remote';
+    let missionData;
+    if (gameMode === 'in_person') {
+        missionData = {
+            type: 'PHYSICAL_OBJECT_HUNT',
+            title: 'Caça aos Objetos - Ronda ' + room.roundNumber,
+            timeLimit: 120,
+            items: [
+                { id: 1, name: 'Objeto Azul', description: 'Encontrem um objeto azul na sala.' },
+                { id: 2, name: 'Objeto Verde', description: 'Encontrem um objeto verde na sala.' }
+            ]
+        };
+    } else {
+        // Alternar ordem para não ser sempre igual
+        missionData = {
+            type: 'RANKING',
+            title: 'Ranking de Países - Ronda ' + room.roundNumber,
+            timeLimit: 120,
+            items: [{ id: 1, name: 'Japão', correctPosition: 4 }, { id: 2, name: 'Brasil', correctPosition: 5 }]
+        };
+    }
+    room.currentMissionData = missionData;
+    room.readyCount = 0;
+
+    // Enviar intro da nova missão para todos
+    room.phaseIntroData = {
+        title: "Missão " + room.roundNumber,
+        description: "Nova missão começou! Cooperem para ganhar ouro.",
+        secretMission: null, // O traidor receberá a missão secreta no start_game, mas aqui simplificamos
+        gameMode: gameMode
+    };
+
+    room.players.forEach(player => {
+        const introData = { ...room.phaseIntroData };
+        if (player.role === 'traitor') {
+            introData.secretMission = "Dizer 'Está difícil' 3 vezes";
+        }
+        io.to(player.id).emit('phase_intro', introData);
+    });
+
+    // Aguardar que todos cliquem em iniciar antes de começar o timer
+    // (O timer é iniciado no player_ready)
+}
+
 function processBanishment(room) {
-    // Contagem de votos
+    // Contagem de votos (agora com suporte para Adaga - 2 votos)
     const voteCount = {};
     room.players.filter(p => p.alive).forEach(p => {
-        if (p.voteCast) voteCount[p.voteCast] = (voteCount[p.voteCast] || 0) + 1;
+        if (p.voteCast) {
+            if (Array.isArray(p.voteCast)) {
+                // Se for um array (Adaga), contamos cada elemento
+                p.voteCast.forEach(id => {
+                    voteCount[id] = (voteCount[id] || 0) + 1;
+                });
+            } else {
+                // Voto normal
+                voteCount[p.voteCast] = (voteCount[p.voteCast] || 0) + 1;
+            }
+        }
     });
 
     let maxVotes = 0;

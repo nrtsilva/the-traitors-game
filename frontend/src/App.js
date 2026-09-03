@@ -10,6 +10,7 @@ import GameTutorial from './components/GameTutorial';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 function App() {
+  const [arsenalResult, setArsenalResult] = useState(null);
   const [banishmentReveal, setBanishmentReveal] = useState(null);
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -66,6 +67,12 @@ function App() {
         setPhaseIntro(null);
         setBanishmentReveal(null);
         setIsEvaluation(true);
+    });
+
+    newSocket.on('arsenal_result', (data) => {
+      setArsenalResult(data);
+      setPhaseIntro(null);
+      setIsEvaluation(false);
     });
 
     newSocket.on('phase_intro', (data) => {
@@ -159,9 +166,15 @@ function App() {
               phaseIntro={phaseIntro}
               banishmentReveal={banishmentReveal}
               playerId={socket.id}
-              onVote={(targetPlayerId) => {
+              arsenalResult={arsenalResult}
+              onArsenalAction={(value) => {
                   if (roomData && roomData.roomCode) {
-                      socket.emit('submit_banishment_vote', { roomCode: roomData.roomCode, targetPlayerId });
+                      socket.emit('submit_arsenal_action', { roomCode: roomData.roomCode, actionData: { value } });
+                  }
+              }}
+              onVote={(targetPlayerId, useDagger) => {
+                  if (roomData && roomData.roomCode) {
+                      socket.emit('submit_banishment_vote', { roomCode: roomData.roomCode, targetPlayerId, useDagger });
                   }
               }}
               isEvaluation={isEvaluation}
@@ -170,7 +183,11 @@ function App() {
                   socket.emit('player_ready', { roomCode: roomData.roomCode });
                 }
               }}
-              onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
+              onEndMission={() => {
+                  if (roomData && roomData.roomCode) {
+                      socket.emit('end_mission', { roomCode: roomData.roomCode });
+                  }
+              }}
               onEvaluation={(data) => {
                   const code = (roomData && roomData.roomCode) || (gameData && gameData.roomCode);
                   if (code) {
