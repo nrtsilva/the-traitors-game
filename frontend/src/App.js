@@ -166,7 +166,14 @@ function App() {
                 }
               }}
               onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
-              onEvaluation={(data) => socket.emit('submit_evaluation', { roomCode: roomData.roomCode, data })}
+              onEvaluation={(data) => {
+                const code = (roomData && roomData.roomCode) || (gameData && gameData.roomCode);
+                if (code) {
+                    socket.emit('submit_evaluation', { roomCode: code, data });
+                } else {
+                    console.error("Erro: roomCode não encontrado. roomData:", roomData, "gameData:", gameData);
+                }
+            }}
           />
         )}
 
