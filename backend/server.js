@@ -15,9 +15,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*", // Em produção, substitua pelo URL do seu Frontend (ex: http://localhost:3000)
-        methods: ["GET", "POST"]
-    }
+        origin: ["https://the-traitors-game.vercel.app", "http://localhost:3000"], 
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling'] // Garante que ambos os transportes funcionam
 });
 
 const PORT = process.env.PORT || 3001;
@@ -472,16 +474,6 @@ function endMurderPhase(room) {
 }
 
 // --- 7. INICIAR O SERVIDOR ---
-// Manter o servidor acordado (evita o "sleep" do Render Free)
-setInterval(() => {
-    http.get(`http://localhost:${PORT}`, (res) => {
-        // apenas para manter o servidor ativo
-    }).on('error', (e) => {
-        // ignora erros silenciosamente
-    });
-}, 300000); // A cada 5 minutos (300000 milissegundos)
-
-
 server.listen(PORT, () => {
     console.log(`[Servidor] The Traitors Backend está a correr na porta ${PORT}`);
 });
