@@ -178,7 +178,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- JOGADOR PRONTO PARA A FASE ---
+	// --- JOGADOR PRONTO PARA A FASE ---
     socket.on('player_ready', ({ roomCode }) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -194,13 +194,12 @@ io.on('connection', (socket) => {
                 
                 const aliveCount = room.players.filter(p => p.alive).length;
                 
-                // Log de DEBUG (agora no sítio certo, depois das variáveis serem definidas)
+                // Log de DEBUG (Agora no sítio certo!)
                 console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
 
                 io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
 
                 if (room.readyCount >= aliveCount) {
-                    // Todos prontos! Limpa flags e inicia a fase.
                     room.players.forEach(p => p.isReadyForPhase = false);
                     room.readyCount = 0;
                     

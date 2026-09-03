@@ -33,32 +33,34 @@ function App() {
         reconnectionDelayMax: 5000,
         timeout: 20000
     });
+
+    // ESPIÃO DE EVENTOS (Para debug no console)
+    newSocket.onAny((event, ...args) => {
+        console.log(`[SOCKET RECEBIDO] Evento: ${event}`, args);
+    });
+
     setSocket(newSocket);
 
     newSocket.on('connect', () => setConnected(true));
     newSocket.on('disconnect', () => setConnected(false));
     
-    // 1. JOGO COMEÇOU -> Vai para o Tutorial
     newSocket.on('game_started', (playerState) => {
       setGameData(playerState);
       setTutorialStep(0);
       setCurrentScreen('tutorial');
-      setPhaseIntro(null); // Limpa qualquer intro anterior
+      setPhaseIntro(null);
     });
 
-    // 2. RECEBER INTRO DA FASE -> Guarda em variável, mas NÃO muda de ecrã imediatamente
     newSocket.on('phase_intro', (data) => {
       setPhaseIntro(data);
     });
 
-    // 3. FASE COMEÇOU (Todos clicaram em Iniciar) -> Já estamos no 'game', mostra o tabuleiro
     newSocket.on('phase_started', (data) => {
-      setPhaseIntro(null); // Fecha o modal
+      setPhaseIntro(null);
       setIsEvaluation(false);
       setGameData(prev => ({ ...prev, phase: data.phase, timer: data.timer, roundNumber: data.roundNumber }));
     });
 
-    // 4. AVALIAÇÃO DA MISSÃO
     newSocket.on('mission_evaluation', () => {
       setIsEvaluation(true);
       setPhaseIntro(null);
