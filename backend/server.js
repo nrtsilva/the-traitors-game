@@ -153,12 +153,21 @@ io.on('connection', (socket) => {
             console.log(`[Jogo Iniciado] ${cleanCode} | Ronda: 1`);
 
             room.players.forEach(player => {
-                const pState = {
-                    phase: room.phase, roundNumber: room.roundNumber, settings: room.settings, prizeFund: room.prizeFund,
-                    currentMission: room.currentMissionData,
-                    players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null })),
-                    secretMissions: (player.role === 'traitor') ? player.secretMissions : []
-                };
+				const pState = {
+					phase: room.phase,
+					roundNumber: room.roundNumber,
+					settings: room.settings,
+					prizeFund: room.prizeFund,
+					currentMission: room.currentMissionData,
+					role: player.role,  // <-- ADICIONAR ESTA LINHA (mostra a role do próprio jogador)
+					players: room.players.map(p => ({
+						id: p.id,
+						name: p.name,
+						alive: p.alive,
+						role: (p.id === player.id) ? p.role : null // Isto está correto para a lista de jogadores
+					})),
+					secretMissions: (player.role === 'traitor') ? player.secretMissions : []
+				};
                 io.to(player.id).emit('game_started', pState);
             });
 
@@ -180,36 +189,36 @@ io.on('connection', (socket) => {
 
 	// --- JOGADOR PRONTO PARA A FASE ---
     socket.on('player_ready', ({ roomCode }) => {
-		try {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room) return;
+        try {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room) return;
 
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
 
-			if (!player.isReadyForPhase) {
-				player.isReadyForPhase = true;
-				room.readyCount++;
-				
-				const aliveCount = room.players.filter(p => p.alive).length;
-				
-				// Log de DEBUG (Agora no sítio certo!)
-				console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
+            if (!player.isReadyForPhase) {
+                player.isReadyForPhase = true;
+                room.readyCount++;
+                
+                const aliveCount = room.players.filter(p => p.alive).length;
+                
+                // Log de DEBUG no sítio certo (depois das variáveis serem criadas)
+                console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
 
-				io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
+                io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
 
-				if (room.readyCount >= aliveCount) {
-					room.players.forEach(p => p.isReadyForPhase = false);
-					room.readyCount = 0;
-					
-					io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
-					startMissionTimer(room);
-				}
-			}
-		} catch (error) {
-			console.error("Erro no player_ready:", error);
-		}
+                if (room.readyCount >= aliveCount) {
+                    room.players.forEach(p => p.isReadyForPhase = false);
+                    room.readyCount = 0;
+                    
+                    io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
+                    startMissionTimer(room);
+                }
+            }
+        } catch (error) {
+            console.error("Erro no player_ready:", error);
+        }
     });
 
     // --- AVALIAÇÃO DA MISSÃO (Fiel dá estrelas, Traidor confirma) ---
