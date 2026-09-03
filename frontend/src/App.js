@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import Lobby from './components/Lobby';
 import RoomSettings from './components/RoomSettings';
@@ -13,17 +13,22 @@ function App() {
   const [banishmentReveal, setBanishmentReveal] = useState(null);
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState('lobby'); // 'lobby', 'settings', 'waiting', 'tutorial', 'roleReveal', 'game'
+  const [currentScreen, setCurrentScreen] = useState('lobby');
   const [roomData, setRoomData] = useState(null);
   const [playerName, setPlayerName] = useState('');
   const [isHost, setIsHost] = useState(false);
   const [gameData, setGameData] = useState(null);
 
-  // Estados para o Tutorial e Fases
   const [isTutorialOverlay, setIsTutorialOverlay] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
-  const [phaseIntro, setPhaseIntro] = useState(null); // Guarda a intro da fase até ser a hora certa
+  const [phaseIntro, setPhaseIntro] = useState(null);
   const [isEvaluation, setIsEvaluation] = useState(false);
+
+  // SOLUÇÃO: UseRef para aceder ao valor mais recente dentro do socket sem recriar a ligação
+  const isEvaluationRef = useRef(isEvaluation);
+  useEffect(() => {
+    isEvaluationRef.current = isEvaluation;
+  }, [isEvaluation]);
 
   useEffect(() => {
     const newSocket = io(BACKEND_URL, {
@@ -35,7 +40,6 @@ function App() {
         timeout: 20000
     });
 
-    // ESPIÃO DE EVENTOS (Para debug no console)
     newSocket.onAny((event, ...args) => {
         console.log(`[SOCKET RECEBIDO] Evento: ${event}`, args);
     });
@@ -47,14 +51,26 @@ function App() {
     
     newSocket.on('game_started', (playerState) => {
         setGameData(playerState);
-        setRoomData(prev => ({ ...prev, roomCode: playerState.roomCode })); // FIX: Garante que roomData tem o código
+        setRoomData(prev => ({ ...prev, roomCode: playerState.roomCode }));
         setTutorialStep(0);
         setCurrentScreen('tutorial');
         setPhaseIntro(null);
     });
 
+    newSocket.on('mission_evaluation', () => {
+        console.log("Evento mission_evaluation recebido!");
+        setPhaseIntro(null);
+        setBanishmentReveal(null);
+        setIsEvaluation(true);
+    });
+
     newSocket.on('phase_intro', (data) => {
-      setPhaseIntro(data);
+        // Usar isEvaluationRef.current em vez de isEvaluation
+        if (data && data.title === "A Expulsão" && isEvaluationRef.current) {
+            console.log("Ignorando phase_intro porque ainda estamos em avaliação.");
+            return;
+        }
+        setPhaseIntro(data);
     });
 
     newSocket.on('phase_started', (data) => {
@@ -63,13 +79,8 @@ function App() {
       setGameData(prev => ({ ...prev, phase: data.phase, timer: data.timer, roundNumber: data.roundNumber }));
     });
 
-    newSocket.on('mission_evaluation', () => {
-      setIsEvaluation(true);
-      setPhaseIntro(null);
-    });
-
     newSocket.on('banishment_reveal', (data) => {
-      setBanishmentReveal(data);  // Definir estado para mostrar no UI
+      setBanishmentReveal(data);
       setPhaseIntro(null);
       setIsEvaluation(false);
     });
@@ -91,16 +102,13 @@ function App() {
 
   const handleTutorialClose = () => {
     if (currentScreen === 'tutorial') {
-      // Saiu do tutorial -> vai para o Role Reveal
       setCurrentScreen('roleReveal');
     } else {
-      // Saiu do popup de ajuda
       setIsTutorialOverlay(false);
     }
   };
 
   const handleRoleRevealContinue = () => {
-    // Saiu do Role Reveal -> Entra no Jogo
     setCurrentScreen('game');
   };
 
@@ -132,12 +140,10 @@ function App() {
           <WaitingRoom socket={socket} roomData={roomData} onBack={() => setCurrentScreen('lobby')} />
         )}
 
-        {/* TUTORIAL (Apenas se a tela atual for 'tutorial') */}
         {connected && currentScreen === 'tutorial' && (
           <GameTutorial onClose={handleTutorialClose} initialStep={0} />
         )}
 
-        {/* ROLE REVEAL (Apenas se a tela atual for 'roleReveal') */}
         {connected && currentScreen === 'roleReveal' && gameData && (
           <RoleReveal 
             playerState={gameData} 
@@ -145,7 +151,6 @@ function App() {
           />
         )}
 
-        {/* JOGO (Apenas se a tela atual for 'game') */}
         {connected && currentScreen === 'game' && gameData && (
           <GameBoard 
               playerState={gameData} 
@@ -167,17 +172,16 @@ function App() {
               }}
               onEndMission={() => socket.emit('end_mission', { roomCode: roomData.roomCode })}
               onEvaluation={(data) => {
-                const code = (roomData && roomData.roomCode) || (gameData && gameData.roomCode);
-                if (code) {
-                    socket.emit('submit_evaluation', { roomCode: code, data });
-                } else {
-                    console.error("Erro: roomCode não encontrado. roomData:", roomData, "gameData:", gameData);
-                }
-            }}
+                  const code = (roomData && roomData.roomCode) || (gameData && gameData.roomCode);
+                  if (code) {
+                      socket.emit('submit_evaluation', { roomCode: code, data });
+                  } else {
+                      console.error("Erro: roomCode não encontrado. roomData:", roomData, "gameData:", gameData);
+                  }
+              }}
           />
         )}
 
-        {/* OVERLAY DE AJUDA (Pode aparecer em qualquer altura do jogo) */}
         {isTutorialOverlay && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm">
             <GameTutorial onClose={handleTutorialClose} initialStep={tutorialStep} />
