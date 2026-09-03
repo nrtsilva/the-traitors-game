@@ -1,37 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function GameBoard({ playerState, onOpenHelp }) { // Adicione onOpenHelp
+export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, socket }) {
   const isTraitor = playerState.role === 'traitor';
+  const [selectedRating, setSelectedRating] = useState(0);
 
+  // Se estiver na avaliação, mostrar painel de estrelas e a pergunta do traidor
+  if (isEvaluation) {
+    return (
+      <div className="w-full max-w-6xl mx-auto p-4 text-center">
+        <h2 className="font-display text-3xl text-[#E5C982] mb-6">MISSÃO TERMINADA</h2>
+        <p className="text-[#F3EBDD] text-lg mb-10">A missão terminou. Todos devem avaliar esta missão.</p>
+        
+        {/* Renderização separada para Traidor */}
+        {isTraitor ? (
+          <div className="mb-8">
+            <h3 className="text-2xl text-red-400 mb-4">Completaste a tua missão secreta?</h3>
+            <div className="flex justify-center gap-4">
+              <button onClick={() => onEvaluation({ type: 'traitor_answer', value: true })} className="px-8 py-4 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Sim, completei</button>
+              <button onClick={() => onEvaluation({ type: 'traitor_answer', value: false })} className="px-8 py-4 bg-[#291923] text-[#F3EBDD] border border-[#D8B66C] rounded-sm">Não, falhei</button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-8">
+            <h3 className="text-2xl text-[#F3EBDD] mb-4">Avalia a missão (1 a 5 estrelas)</h3>
+            <div className="flex justify-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setSelectedRating(star)}
+                  className={`text-5xl transition ${selectedRating >= star ? 'text-[#D8B66C]' : 'text-[#F3EBDD]/30'}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => onEvaluation({ type: 'faithful_rating', value: selectedRating })}
+              disabled={selectedRating === 0}
+              className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50"
+            >
+              Confirmar Avaliação
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Se houver uma Introdução de Fase (Ex: Missão I), mostrar o modal
+  if (phaseIntro) {
+    return (
+      <div className="w-full max-w-2xl mx-auto p-8 bg-[#291923] border-2 border-[#D8B66C] rounded-lg shadow-soft text-center relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
+        
+        <h2 className="font-display text-4xl text-[#E5C982] mb-4">{phaseIntro.title}</h2>
+        <p className="text-[#F3EBDD] text-lg leading-relaxed mb-8">{phaseIntro.description}</p>
+
+        {/* Aviso secreto para o traidor */}
+        {isTraitor && phaseIntro.secretMission && (
+          <div className="bg-red-900/30 border border-red-500 rounded p-4 mb-8">
+            <p className="text-red-400 font-bold mb-2">🤫 TAREFA SECRETA DO TRAIDOR</p>
+            <p className="text-[#F3EBDD]">{phaseIntro.secretMission}</p>
+          </div>
+        )}
+
+        <button
+          onClick={onReady}
+          className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft"
+        >
+          INICIAR FASE
+        </button>
+        <p className="text-xs text-[#F3EBDD]/60 mt-4">Aguarda que todos os jogadores estejam prontos...</p>
+        
+        <button onClick={() => onOpenHelp(0)} className="absolute top-4 right-4 text-[#E5C982] font-bold">?</button>
+      </div>
+    );
+  }
+
+  // Caso normal: mostrar o tabuleiro
   return (
     <div className="w-full max-w-6xl mx-auto p-4 relative">
       
-      {/* Botão de Ajuda no topo direito */}
-      <button 
-        onClick={() => onOpenHelp(0)}
-        className="absolute top-0 right-4 text-3xl text-[#E5C982] hover:text-[#F3EBDD] font-display font-bold transition z-20"
-        title="Ajuda"
-      >
-        ?
-      </button>
+      <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982] hover:text-[#F3EBDD] font-display font-bold transition z-20" title="Ajuda">?</button>
 
       <div className="flex flex-col md:flex-row gap-8">
-        
-        {/* Área Principal (70%) */}
         <div className="flex-1 bg-[#291923] border border-[#D8B66C] p-8 rounded-md shadow-soft relative overflow-hidden">
-          
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent"></div>
-
           <div className="text-center mb-8">
-            <h2 className="font-display text-3xl font-bold mb-2 text-[#E5C982] tracking-widest">FASE I</h2>
+            <h2 className="font-display text-3xl font-bold mb-2 text-[#E5C982] tracking-widest">{playerState.phase === 'PHASE_2_BANISHMENT' ? 'FASE II' : playerState.phase === 'PHASE_3_ARMOURY' ? 'FASE III' : playerState.phase === 'PHASE_4_MURDER' ? 'FASE IV' : 'FASE I'}</h2>
             <p className="text-[#F3EBDD] text-sm uppercase tracking-[0.2em]">
               {playerState.currentMission.title}
             </p>
             <div className="w-16 h-px bg-[#D8B66C] mx-auto my-4"></div>
-            <p className="text-[#F3EBDD]/60 text-sm">Tempo: {playerState.currentMission.timeLimit} segundos</p>
+            <p className="text-[#F3EBDD]/60 text-sm">Tempo restante: {playerState.timer || 0}s</p>
           </div>
 
-          {/* Exemplo de Mini-Jogo */}
           <div className="space-y-4">
             <p className="text-[#F3EBDD] font-display text-lg">Ordena os países por população (do maior para o menor):</p>
             {playerState.currentMission.items.map((item, index) => (
@@ -44,16 +107,9 @@ export default function GameBoard({ playerState, onOpenHelp }) { // Adicione onO
               </div>
             ))}
           </div>
-
-          <button className="mt-8 w-full py-4 bg-[#D8B66C] text-[#291923] font-display font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft">
-            CONFIRMAR DECISÃO
-          </button>
-
         </div>
 
-        {/* Barra Lateral (30%) */}
         <div className="w-full md:w-1/3 space-y-6">
-          
           <div className="bg-[#291923] border border-[#D8B66C] p-6 rounded-md text-center relative">
             <h3 className="font-display text-xl font-bold text-[#E5C982] mb-4">O COFRE</h3>
             <div className="flex justify-center items-center gap-6">
@@ -110,7 +166,6 @@ export default function GameBoard({ playerState, onOpenHelp }) { // Adicione onO
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

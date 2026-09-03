@@ -18,9 +18,12 @@ function App() {
   const [isHost, setIsHost] = useState(false);
   const [gameData, setGameData] = useState(null);
 
-  // Estados para o Tutorial
   const [isTutorialOverlay, setIsTutorialOverlay] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+
+  // Estado do jogo
+  const [phaseIntro, setPhaseIntro] = useState(null);
+  const [isEvaluation, setIsEvaluation] = useState(false);
 
   useEffect(() => {
     const newSocket = io(BACKEND_URL, {
@@ -38,8 +41,27 @@ function App() {
     
     newSocket.on('game_started', (playerState) => {
       setGameData(playerState);
-      setTutorialStep(0); // Começa o tutorial do início
-      setCurrentScreen('tutorial'); // Vai primeiro para o tutorial
+      setTutorialStep(0);
+      setCurrentScreen('tutorial');
+    });
+
+    // Receber Introdução da Fase (para todos clicarem em "Iniciar")
+    newSocket.on('phase_intro', (data) => {
+      setPhaseIntro(data);
+      setCurrentScreen('game'); // Vai para o tabuleiro mas mostra o modal
+    });
+
+    // Receber fim da introdução (todos prontos)
+    newSocket.on('phase_started', (data) => {
+      setPhaseIntro(null);
+      setIsEvaluation(false);
+      setGameData(prev => ({ ...prev, phase: data.phase, timer: data.timer, roundNumber: data.roundNumber }));
+    });
+
+    // Receber fase de avaliação (pós-missão)
+    newSocket.on('mission_evaluation', () => {
+      setIsEvaluation(true);
+      setPhaseIntro(null);
     });
 
     return () => newSocket.close();
@@ -57,7 +79,6 @@ function App() {
     setCurrentScreen('waiting');
   };
 
-  // Fecha o tutorial (volta ao RoleReveal se for o início, ou fecha o pop-up)
   const handleTutorialClose = () => {
     if (currentScreen === 'tutorial') {
       setCurrentScreen('roleReveal');
@@ -66,7 +87,6 @@ function App() {
     }
   };
 
-  // Abre o tutorial como pop-up durante o jogo
   const openHelp = (step) => {
     setTutorialStep(step || 0);
     setIsTutorialOverlay(true);
@@ -107,10 +127,17 @@ function App() {
         )}
 
         {connected && currentScreen === 'game' && gameData && (
-          <GameBoard playerState={gameData} onOpenHelp={openHelp} />
+          <GameBoard 
+            playerState={gameData} 
+            onOpenHelp={openHelp} 
+            socket={socket}
+            phaseIntro={phaseIntro}
+            isEvaluation={isEvaluation}
+            onReady={() => socket.emit('player_ready', { roomCode: roomData.roomCode })}
+            onEvaluation={(data) => socket.emit('submit_evaluation', { roomCode: roomData.roomCode, data })}
+          />
         )}
 
-        {/* Overlay do Tutorial (Ajuda durante o jogo) */}
         {isTutorialOverlay && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm">
             <GameTutorial onClose={handleTutorialClose} initialStep={tutorialStep} />

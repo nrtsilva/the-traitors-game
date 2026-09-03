@@ -13,7 +13,7 @@ const steps = [
   },
   {
     title: "As Missões",
-    description: "Nesta fase, todos os jogadores cooperam para completar desafios (como ordenar países, adivinhar palavras ou responder a quizzes). O ouro ganho vai para o Cofre Comunitário. Se o Traidor quiser, pode tentar sabotar secretamente a missão sem ser apanhado!",
+    description: "Nesta fase, todos os jogadores cooperam para completar desafios em equipa. O ouro ganho vai para o Cofre Comunitário. Se for o Traidor, terá uma tarefa secreta de sabotagem que deve tentar cumprir sem ser apanhado!",
     icon: "⚔️"
   },
   {
@@ -22,7 +22,7 @@ const steps = [
     icon: "🗳️"
   },
   {
-    title: "A Armoury",
+    title: "O Arsenal",
     description: "É um mini-jogo competitivo individual! Quem vencer recebe cartas de recompensa especiais: um Escudo (protege de um assassinato), uma Adaga (dobra o ouro ganho se expulsarem um Traidor), ou mais ouro para o seu baú pessoal.",
     icon: "🛡️"
   },
