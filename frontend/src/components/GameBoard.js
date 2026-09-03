@@ -23,11 +23,41 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
 
   // 1. REVELAÇÃO DA EXPULSÃO
   if (banishmentReveal) {
+    const isTie = banishmentReveal.isTie;
+    const isNoVotes = banishmentReveal.banishedName === null && banishmentReveal.isTie === false;
+
     return (
-      <div className="text-center">
-        <h1 className="text-5xl font-bold mb-8 text-white">{banishmentReveal.banishedName} foi expulso!</h1>
-        <p className="text-xl">Perdeu {banishmentReveal.lostGold} moedas.</p>
-        <p className="mt-10 text-lg text-[#F3EBDD]/70">A preparar o Arsenal...</p>
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div className="text-center animate-pulse">
+          {/* Efeito de "tocha" ou brilho */}
+          <div className="w-32 h-32 mx-auto mb-8 rounded-full bg-[#D8B66C]/20 blur-3xl"></div>
+          
+          {isTie && (
+            <>
+              <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">EMPATE</h1>
+              <p className="text-2xl text-white mb-4">NINGUÉM FOI EXPULSO</p>
+              <p className="text-xl text-white/60 mb-8">Todos os jogadores empatados perderam 1 moeda.</p>
+            </>
+          )}
+          
+          {!isTie && !isNoVotes && (
+            <>
+              <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">EXPULSÃO</h1>
+              <p className="text-4xl text-red-400 font-bold mb-4">{banishmentReveal.banishedName} FOI EXPULSO</p>
+              <p className="text-xl text-white/60 mb-8">Perdeu {banishmentReveal.lostGold} moedas.</p>
+            </>
+          )}
+
+          {isNoVotes && (
+            <>
+              <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">SURPRESA</h1>
+              <p className="text-2xl text-white mb-8">Ninguém foi expulso! (Nenhum voto foi registado)</p>
+            </>
+          )}
+
+          {/* Indicador de progresso para o Arsenal */}
+          <p className="text-lg text-[#D8B66C] mt-10 animate-bounce">A preparar o Arsenal...</p>
+        </div>
       </div>
     );
   }
