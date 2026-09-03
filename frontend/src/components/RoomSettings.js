@@ -31,7 +31,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
             <span className="font-bold text-[#D8B66C]">{settings.maxPlayers}</span>
           </div>
           <input 
-            type="range" min="4" max="10" 
+            type="range" min="2" max="10" 
             value={settings.maxPlayers} 
             onChange={(e) => updateSetting('maxPlayers', parseInt(e.target.value))}
             className="w-full accent-[#D8B66C]" 

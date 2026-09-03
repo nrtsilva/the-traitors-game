@@ -190,7 +190,7 @@ io.on('connection', (socket) => {
                 return callback({ success: false, message: "Apenas o anfitrião pode iniciar o jogo." });
             }
 
-            if (room.players.length < 4) {
+            if (room.players.length < 2) {
                 return callback({ success: false, message: "É necessário pelo menos 4 jogadores para iniciar." });
             }
 
