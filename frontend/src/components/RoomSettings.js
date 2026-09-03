@@ -4,9 +4,13 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
   const settings = roomData.settings;
 
   const updateSetting = (key, value) => {
-    const newSettings = { ...settings, [key]: value };
-    setRoomData({ ...roomData, settings: newSettings });
-    socket.emit('update_settings', { roomCode: roomData.roomCode, newSettings });
+      const newSettings = { ...settings, [key]: value };
+      setRoomData({ ...roomData, settings: newSettings });
+      socket.emit('update_settings', { roomCode: roomData.roomCode, newSettings }, (response) => {
+          if (response && !response.success) {
+              console.log(response.message);
+          }
+      });
   };
 
   const handleStart = () => {

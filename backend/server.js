@@ -165,19 +165,37 @@ io.on('connection', (socket) => {
     // --- EVENTO: ANFITRIÃO ALTERA CONFIGURAÇÕES ---
     socket.on('update_settings', ({ roomCode, newSettings }, callback) => {
         try {
+            // 1. Verificar se o callback é uma função (Se não for, não crashamos!)
+            const hasCallback = typeof callback === 'function';
+
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
-            if (!room || room.hostId !== socket.id) {
-                return callback({ success: false, message: "Apenas o anfitrião pode alterar as configurações." });
+
+            if (!room) {
+                if (hasCallback) return callback({ success: false, message: "Sala não encontrada." });
+                return;
+            }
+            if (room.hostId !== socket.id) {
+                if (hasCallback) return callback({ success: false, message: "Apenas o anfitrião pode alterar as configurações." });
+                return;
             }
 
+            // 2. Atualizar as configurações
             room.settings = { ...room.settings, ...newSettings };
             
+            // 3. Emitir para todos na sala
             io.to(cleanCode).emit('settings_updated', room.settings);
-            callback({ success: true });
+
+            // 4. Responder apenas se existir callback
+            if (hasCallback) {
+                callback({ success: true });
+            }
         } catch (error) {
             console.error("Erro no update_settings:", error);
-            callback({ success: false, message: "Erro ao atualizar configurações." });
+            // Nunca tentar chamar callback se não for função
+            if (typeof callback === 'function') {
+                callback({ success: false, message: "Erro ao atualizar configurações." });
+            }
         }
     });
 
