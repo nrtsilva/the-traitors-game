@@ -181,7 +181,6 @@ io.on('connection', (socket) => {
     // --- JOGADOR PRONTO PARA A FASE ---
     socket.on('player_ready', ({ roomCode }) => {
         try {
-			console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
             if (!room) return;
@@ -194,6 +193,10 @@ io.on('connection', (socket) => {
                 room.readyCount++;
                 
                 const aliveCount = room.players.filter(p => p.alive).length;
+                
+                // Log de DEBUG (agora no sítio certo, depois das variáveis serem definidas)
+                console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
+
                 io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
 
                 if (room.readyCount >= aliveCount) {
