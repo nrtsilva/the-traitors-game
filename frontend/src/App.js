@@ -19,13 +19,13 @@ function App() {
 
   useEffect(() => {
     // Criar a ligação ao servidor
-  const newSocket = io(BACKEND_URL, {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5, // Limita a 5 tentativas para não bloquear o IP
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 5000
-  });
+    const newSocket = io(BACKEND_URL, {
+        transports: ['polling'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
+        timeout: 20000
+    });
     setSocket(newSocket); // Guardamos o socket no estado
 
     newSocket.on('connect', () => setConnected(true));
