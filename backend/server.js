@@ -147,6 +147,60 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- JOGADOR PRONTO PARA A FASE (RESTAURADO - CRÍTICO) ---
+    socket.on('player_ready', ({ roomCode }) => {
+        try {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room) return;
+
+            // Procura o jogador pelo socket.id atual
+            let player = room.players.find(p => p.id === socket.id);
+
+            // Se não encontrar (porque o socket.id mudou), procura um jogador
+            // que ainda não tenha pressionado "Iniciar Fase" e atualiza o ID dele
+            if (!player) {
+                player = room.players.find(p => !p.isReadyForPhase);
+                if (player) {
+                    console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
+                    player.id = socket.id; // Atualiza o ID para o novo socket
+                }
+            }
+
+            if (!player || !player.alive) return;
+
+            if (!player.isReadyForPhase) {
+                player.isReadyForPhase = true;
+                room.readyCount++;
+                
+                const aliveCount = room.players.filter(p => p.alive).length;
+                
+                console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
+
+                io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
+
+                if (room.readyCount >= aliveCount) {
+                    room.players.forEach(p => p.isReadyForPhase = false);
+                    room.readyCount = 0;
+                    
+                    if (room.phase === GAME_PHASES.PHASE_2_BANISHMENT) {
+                        const debateTime = room.settings.debateTime || 60;
+                        io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: debateTime });
+                        
+                        // Iniciar timer de debate
+                        clearTimeout(room.phaseTimer);
+                        room.phaseTimer = setTimeout(() => processBanishment(room), debateTime * 1000);
+                    } else {
+                        io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
+                        startMissionTimer(room);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Erro no player_ready:", error);
+        }
+    });
+
     // --- AVALIAÇÃO DA MISSÃO (Fiel dá estrelas, Traidor confirma) ---
     socket.on('submit_evaluation', ({ roomCode, data }) => {
         try {
@@ -164,7 +218,7 @@ io.on('connection', (socket) => {
 
             // GUARDAR A RESPOSTA DO TRAIDOR
             if (data.type === 'traitor_answer') {
-                player.secretMissionsCompleted = [data.value];
+                player.secretMissionsCompleted = [data.value]; // Guarda [true] ou [false]
             }
 
             player.evaluation = data;
@@ -208,12 +262,13 @@ io.on('connection', (socket) => {
         if (action === 'skip') {
             room.murderedThisRound = null;
             room.recruitPending = false;
-            io.to(cleanCode).emit('decoy_question');
+            io.to(cleanCode).emit('decoy_question'); // Pergunta decoy para todos
             room.pendingDecoys = room.players.filter(p => p.alive).length;
             return;
         }
 
         if (action === 'recruit') {
+            // O traidor escolheu recrutar, mas ainda precisa de escolher o alvo
             io.to(traitor.id).emit('show_player_list', { type: 'recruit' });
             return;
         }
@@ -227,6 +282,7 @@ io.on('connection', (socket) => {
         const victim = room.players.find(p => p.id === targetPlayerId);
         if (!victim || !victim.alive) return;
 
+        // Verificar escudo
         const shieldIndex = victim.inventory.indexOf('shield');
         if (shieldIndex !== -1) {
             victim.inventory.splice(shieldIndex, 1);
@@ -237,7 +293,7 @@ io.on('connection', (socket) => {
             room.shieldUsed = false;
         }
 
-        io.to(cleanCode).emit('decoy_question');
+        io.to(cleanCode).emit('decoy_question'); // Todos respondem à decoy
         room.pendingDecoys = room.players.filter(p => p.alive).length;
         if (typeof callback === 'function') callback({ success: true });
     });
@@ -251,9 +307,10 @@ io.on('connection', (socket) => {
         if (!target) return;
 
         room.recruitTargetId = targetPlayerId;
-        io.to(targetPlayerId).emit('recruit_invitation');
+        io.to(targetPlayerId).emit('recruit_invitation'); // O alvo recebe convite
         room.recruitPending = true;
 
+        // Enviar Decoy para todos EXCETO o alvo
         room.players.filter(p => p.alive && p.id !== targetPlayerId).forEach(p => {
             io.to(p.id).emit('decoy_question');
         });
@@ -265,6 +322,7 @@ io.on('connection', (socket) => {
         const room = rooms[cleanCode];
         if (!room) return;
 
+        // Todos respondem à decoy
         if (room.pendingDecoys > 0) {
             room.pendingDecoys--;
             if (room.pendingDecoys === 0) {
