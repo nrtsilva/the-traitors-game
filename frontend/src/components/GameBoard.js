@@ -373,8 +373,8 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-// 6. TABULEIRO NORMAL (Missão)
-return (
+  // 6. TABULEIRO NORMAL (Missão)
+  return (
     <div className="relative">
       <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982]">?</button>
 
@@ -391,30 +391,7 @@ return (
         <h2 className="font-display text-3xl font-bold text-[#E5C982] mb-4 text-center">{playerState.currentMission.title}</h2>
         <p className="text-[#F3EBDD] text-lg mb-8 text-center">{playerState.currentMission.description}</p>
 
-        {/* Lógica flexível para diferentes tipos de missões */}
-        {playerState.currentMission.type === 'WORD_GUESSER' && (
-          <div className="text-center">
-            <p className="text-white mb-4">Tentem adivinhar a palavra secreta de 5 letras.</p>
-            {/* Aqui entraria o mini-jogo de letras */}
-            <button className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Enviar Palavra</button>
-          </div>
-        )}
-
-        {playerState.currentMission.type === 'PHYSICAL_OBJECT_HUNT' && (
-          <div className="text-center">
-            <p className="text-white mb-4">Encontrem os objetos e tirem fotos com o vosso telemóvel.</p>
-            <button className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Carregar Fotos</button>
-          </div>
-        )}
-
-        {playerState.currentMission.type === 'COLLABORATIVE_DRAWING' && (
-          <div className="text-center">
-            <p className="text-white mb-4">Usem o quadro branco partilhado para desenhar.</p>
-            <button className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Abrir Quadro</button>
-          </div>
-        )}
-
-                {/* Lógica flexível para diferentes tipos de missões */}
+        {/* Lógica flexível para diferentes tipos de missões (ÚNICO E LIMPO) */}
         {playerState.currentMission.type === 'WORD_GUESSER' && (
           <div className="text-center">
             <p className="text-white mb-4">Tentem adivinhar a palavra secreta de 5 letras.</p>
@@ -436,7 +413,7 @@ return (
           </div>
         )}
 
-        {/* CORREÇÃO: Usar includes() para verificar todos os outros tipos */}
+        {/* Tipos genéricos - Usar .includes() (Corrigido) */}
         {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION'].includes(playerState.currentMission.type) && (
           <div className="text-center">
             <p className="text-white mb-4">Sigam as instruções da missão e cliquem quando terminarem.</p>
