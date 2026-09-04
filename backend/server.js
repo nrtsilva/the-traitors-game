@@ -89,6 +89,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- ENTRAR NA SALA ---
     socket.on('join_room', ({ roomCode, playerName }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -97,7 +98,14 @@ io.on('connection', (socket) => {
             if (room.players.length >= room.settings.maxPlayers) return callback({ success: false, message: "Sala cheia." });
             if (room.phase !== GAME_PHASES.WAITING_LOBBY) return callback({ success: false, message: "O jogo já começou." });
 
-            const newPlayer = { id: socket.id, name: (playerName || "Jogador").trim(), role: 'unassigned', alive: true, gold: 3, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false };
+            // NOVO: Verificar se o nome já existe na sala (ignorar maiúsculas/minúsculas)
+            const cleanName = (playerName || "Jogador").trim();
+            const nameExists = room.players.some(p => p.name.toLowerCase() === cleanName.toLowerCase());
+            if (nameExists) {
+                return callback({ success: false, message: "Já existe um jogador com esse nome na sala. Escolhe outro nome." });
+            }
+
+            const newPlayer = { id: socket.id, name: cleanName, role: 'unassigned', alive: true, gold: 3, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false };
             room.players.push(newPlayer);
             socket.join(cleanCode);
             io.to(cleanCode).emit('room_update', { players: room.players, settings: room.settings });
@@ -118,8 +126,9 @@ io.on('connection', (socket) => {
         } catch (error) {
             console.error("Erro no update_settings:", error);
         }
-    });
-
+    });    
+	
+	// --- INICIAR JOGO ---
     socket.on('start_game', ({ roomCode }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -127,7 +136,15 @@ io.on('connection', (socket) => {
             room.endMissionVotes = 0;
             room.players.forEach(p => p.hasEndMissionVote = false);
             if (!room || room.hostId !== socket.id) return;
-            if (room.players.length < 2) return callback({ success: false, message: "Mínimo 2 jogadores para testes." });
+            
+            // NOVO: Regra de mínimo 4 jogadores (ou mais, se o Anfitrião definir maxPlayers superior)
+            const minPlayers = 4;
+            if (room.players.length < minPlayers) {
+                return callback({ 
+                    success: false, 
+                    message: `É necessário ter pelo menos ${minPlayers} jogadores na sala para iniciar. Ajusta o número de jogadores nas configurações ou convida mais amigos.` 
+                });
+            }
 
             const gameMode = room.settings.gameMode || 'remote';
             const shuffled = [...room.players].sort(() => Math.random() - 0.5);
