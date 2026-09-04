@@ -33,19 +33,32 @@ function App() {
   const [murderReveal, setMurderReveal] = useState(null);
   const [gameOver, setGameOver] = useState(null);
 
+  // Estado de Áudio
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
   const isMutedRef = useRef(isMuted);
-  const soundEnabledRef = useRef(true);
+  const soundEnabledRef = useRef(true); // Indica se o jogo TEM sons (true) ou está OFF (false)
 
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
-  useEffect(() => { soundEnabledRef.current = gameData?.settings?.soundEffects ?? true; }, [gameData?.settings?.soundEffects]);
+  
+  // Quando o jogo carrega, verifica se os sons estão OFF nas configurações
+  useEffect(() => {
+    if (gameData?.settings?.soundEffects === false) {
+      // Se OFF, forçamos o mute para todos e pausamos o áudio atual
+      soundEnabledRef.current = false;
+      setIsMuted(true);
+      if (audioRef.current) audioRef.current.pause();
+    } else {
+      soundEnabledRef.current = true;
+    }
+  }, [gameData?.settings?.soundEffects]);
 
   const isEvaluationRef = useRef(isEvaluation);
   useEffect(() => { isEvaluationRef.current = isEvaluation; }, [isEvaluation]);
 
   const playBackgroundSound = (filename) => {
-    if (!soundEnabledRef.current) return;
+    // Se o som estiver OFF nas configurações, apenas tocamos se o utilizador tiver feito unmute manualmente
+    // Se o som estiver ON, tocamos normalmente (a menos que o utilizador esteja muted)
     if (isMutedRef.current) return;
     
     if (audioRef.current) {
@@ -92,8 +105,10 @@ function App() {
     
     newSocket.on('room_update', (data) => {
       setRoomData(prev => ({ ...prev, players: data.players, settings: data.settings }));
-      if (!data.settings.soundEffects && audioRef.current) {
-        audioRef.current.pause();
+      if (data.settings.soundEffects === false) {
+        soundEnabledRef.current = false;
+        setIsMuted(true);
+        if (audioRef.current) audioRef.current.pause();
       }
     });
     
@@ -231,21 +246,27 @@ function App() {
   };
 
   const toggleMute = () => {
-    if (audioRef.current) {
-      if (!isMuted) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play().catch(e => console.log(e));
-      }
+    // Se estiver muted, faz unmute e tenta tocar o som correspondente ao ecrã atual
+    if (isMuted) {
+      setIsMuted(false);
+      // Reproduzir o som do ecrã atual
+      if (currentScreen === 'lobby') playBackgroundSound('lobby.mp3');
+      else if (currentScreen === 'tutorial') playBackgroundSound('tutorial.mp3');
+      else if (currentScreen === 'roleReveal') playBackgroundSound('role-reveal.mp3');
+      else if (currentScreen === 'game') playBackgroundSound('mission.mp3');
+      else if (phaseIntro) playBackgroundSound('mission.mp3'); // Fallback
+    } else {
+      setIsMuted(true);
+      if (audioRef.current) audioRef.current.pause();
     }
-    setIsMuted(!isMuted);
   };
 
   return (
     <div className="min-h-screen">
       <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen relative">
         
-        {gameData?.settings?.soundEffects !== false && (
+        {/* Botão de Mute/Unmute Global - Sempre visível quando conectado */}
+        {connected && (
           <button 
             onClick={toggleMute}
             className="fixed top-4 right-4 z-[100] w-12 h-12 bg-[#291923] border border-[#D8B66C] rounded-full flex items-center justify-center text-2xl shadow-soft hover:bg-[#412734] transition"
