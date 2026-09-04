@@ -1,6 +1,6 @@
 /* ==========================================================
    THE TRAITORS - BACKEND SERVER (NODE.JS + SOCKET.IO)
-   Versão: 1.4 (Estável e Completa)
+   Versão: 1.5 (Correções de Reconexão e Arsenal)
    ========================================================== */
 
 const express = require('express');
@@ -147,23 +147,19 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- JOGADOR PRONTO PARA A FASE (RESTAURADO - CRÍTICO) ---
+    // --- JOGADOR PRONTO PARA A FASE (CORRIGIDO PARA ARSENAL) ---
     socket.on('player_ready', ({ roomCode }) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
             if (!room) return;
 
-            // Procura o jogador pelo socket.id atual
             let player = room.players.find(p => p.id === socket.id);
-
-            // Se não encontrar (porque o socket.id mudou), procura um jogador
-            // que ainda não tenha pressionado "Iniciar Fase" e atualiza o ID dele
             if (!player) {
                 player = room.players.find(p => !p.isReadyForPhase);
                 if (player) {
-                    console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
                     player.id = socket.id; // Atualiza o ID para o novo socket
+                    console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
                 }
             }
 
@@ -172,25 +168,28 @@ io.on('connection', (socket) => {
             if (!player.isReadyForPhase) {
                 player.isReadyForPhase = true;
                 room.readyCount++;
-                
                 const aliveCount = room.players.filter(p => p.alive).length;
                 
                 console.log(`[DEBUG Ready] Recebido de ${player.name}. Prontos: ${room.readyCount} de ${aliveCount}`);
-
                 io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
 
                 if (room.readyCount >= aliveCount) {
                     room.players.forEach(p => p.isReadyForPhase = false);
                     room.readyCount = 0;
                     
+                    // FASE 2: EXPULSÃO (Debate)
                     if (room.phase === GAME_PHASES.PHASE_2_BANISHMENT) {
                         const debateTime = room.settings.debateTime || 60;
                         io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: debateTime });
-                        
-                        // Iniciar timer de debate
                         clearTimeout(room.phaseTimer);
                         room.phaseTimer = setTimeout(() => processBanishment(room), debateTime * 1000);
-                    } else {
+                    } 
+                    // FASE 3: ARSENAL (Mini-Jogo Individual) - NÃO USAR TIMER DA MISSÃO!
+                    else if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
+                        io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: null });
+                    } 
+                    // FASE 1: MISSÃO
+                    else {
                         io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
                         startMissionTimer(room);
                     }
@@ -216,14 +215,12 @@ io.on('connection', (socket) => {
 
             if (!player || !player.alive) return;
 
-            // GUARDAR A RESPOSTA DO TRAIDOR
             if (data.type === 'traitor_answer') {
                 player.secretMissionsCompleted = [data.value]; // Guarda [true] ou [false]
             }
 
             player.evaluation = data;
 
-            // Verifica se todos os vivos responderam
             const alivePlayers = room.players.filter(p => p.alive);
             const allEvaluated = alivePlayers.every(p => p.evaluation !== undefined);
 
@@ -248,7 +245,38 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- FIM DA AVALIAÇÃO ---
+    // --- VOTO DE EXPULSÃO (CORRIGIDO COM RECUPERAÇÃO DE SOCKET) ---
+    socket.on('submit_banishment_vote', ({ roomCode, targetPlayerId, useDagger }, callback) => {
+        try {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || room.phase !== GAME_PHASES.PHASE_2_BANISHMENT) return;
+
+            // RECUPERAR JOGADOR SE O SOCKET MUDOU
+            let player = room.players.find(p => p.id === socket.id);
+            if (!player) {
+                player = room.players.find(p => p.alive && p.voteCast === null);
+                if (player) player.id = socket.id;
+            }
+            if (!player || !player.alive) return;
+
+            player.voteCast = targetPlayerId;
+            if (useDagger) {
+                player.voteCast = [targetPlayerId, targetPlayerId]; // Dois votos para o mesmo
+            } else {
+                player.voteCast = targetPlayerId; // Um voto
+            }
+
+            const allVoted = room.players.filter(p => p.alive).every(p => p.voteCast !== null);
+            if (allVoted) {
+                clearTimeout(room.phaseTimer); // Limpa o timer se todos votarem cedo
+                processBanishment(room);
+            }
+            if (typeof callback === 'function') callback({ success: true });
+        } catch (error) {
+            console.error("Erro no voto:", error);
+        }
+    });
 
     // --- EVENTOS DO ASSASSINATO / RECRUTAMENTO (FASE 4) ---
     socket.on('traitor_choice', ({ roomCode, action }) => {
@@ -268,7 +296,6 @@ io.on('connection', (socket) => {
         }
 
         if (action === 'recruit') {
-            // O traidor escolheu recrutar, mas ainda precisa de escolher o alvo
             io.to(traitor.id).emit('show_player_list', { type: 'recruit' });
             return;
         }
@@ -282,7 +309,6 @@ io.on('connection', (socket) => {
         const victim = room.players.find(p => p.id === targetPlayerId);
         if (!victim || !victim.alive) return;
 
-        // Verificar escudo
         const shieldIndex = victim.inventory.indexOf('shield');
         if (shieldIndex !== -1) {
             victim.inventory.splice(shieldIndex, 1);
@@ -293,7 +319,7 @@ io.on('connection', (socket) => {
             room.shieldUsed = false;
         }
 
-        io.to(cleanCode).emit('decoy_question'); // Todos respondem à decoy
+        io.to(cleanCode).emit('decoy_question');
         room.pendingDecoys = room.players.filter(p => p.alive).length;
         if (typeof callback === 'function') callback({ success: true });
     });
@@ -307,10 +333,9 @@ io.on('connection', (socket) => {
         if (!target) return;
 
         room.recruitTargetId = targetPlayerId;
-        io.to(targetPlayerId).emit('recruit_invitation'); // O alvo recebe convite
+        io.to(targetPlayerId).emit('recruit_invitation');
         room.recruitPending = true;
 
-        // Enviar Decoy para todos EXCETO o alvo
         room.players.filter(p => p.alive && p.id !== targetPlayerId).forEach(p => {
             io.to(p.id).emit('decoy_question');
         });
@@ -322,7 +347,6 @@ io.on('connection', (socket) => {
         const room = rooms[cleanCode];
         if (!room) return;
 
-        // Todos respondem à decoy
         if (room.pendingDecoys > 0) {
             room.pendingDecoys--;
             if (room.pendingDecoys === 0) {
@@ -376,6 +400,36 @@ io.on('connection', (socket) => {
                 room.phaseTimer = null;
                 io.to(cleanCode).emit('mission_evaluation');
             }
+        }
+    });
+
+    // --- ARSENAL (Competitivo) ---
+    socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
+        try {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || room.phase !== GAME_PHASES.PHASE_3_ARMOURY) return;
+
+            // RECUPERAR JOGADOR SE O SOCKET MUDOU
+            let player = room.players.find(p => p.id === socket.id);
+            if (!player) {
+                player = room.players.find(p => p.alive && p.arsenalChoice === undefined);
+                if (player) player.id = socket.id;
+            }
+            if (!player || !player.alive) return;
+
+            player.arsenalChoice = actionData.value; // Número escolhido (1-6)
+            console.log(`[Arsenal] ${player.name} escolheu ${player.arsenalChoice}`);
+
+            const alivePlayers = room.players.filter(p => p.alive);
+            const allChose = alivePlayers.every(p => p.arsenalChoice !== undefined);
+
+            if (allChose) {
+                processArsenal(room);
+            }
+            if (typeof callback === 'function') callback({ success: true });
+        } catch (error) {
+            console.error("Erro no submit_arsenal_action:", error);
         }
     });
 
