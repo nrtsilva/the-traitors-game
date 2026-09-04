@@ -60,12 +60,22 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           <input type="range" min="4" max="10" value={settings.maxPlayers} onChange={(e) => updateSetting('maxPlayers', parseInt(e.target.value))} className="w-full accent-[#D8B66C]" />
         </div>
 
-        {/* Nº de Traidores */}
+        {/* Nº de Traidores (com nota sobre 7+ jogadores) */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30 flex justify-between items-center">
-          <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Número de Traidores</label>
+          <div>
+            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Número de Traidores</label>
+            <p className="text-[#F3EBDD]/50 text-xs mt-1">Máximo de 1 para 6 ou menos jogadores. 2 permitidos para 7+.</p>
+          </div>
           <div className="flex gap-2">
             {[1, 2].map(num => (
-              <button key={num} onClick={() => updateSetting('numTraitors', num)} className={`px-5 py-2 rounded-sm font-bold transition ${settings.numTraitors === num ? 'bg-[#D8B66C] text-[#291923]' : 'bg-[#412734] text-[#F3EBDD] border border-[#D8B66C]/30'}`}>{num}</button>
+              <button 
+                key={num} 
+                onClick={() => updateSetting('numTraitors', num)}
+                disabled={num === 2 && settings.maxPlayers <= 6}
+                className={`px-5 py-2 rounded-sm font-bold transition ${settings.numTraitors === num ? 'bg-[#D8B66C] text-[#291923]' : 'bg-[#412734] text-[#F3EBDD] border border-[#D8B66C]/30 disabled:opacity-40 disabled:cursor-not-allowed'}`}
+              >
+                {num}
+              </button>
             ))}
           </div>
         </div>
@@ -88,13 +98,17 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
         {/* Opções Toggle */}
         <div className="grid grid-cols-1 gap-3">
           {[
-            { key: 'soundEffects', label: 'Efeitos Sonoros' },
-            { key: 'recruitingActive', label: 'Traidor pode recrutar' },
+            { key: 'recruitingActive', label: 'Traidor pode recrutar (apenas 7+)', disabled: settings.maxPlayers <= 6 },
             { key: 'eliminatedAsSpectator', label: 'Eliminados ficam como espectadores' },
+            { key: 'soundEffects', label: 'Efeitos Sonoros' },
           ].map((opt) => (
             <div key={opt.key} className="flex justify-between items-center bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
-              <span className="text-[#F3EBDD] font-medium text-sm uppercase tracking-wider">{opt.label}</span>
-              <button onClick={() => updateSetting(opt.key, !settings[opt.key])} className={`w-14 h-7 rounded-full p-1 transition ${settings[opt.key] ? 'bg-[#D8B66C]' : 'bg-[#412734] border border-[#D8B66C]/50'}`}>
+              <span className={`text-[#F3EBDD] font-medium text-sm uppercase tracking-wider ${opt.disabled ? 'opacity-50' : ''}`}>{opt.label}</span>
+              <button 
+                onClick={() => updateSetting(opt.key, !settings[opt.key])}
+                disabled={opt.disabled}
+                className={`w-14 h-7 rounded-full p-1 transition ${settings[opt.key] ? 'bg-[#D8B66C]' : 'bg-[#412734] border border-[#D8B66C]/50'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
                 <div className={`w-5 h-5 bg-[#F3EBDD] rounded-full shadow-md transform transition ${settings[opt.key] ? 'translate-x-7' : ''}`}></div>
               </button>
             </div>

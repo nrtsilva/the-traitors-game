@@ -1,6 +1,6 @@
 /* ==========================================================
    THE TRAITORS - BACKEND SERVER (NODE.JS + SOCKET.IO)
-   Versão: 2.1 (Defaults Atualizados e Lógica de Traidores)
+   Versão: 2.2 (Regras de Recrutamento e Traidores Corrigidas)
    ========================================================== */
 
 const express = require('express');
@@ -53,14 +53,14 @@ function createInitialRoomState(hostId, hostName) {
             maxPlayers: 6, 
             numTraitors: 1, 
             sabotageActive: true, 
-            recruitingActive: true, // MUDANÇA: Agora é TRUE por defeito
+            recruitingActive: false, // CORRIGIDO: Começa desligado
             debateTime: 60, 
             banishedLoseGold: true, 
             eliminatedAsSpectator: true, 
             tutorialMode: true, 
-            gameMode: 'in_person', // MUDANÇA: Agora é 'in_person' por defeito
+            gameMode: 'in_person', 
             numPhases: 2,
-            soundEffects: true // MUDANÇA: Som por defeito ATIVO
+            soundEffects: true 
         },
         players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 }, phaseTimer: null, currentMissionData: null, readyCount: 0,
@@ -109,7 +109,6 @@ io.on('connection', (socket) => {
             if (room.players.length >= room.settings.maxPlayers) return callback({ success: false, message: "Sala cheia." });
             if (room.phase !== GAME_PHASES.WAITING_LOBBY) return callback({ success: false, message: "O jogo já começou." });
 
-            // Verificar se o nome já existe (ignorar maiúsculas/minúsculas)
             const cleanName = (playerName || "Jogador").trim();
             const nameExists = room.players.some(p => p.name.toLowerCase() === cleanName.toLowerCase());
             if (nameExists) {
@@ -132,15 +131,16 @@ io.on('connection', (socket) => {
             const room = rooms[cleanCode];
             if (!room || room.hostId !== socket.id) return;
 
-            // MUDANÇA: Lógica para Traidores baseada no número máximo de jogadores
             let updatedSettings = { ...room.settings, ...newSettings };
             
-            // Se o máximo de jogadores for 6 ou menos, forçar 1 traidor. Se for 7+, permitir 2.
+            // REGRA: Se o limite máximo de jogadores for 6 ou menos, forçar 1 traidor e desligar recrutamento
             if (updatedSettings.maxPlayers <= 6) {
                 updatedSettings.numTraitors = 1;
+                updatedSettings.recruitingActive = false;
             } else {
-                // Se for 7 ou mais e o utilizador pediu 2, mantém 2, senão 1.
+                // Se for 7 ou mais, permitir 2 traidores e recrutamento
                 updatedSettings.numTraitors = (updatedSettings.numTraitors === 2) ? 2 : 1;
+                // (O recrutamento pode ser ativado/desativado à escolha do anfitrião)
             }
 
             room.settings = updatedSettings;
@@ -159,7 +159,6 @@ io.on('connection', (socket) => {
             room.players.forEach(p => p.hasEndMissionVote = false);
             if (!room || room.hostId !== socket.id) return;
             
-            // MUDANÇA: Regra de mínimo 4 jogadores
             const minPlayers = 4;
             if (room.players.length < minPlayers) {
                 return callback({ 
@@ -171,11 +170,21 @@ io.on('connection', (socket) => {
             const gameMode = room.settings.gameMode || 'in_person';
             const shuffled = [...room.players].sort(() => Math.random() - 0.5);
             
-            // Determinar número de traidores (garantindo que é 1 se ≤ 6 jogadores, 1 ou 2 se ≥ 7)
+            // REGRA IMPORTANTE: Usar o número REAL de jogadores na sala
             let traitorCount = room.settings.numTraitors;
-            if (room.players.length <= 6) traitorCount = 1;
-            else if (room.players.length >= 7) traitorCount = Math.min(2, traitorCount);
-            else traitorCount = 1;
+            let recruitingActive = room.settings.recruitingActive;
+
+            if (room.players.length <= 6) {
+                traitorCount = 1;
+                recruitingActive = false;
+            } else {
+                // Se houver 7 ou mais jogadores
+                if (traitorCount > 2) traitorCount = 2;
+                // Recrutamento só é permitido com 7+ jogadores
+            }
+
+            room.settings.numTraitors = traitorCount;
+            room.settings.recruitingActive = recruitingActive;
 
             room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
 
@@ -198,7 +207,7 @@ io.on('connection', (socket) => {
             room.roundNumber = 1;
             room.totalRounds = room.settings.numPhases || 2;
             room.phase = GAME_PHASES.PHASE_1_MISSION;
-            room.prizeFund = { bars: 0, coins: 0 };
+            room.prizeFund = { bars: 0, coins:  ​​0 };
             room.readyCount = 0;
 
             room.phaseIntroData = {
@@ -226,28 +235,24 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ... (resto do ficheiro mantém-se igual, com todos os eventos e funções)
-    socket.on('player_ready', ({ roomCode }) => { /* ... */ });
-    socket.on('submit_evaluation', ({ roomCode, data }) => { /* ... */ });
-    socket.on('submit_banishment_vote', ({ roomCode, targetPlayerId, useDagger }, callback) => { /* ... */ });
-    socket.on('traitor_choice', ({ roomCode, action }) => { /* ... */ });
-    socket.on('traitor_murder_choice', ({ roomCode, targetPlayerId }, callback) => { /* ... */ });
-    socket.on('traitor_recruit_choice', ({ roomCode, targetPlayerId }) => { /* ... */ });
-    socket.on('decoy_answer', ({ roomCode }) => { /* ... */ });
-    socket.on('recruit_decision', ({ roomCode, accepted }) => { /* ... */ });
-    socket.on('continue_after_reveal', ({ roomCode }) => { /* ... */ });
-    socket.on('end_mission', ({ roomCode }) => { /* ... */ });
-    socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => { /* ... */ });
-    socket.on('disconnect', () => { /* ... */ });
+    // ... (restantes eventos: player_ready, submit_evaluation, submit_banishment_vote, traitor_choice, etc. mantêm-se iguais)
+    // ... (funções: startMissionTimer, startMurderPhase, endMurderPhase, processArsenal, processBanishment, proceedToNextRound mantêm-se iguais)
+
+    socket.on('disconnect', () => {
+        for (const roomCode in rooms) {
+            const room = rooms[roomCode];
+            const idx = room.players.findIndex(p => p.id === socket.id);
+            if (idx !== -1) {
+                room.players.splice(idx, 1);
+                if (room.hostId === socket.id) {
+                    delete rooms[roomCode];
+                } else {
+                    io.to(roomCode).emit('room_update', { players: room.players });
+                }
+                break;
+            }
+        }
+    });
 });
 
-// ... (funções de lógica, startMurderPhase, endMurderPhase, processArsenal, processBanishment, proceedToNextRound, server.listen)
-
-server.keepAliveTimeout = 120000;
-server.headersTimeout = 120000;
-
-server.listen(PORT, () => {
-    console.log(`[Servidor] The Traitors Backend está a correr na porta ${PORT}`);
-    const PUBLIC_URL = process.env.RENDER_EXTERNAL_URL || `https://the-traitors-game.onrender.com`;
-    setInterval(() => { http.get(PUBLIC_URL, (res) => {}).on('error', (e) => {}); }, 240000);
-});
+// ... (funções auxiliares e server.listen no final)

@@ -37,19 +37,14 @@ function App() {
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
   const isMutedRef = useRef(isMuted);
-  const soundEnabledRef = useRef(true); // Indica se o jogo TEM sons (true) ou está OFF (false)
 
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
-  
-  // Quando o jogo carrega, verifica se os sons estão OFF nas configurações
+
+  // Força o mute inicial se o jogo tiver sons desligados
   useEffect(() => {
     if (gameData?.settings?.soundEffects === false) {
-      // Se OFF, forçamos o mute para todos e pausamos o áudio atual
-      soundEnabledRef.current = false;
       setIsMuted(true);
       if (audioRef.current) audioRef.current.pause();
-    } else {
-      soundEnabledRef.current = true;
     }
   }, [gameData?.settings?.soundEffects]);
 
@@ -57,8 +52,6 @@ function App() {
   useEffect(() => { isEvaluationRef.current = isEvaluation; }, [isEvaluation]);
 
   const playBackgroundSound = (filename) => {
-    // Se o som estiver OFF nas configurações, apenas tocamos se o utilizador tiver feito unmute manualmente
-    // Se o som estiver ON, tocamos normalmente (a menos que o utilizador esteja muted)
     if (isMutedRef.current) return;
     
     if (audioRef.current) {
@@ -70,10 +63,10 @@ function App() {
       const audio = new Audio(`/audio/${filename}`);
       audio.loop = true;
       audio.volume = 0.5;
-      audio.play().catch(e => console.log("Áudio bloqueado pelo browser:", e));
+      audio.play().catch(e => console.log("Áudio bloqueado:", e));
       audioRef.current = audio;
     } catch (e) {
-      console.error("Erro ao carregar áudio", e);
+      console.error("Erro áudio", e);
     }
   };
 
@@ -106,7 +99,6 @@ function App() {
     newSocket.on('room_update', (data) => {
       setRoomData(prev => ({ ...prev, players: data.players, settings: data.settings }));
       if (data.settings.soundEffects === false) {
-        soundEnabledRef.current = false;
         setIsMuted(true);
         if (audioRef.current) audioRef.current.pause();
       }
@@ -246,15 +238,12 @@ function App() {
   };
 
   const toggleMute = () => {
-    // Se estiver muted, faz unmute e tenta tocar o som correspondente ao ecrã atual
     if (isMuted) {
       setIsMuted(false);
-      // Reproduzir o som do ecrã atual
       if (currentScreen === 'lobby') playBackgroundSound('lobby.mp3');
       else if (currentScreen === 'tutorial') playBackgroundSound('tutorial.mp3');
       else if (currentScreen === 'roleReveal') playBackgroundSound('role-reveal.mp3');
       else if (currentScreen === 'game') playBackgroundSound('mission.mp3');
-      else if (phaseIntro) playBackgroundSound('mission.mp3'); // Fallback
     } else {
       setIsMuted(true);
       if (audioRef.current) audioRef.current.pause();
@@ -265,7 +254,6 @@ function App() {
     <div className="min-h-screen">
       <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen relative">
         
-        {/* Botão de Mute/Unmute Global - Sempre visível quando conectado */}
         {connected && (
           <button 
             onClick={toggleMute}
