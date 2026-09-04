@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function RoomSettings({ socket, roomData, setRoomData, onBack }) {
   const settings = roomData.settings;
+  const [errorMessage, setErrorMessage] = useState('');
 
   const updateSetting = (key, value) => {
     const newSettings = { ...settings, [key]: value };
@@ -11,7 +12,11 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
 
   const handleStart = () => {
     socket.emit('start_game', { roomCode: roomData.roomCode }, (response) => {
-      if (!response.success) alert(response.message);
+      if (!response.success) {
+        setErrorMessage(response.message);
+      } else {
+        setErrorMessage('');
+      }
     });
   };
 
@@ -22,7 +27,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
         <p className="font-ui text-sm text-[#F3EBDD]/70 mt-2 tracking-widest">Código da Sala: <span className="font-bold text-[#D8B66C] tracking-[0.3em]">{roomData.roomCode}</span></p>
       </div>
 
-      {/* ADICIONADO: Lista de Jogadores na sala */}
+      {/* Lista de Jogadores na sala */}
       <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30 mb-6">
         <h3 className="text-lg mb-3 font-display text-[#D8B66C]">Jogadores na sala ({roomData.players.length})</h3>
         <ul className="space-y-2">
@@ -60,11 +65,12 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           <input type="range" min="4" max="10" value={settings.maxPlayers} onChange={(e) => updateSetting('maxPlayers', parseInt(e.target.value))} className="w-full accent-[#D8B66C]" />
         </div>
 
-        {/* Nº de Traidores (com nota sobre 7+ jogadores) */}
+        {/* Nº de Traidores */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30 flex justify-between items-center">
           <div>
             <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Número de Traidores</label>
-            <p className="text-[#F3EBDD]/50 text-xs mt-1">Máximo de 1 para 6 ou menos jogadores. 2 permitidos para 7+.</p>
+            {/* MENSAGEM ALTERADA */}
+            <p className="text-[#F3EBDD]/50 text-xs mt-1">Permite 2 traidores apenas para 7+.</p>
           </div>
           <div className="flex gap-2">
             {[1, 2].map(num => (
@@ -126,6 +132,13 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           </select>
         </div>
       </div>
+
+      {/* MENSAGEM DE ERRO NA UI */}
+      {errorMessage && (
+        <div className="mt-6 p-4 bg-red-900/40 border border-red-500 rounded-sm text-center">
+          <p className="text-red-300 font-bold">{errorMessage}</p>
+        </div>
+      )}
 
       <div className="mt-8 flex gap-4 pt-6 border-t border-[#D8B66C]/50">
         <button onClick={onBack} className="flex-1 py-3 bg-[#412734] border border-[#D8B66C]/50 text-[#F3EBDD] font-ui font-semibold uppercase tracking-widest text-sm rounded-sm hover:bg-[#291923] transition">Voltar</button>
