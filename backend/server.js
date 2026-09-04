@@ -1,6 +1,6 @@
 /* ==========================================================
    THE TRAITORS - BACKEND SERVER (NODE.JS + SOCKET.IO)
-   Versão: 1.7 (Missões Dinâmicas e Correções Finais)
+   Versão: 1.8 (Tesouro Comum e Correções Finais)
    ========================================================== */
 
 const express = require('express');
@@ -25,8 +25,24 @@ const GAME_PHASES = {
     PHASE_3_ARMOURY: 'PHASE_3_ARMOURY', PHASE_4_MURDER: 'PHASE_4_MURDER', GAME_OVER: 'GAME_OVER'
 };
 
-// Carregar as aventuras do ficheiro JSON
-const adventures = JSON.parse(fs.readFileSync(path.join(__dirname, 'aventuras.json'), 'utf-8'));
+// Carregar as aventuras com proteção contra erros
+let adventures = [];
+try {
+    const filePath = path.join(__dirname, 'aventuras.json');
+    if (fs.existsSync(filePath)) {
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        if (fileContent.trim().length > 0) {
+            adventures = JSON.parse(fileContent);
+            console.log(`[Config] ${adventures.length} aventuras carregadas com sucesso.`);
+        } else {
+            console.error("[Config] ERRO: O ficheiro aventuras.json está vazio!");
+        }
+    } else {
+        console.error("[Config] ERRO: O ficheiro aventuras.json não foi encontrado!");
+    }
+} catch (error) {
+    console.error("[Config] ERRO CRÍTICO ao ler aventuras.json:", error.message);
+}
 
 function generateRoomCode() { return crypto.randomBytes(3).toString('hex').toUpperCase(); }
 
@@ -36,11 +52,11 @@ function createInitialRoomState(hostId, hostName) {
         settings: { 
             maxPlayers: 6, 
             numTraitors: 1, 
-            sabotageActive: true, // FIXADO: Traidor pode sabotar SEMPRE
+            sabotageActive: true, 
             recruitingActive: false, 
             debateTime: 60, 
-            banishedLoseGold: true, // Apenas para expulsões
-            eliminatedAsSpectator: true, // Se false, eliminados saem da sala
+            banishedLoseGold: true, 
+            eliminatedAsSpectator: true, 
             tutorialMode: true, 
             gameMode: 'remote', 
             numPhases: 2 
@@ -51,7 +67,6 @@ function createInitialRoomState(hostId, hostName) {
     };
 }
 
-// Função para eliminar o jogador da sala (se espectador estiver desligado)
 function removePlayerFromRoom(room, playerId) {
     const playerIndex = room.players.findIndex(p => p.id === playerId);
     if (playerIndex !== -1) {
@@ -60,14 +75,21 @@ function removePlayerFromRoom(room, playerId) {
     const socket = io.sockets.sockets.get(playerId);
     if (socket) {
         socket.leave(room.roomCode);
-        socket.disconnect(true); // Desconecta o jogador
+        socket.disconnect(true);
+    }
+}
+
+// Função para converter moedas em barras no tesouro comum
+function convertCoinsToBars(room) {
+    while (room.prizeFund.coins >= 5) {
+        room.prizeFund.coins -= 5;
+        room.prizeFund.bars += 1;
     }
 }
 
 io.on('connection', (socket) => {
     console.log(`[Nova Conexão] Socket ID: ${socket.id}`);
 
-    // --- CRIAR SALA ---
     socket.on('create_room', ({ playerName }, callback) => {
         try {
             const roomState = createInitialRoomState(socket.id, (playerName || "Anfitrião").trim());
@@ -79,7 +101,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- ENTRAR NA SALA ---
     socket.on('join_room', ({ roomCode, playerName }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -98,7 +119,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- CONFIGURAÇÕES ---
     socket.on('update_settings', ({ roomCode, newSettings }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -112,7 +132,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- INICIAR JOGO ---
     socket.on('start_game', ({ roomCode }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -123,26 +142,22 @@ io.on('connection', (socket) => {
             if (room.players.length < 2) return callback({ success: false, message: "Mínimo 2 jogadores para testes." });
 
             const gameMode = room.settings.gameMode || 'remote';
-
             const shuffled = [...room.players].sort(() => Math.random() - 0.5);
             let traitorCount = room.settings.numTraitors;
             if (!traitorCount || traitorCount < 1 || traitorCount >= room.players.length) traitorCount = 1;
 
             room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
 
-            // Atribuir papéis de Traidor
             for (let i = 0; i < traitorCount; i++) {
                 const t = shuffled[i];
                 const pObj = room.players.find(p => p.id === t.id);
                 if (pObj) pObj.role = 'traitor';
             }
 
-            // Filtrar aventuras por modo e escolher uma aleatória
             const availableAdventures = adventures.filter(a => a.mode === gameMode);
             const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
             room.currentMissionData = randomAdventure;
 
-            // Atribuir missões secretas dinâmicas ao traidor (DEPOIS da role ser atribuída!)
             room.players.forEach(player => {
                 if (player.role === 'traitor') {
                     player.secretMissions = randomAdventure.traitorSecretMissions || [];
@@ -180,7 +195,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- JOGADOR PRONTO PARA A FASE (RESTAURADO - CRÍTICO) ---
     socket.on('player_ready', ({ roomCode }) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -210,18 +224,15 @@ io.on('connection', (socket) => {
                     room.players.forEach(p => p.isReadyForPhase = false);
                     room.readyCount = 0;
                     
-                    // FASE 2: EXPULSÃO (Debate)
                     if (room.phase === GAME_PHASES.PHASE_2_BANISHMENT) {
                         const debateTime = room.settings.debateTime || 60;
                         io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: debateTime });
                         clearTimeout(room.phaseTimer);
                         room.phaseTimer = setTimeout(() => processBanishment(room), debateTime * 1000);
                     } 
-                    // FASE 3: ARSENAL (Mini-Jogo Individual) - NÃO USAR TIMER DA MISSÃO!
                     else if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
                         io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: null });
                     } 
-                    // FASE 1: MISSÃO
                     else {
                         io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
                         startMissionTimer(room);
@@ -233,7 +244,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- AVALIAÇÃO DA MISSÃO (Fiel dá estrelas, Traidor confirma) ---
     socket.on('submit_evaluation', ({ roomCode, data }) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -249,7 +259,7 @@ io.on('connection', (socket) => {
             if (!player || !player.alive) return;
 
             if (data.type === 'traitor_answer') {
-                player.secretMissionsCompleted = [data.value]; // Guarda [true] ou [false]
+                player.secretMissionsCompleted = [data.value]; 
             }
 
             player.evaluation = data;
@@ -260,7 +270,6 @@ io.on('connection', (socket) => {
             if (allEvaluated) {
                 room.players.forEach(p => p.evaluation = undefined);
                 
-                // Avançar para a Fase II (Expulsão)
                 room.phase = GAME_PHASES.PHASE_2_BANISHMENT;
                 room.phaseIntroData = {
                     title: "A Expulsão",
@@ -278,7 +287,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- VOTO DE EXPULSÃO (CORRIGIDO COM RECUPERAÇÃO DE SOCKET) ---
     socket.on('submit_banishment_vote', ({ roomCode, targetPlayerId, useDagger }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -294,14 +302,14 @@ io.on('connection', (socket) => {
 
             player.voteCast = targetPlayerId;
             if (useDagger) {
-                player.voteCast = [targetPlayerId, targetPlayerId]; // Dois votos para o mesmo
+                player.voteCast = [targetPlayerId, targetPlayerId];
             } else {
-                player.voteCast = targetPlayerId; // Um voto
+                player.voteCast = targetPlayerId;
             }
 
             const allVoted = room.players.filter(p => p.alive).every(p => p.voteCast !== null);
             if (allVoted) {
-                clearTimeout(room.phaseTimer); // Limpa o timer se todos votarem cedo
+                clearTimeout(room.phaseTimer);
                 processBanishment(room);
             }
             if (typeof callback === 'function') callback({ success: true });
@@ -310,7 +318,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- EVENTOS DO ASSASSINATO / RECRUTAMENTO (FASE 4) ---
     socket.on('traitor_choice', ({ roomCode, action }) => {
         const cleanCode = (roomCode || "").trim().toUpperCase();
         const room = rooms[cleanCode];
@@ -319,7 +326,6 @@ io.on('connection', (socket) => {
         const traitor = room.players.find(p => p.id === socket.id);
         if (!traitor || traitor.role !== 'traitor') return;
 
-        // FIX: ADICIONADO O CASO 'KILL'
         if (action === 'kill') {
             io.to(traitor.id).emit('show_player_list', { type: 'kill' });
             return;
@@ -328,7 +334,7 @@ io.on('connection', (socket) => {
         if (action === 'skip') {
             room.murderedThisRound = null;
             room.recruitPending = false;
-            io.to(cleanCode).emit('decoy_question'); // Pergunta decoy para todos
+            io.to(cleanCode).emit('decoy_question');
             room.pendingDecoys = room.players.filter(p => p.alive).length;
             return;
         }
@@ -418,7 +424,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- TERMINAR MISSÃO ANTECIPADAMENTE ---
     socket.on('end_mission', ({ roomCode }) => {
         const cleanCode = (roomCode || "").trim().toUpperCase();
         const room = rooms[cleanCode];
@@ -441,7 +446,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- ARSENAL (Competitivo) ---
     socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -455,7 +459,7 @@ io.on('connection', (socket) => {
             }
             if (!player || !player.alive) return;
 
-            player.arsenalChoice = actionData.value; // Número escolhido (1-6)
+            player.arsenalChoice = actionData.value;
             console.log(`[Arsenal] ${player.name} escolheu ${player.arsenalChoice}`);
 
             const alivePlayers = room.players.filter(p => p.alive);
@@ -470,7 +474,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- DESCONEXÃO ---
     socket.on('disconnect', () => {
         for (const roomCode in rooms) {
             const room = rooms[roomCode];
@@ -506,92 +509,100 @@ function startMurderPhase(room) {
     io.to(room.roomCode).emit('blindfold_begin', { duration: 10 });
 
     setTimeout(() => {
-        const aliveTraitors = room.players.filter(p => p.role === 'traitor' && p.alive);
+        try {
+            let traitor = room.players.find(p => p.role === 'traitor' && p.alive);
+            
+            if (!traitor) {
+                io.to(room.roomCode).emit('decoy_question');
+                room.pendingDecoys = room.players.filter(p => p.alive).length;
+                return;
+            }
 
-        if (aliveTraitors.length === 0) {
+            const completedMission = traitor.secretMissionsCompleted && traitor.secretMissionsCompleted[0];
+            const canRecruit = room.settings.recruitingActive && (room.settings.numTraitors > 1) && (room.players.filter(p => p.role === 'traitor' && p.alive).length === 1);
+
+            if (!completedMission && !canRecruit) {
+                io.to(traitor.id).emit('traitor_blocked', { message: "Não completaste a missão secreta. Não podes assassinar." });
+                io.to(room.roomCode).emit('decoy_question');
+                room.pendingDecoys = room.players.filter(p => p.alive).length;
+            } else {
+                const options = [];
+                if (completedMission) options.push('kill');
+                if (canRecruit) options.push('recruit');
+                options.push('skip');
+                io.to(traitor.id).emit('traitor_choices', { options });
+            }
+        } catch (error) {
+            console.error("Erro no startMurderPhase:", error);
             io.to(room.roomCode).emit('decoy_question');
             room.pendingDecoys = room.players.filter(p => p.alive).length;
-            return;
-        }
-
-        const traitor = aliveTraitors[0];
-        const completedMission = traitor.secretMissionsCompleted && traitor.secretMissionsCompleted[0];
-        const canRecruit = room.settings.recruitingActive && (room.settings.numTraitors > 1) && (aliveTraitors.length === 1);
-
-        if (!completedMission && !canRecruit) {
-            io.to(traitor.id).emit('traitor_blocked', { message: "Não completaste a missão secreta. Não podes assassinar." });
-            io.to(room.roomCode).emit('decoy_question');
-            room.pendingDecoys = room.players.filter(p => p.alive).length;
-        } else {
-            const options = [];
-            if (completedMission) options.push('kill');
-            if (canRecruit) options.push('recruit');
-            options.push('skip');
-            io.to(traitor.id).emit('traitor_choices', { options });
         }
     }, 10000);
 }
 
 function endMurderPhase(room) {
-    if (room.murderedThisRound) {
-        const victim = room.players.find(p => p.id === room.murderedThisRound);
-        if (victim) {
-            victim.alive = false;
-            // SEM PERDA DE MOEDAS NO ASSASSINATO
-            io.to(room.roomCode).emit('murder_reveal', { type: 'murder', playerName: victim.name, lostGold: 0 });
-            
-            // Se espectadores estiverem desligados, remover da sala
-            if (!room.settings.eliminatedAsSpectator) {
-                removePlayerFromRoom(room, victim.id);
+    try {
+        if (room.murderedThisRound) {
+            const victim = room.players.find(p => p.id === room.murderedThisRound);
+            if (victim) {
+                victim.alive = false;
+                io.to(room.roomCode).emit('murder_reveal', { type: 'murder', playerName: victim.name, lostGold: 0 });
+                
+                if (!room.settings.eliminatedAsSpectator) {
+                    removePlayerFromRoom(room, victim.id);
+                }
             }
+        } else if (room.shieldUsed) {
+            io.to(room.roomCode).emit('murder_reveal', { type: 'shield', playerName: null });
+        } else {
+            io.to(room.roomCode).emit('murder_reveal', { type: 'no_one', playerName: null });
         }
-    } else if (room.shieldUsed) {
-        io.to(room.roomCode).emit('murder_reveal', { type: 'shield', playerName: null });
-    } else {
-        io.to(room.roomCode).emit('murder_reveal', { type: 'no_one', playerName: null });
+
+        room.roundNumber++;
+        if (room.roundNumber > room.totalRounds) {
+            room.phase = GAME_PHASES.GAME_OVER;
+            io.to(room.roomCode).emit('game_over', { 
+                message: "A aventura terminou!", 
+                prizeFund: room.prizeFund,
+                players: room.players.map(p => ({ name: p.name, gold: p.gold, bars: p.bars, alive: p.alive }))
+            });
+            return;
+        }
+
+        room.phase = GAME_PHASES.PHASE_1_MISSION;
+        room.endMissionVotes = 0;
+        room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; p.isReadyForPhase = false; });
+        
+        const gameMode = room.settings.gameMode || 'remote';
+        const availableAdventures = adventures.filter(a => a.mode === gameMode);
+        const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
+        room.currentMissionData = randomAdventure;
+        room.readyCount = 0;
+
+        room.phaseIntroData = {
+            title: randomAdventure.title,
+            description: randomAdventure.description,
+            secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
+            gameMode: gameMode
+        };
+        
+        room.players.forEach(player => {
+            if (player.role === 'traitor') {
+                player.secretMissions = randomAdventure.traitorSecretMissions || [];
+            }
+        });
+
+        room.players.forEach(player => {
+            const introData = { ...room.phaseIntroData };
+            if (player.role === 'traitor') {
+                introData.secretMission = player.secretMissions[0];
+            }
+            io.to(player.id).emit('phase_intro', introData);
+        });
+    } catch (error) {
+        console.error("Erro no endMurderPhase:", error);
+        io.to(room.roomCode).emit('game_over', { message: "Erro no assassinato. A aventura terminou abruptamente." });
     }
-
-    room.roundNumber++;
-    if (room.roundNumber > room.totalRounds) {
-        room.phase = GAME_PHASES.GAME_OVER;
-        io.to(room.roomCode).emit('game_over', { message: "A aventura terminou!" });
-        return;
-    }
-
-    room.phase = GAME_PHASES.PHASE_1_MISSION;
-    room.endMissionVotes = 0;
-    room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; p.isReadyForPhase = false; });
-    
-    // CORREÇÃO CRÍTICA: Definir gameMode no topo antes de o usar
-    const gameMode = room.settings.gameMode || 'remote';
-
-    // Filtrar aventuras por modo
-    const availableAdventures = adventures.filter(a => a.mode === gameMode);
-    const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
-    room.currentMissionData = randomAdventure;
-    room.readyCount = 0;
-
-    room.phaseIntroData = {
-        title: randomAdventure.title,
-        description: randomAdventure.description,
-        secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
-        gameMode: gameMode
-    };
-    
-    // Atualizar missões secretas do traidor para a nova ronda
-    room.players.forEach(player => {
-        if (player.role === 'traitor') {
-            player.secretMissions = randomAdventure.traitorSecretMissions || [];
-        }
-    });
-
-    room.players.forEach(player => {
-        const introData = { ...room.phaseIntroData };
-        if (player.role === 'traitor') {
-            introData.secretMission = player.secretMissions[0]; // Usar a missão dinâmica
-        }
-        io.to(player.id).emit('phase_intro', introData);
-    });
 }
 
 function processArsenal(room) {
@@ -622,7 +633,7 @@ function processArsenal(room) {
 
     io.to(room.roomCode).emit('arsenal_result', {
         winnerName: winner ? winner.name : 'Ninguém',
-        winnerId: winner ? winner.id : null, // ADICIONADO PARA O FRONTEND IDENTIFICAR
+        winnerId: winner ? winner.id : null,
         reward: winner ? randomReward : null
     });
 
@@ -662,23 +673,30 @@ function processBanishment(room) {
     } else if (isTie) {
         topPlayersIds.forEach(id => {
             const player = room.players.find(p => p.id === id);
-            if (player) player.gold = Math.max(0, player.gold - 1);
+            if (player) {
+                player.gold = Math.max(0, player.gold - 1);
+                room.prizeFund.coins += 1; // Vai para o tesouro comum
+            }
         });
         actualLostGold = 1;
     } else {
         const p = room.players.find(p => p.id === topPlayersIds[0]);
         if (p) {
             p.alive = false;
-            if (room.settings.banishedLoseGold) p.gold = Math.max(0, p.gold - 2);
+            if (room.settings.banishedLoseGold) {
+                p.gold = Math.max(0, p.gold - 2);
+                room.prizeFund.coins += 2; // Vai para o tesouro comum
+            }
             banishedName = p.name;
             actualLostGold = room.settings.banishedLoseGold ? 2 : 0;
             
-            // Se espectadores estiverem desligados, remover da sala
             if (!room.settings.eliminatedAsSpectator) {
                 removePlayerFromRoom(room, p.id);
             }
         }
     }
+
+    convertCoinsToBars(room);
 
     const revealData = {
         title: "O RESULTADO DA EXPULSÃO",

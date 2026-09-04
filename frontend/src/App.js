@@ -31,8 +31,9 @@ function App() {
   const [recruitInvitation, setRecruitInvitation] = useState(false);
   const [recruitResult, setRecruitResult] = useState(null);
   const [murderReveal, setMurderReveal] = useState(null);
+  const [gameOver, setGameOver] = useState(null);
 
-  // NOVO: Estado de Áudio
+  // Estado de Áudio
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
   const isMutedRef = useRef(isMuted);
@@ -44,14 +45,10 @@ function App() {
   const isEvaluationRef = useRef(isEvaluation);
   useEffect(() => { isEvaluationRef.current = isEvaluation; }, [isEvaluation]);
 
-  // NOVO: Função para tocar o som de fundo
   const playBackgroundSound = (filename) => {
-    // Se os sons estiverem desativados nas configurações, não tocar
     if (!soundEnabledRef.current) return;
-    // Se estiver mudo, não tocar
     if (isMutedRef.current) return;
     
-    // Parar o som anterior
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -68,7 +65,6 @@ function App() {
     }
   };
 
-  // NOVO: Efeitos para mudar a música conforme o ecrã
   useEffect(() => {
     if (currentScreen === 'lobby') playBackgroundSound('lobby.mp3');
     if (currentScreen === 'tutorial') playBackgroundSound('tutorial.mp3');
@@ -97,7 +93,6 @@ function App() {
     
     newSocket.on('room_update', (data) => {
       setRoomData(prev => ({ ...prev, players: data.players, settings: data.settings }));
-      // Se as configurações mudarem e os sons forem desligados, para o áudio
       if (!data.settings.soundEffects && audioRef.current) {
         audioRef.current.pause();
       }
@@ -109,21 +104,21 @@ function App() {
         setTutorialStep(0);
         setCurrentScreen('tutorial');
         setPhaseIntro(null);
+        setGameOver(null);
     });
 
     newSocket.on('mission_evaluation', () => {
-        console.log("Evento mission_evaluation recebido!");
         setPhaseIntro(null);
         setBanishmentReveal(null);
         setIsEvaluation(true);
-        playBackgroundSound('evaluation.mp3'); // NOVO
+        playBackgroundSound('evaluation.mp3');
     });
 
     newSocket.on('arsenal_result', (data) => {
       setArsenalResult(data);
       setPhaseIntro(null);
       setIsEvaluation(false);
-      playBackgroundSound('arsenal.mp3'); // NOVO
+      playBackgroundSound('arsenal.mp3');
     });
 
     newSocket.on('phase_intro', (data) => {
@@ -138,7 +133,6 @@ function App() {
       setIsEvaluation(false);
       setGameData(prev => ({ ...prev, phase: data.phase, timer: data.timer, roundNumber: data.roundNumber }));
       
-      // NOVO: Tocar som específico por fase
       if (data.phase === 'PHASE_2_BANISHMENT') playBackgroundSound('banishment.mp3');
       else if (data.phase === 'PHASE_3_ARMOURY') playBackgroundSound('arsenal.mp3');
       else playBackgroundSound('mission.mp3');
@@ -148,7 +142,7 @@ function App() {
       setBanishmentReveal(data);
       setPhaseIntro(null);
       setIsEvaluation(false);
-      playBackgroundSound('banishment.mp3'); // NOVO
+      playBackgroundSound('banishment.mp3');
     });
 
     newSocket.on('blindfold_begin', () => {
@@ -158,7 +152,7 @@ function App() {
       setShowPlayerList(null);
       setMurderReveal(null);
       setRecruitInvitation(false);
-      playBackgroundSound('murder-blindfold.mp3'); // NOVO
+      playBackgroundSound('murder-blindfold.mp3');
     });
 
     newSocket.on('traitor_choices', (data) => {
@@ -200,8 +194,9 @@ function App() {
       setBanishmentReveal(null);
     });
     
-    newSocket.on('game_over', () => {
-       playBackgroundSound('game-over.mp3'); // NOVO
+    newSocket.on('game_over', (data) => {
+       setGameOver(data);
+       playBackgroundSound('game-over.mp3');
     });
 
     return () => newSocket.close();
@@ -251,7 +246,6 @@ function App() {
     <div className="min-h-screen">
       <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen relative">
         
-        {/* NOVO: Botão de Mute/Unmute Global no topo */}
         {gameData?.settings?.soundEffects !== false && (
           <button 
             onClick={toggleMute}
@@ -307,6 +301,7 @@ function App() {
               recruitInvitation={recruitInvitation}
               recruitResult={recruitResult}
               murderReveal={murderReveal}
+              gameOver={gameOver}
               onTraitorChoice={(action) => socket.emit('traitor_choice', { roomCode: roomData.roomCode, action })}
               onTraitorMurder={(targetId) => socket.emit('traitor_murder_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}
               onTraitorRecruit={(targetId) => socket.emit('traitor_recruit_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}

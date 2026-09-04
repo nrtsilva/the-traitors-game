@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, onArsenalAction, banishmentReveal, arsenalResult, playerId, onEndMission, blindfold, onDecoyAnswer, traitorChoices, onTraitorChoice, showPlayerList, onTraitorMurder, onTraitorRecruit, recruitInvitation, onRecruitDecision, recruitResult, murderReveal, onContinueAfterReveal }) {
+export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, onArsenalAction, banishmentReveal, arsenalResult, playerId, onEndMission, blindfold, onDecoyAnswer, traitorChoices, onTraitorChoice, showPlayerList, onTraitorMurder, onTraitorRecruit, recruitInvitation, onRecruitDecision, recruitResult, murderReveal, onContinueAfterReveal, gameOver }) {
   const isTraitor = playerState.role === 'traitor';
   const [selectedRating, setSelectedRating] = useState(0);
-  const [traitorAnswer, setTraitorAnswer] = useState(null); // Para não estar selecionado por defeito
+  const [traitorAnswer, setTraitorAnswer] = useState(null);
   const [selectedVote, setSelectedVote] = useState(null);
   const [useDagger, setUseDagger] = useState(false);
   const [arsenalNumber, setArsenalNumber] = useState(1);
   const [timer, setTimer] = useState(0);
-  const [decoyAnswered, setDecoyAnswered] = useState(false); // Para esconder o botão depois de clicar
+  const [decoyAnswered, setDecoyAnswered] = useState(false);
 
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
@@ -23,6 +23,32 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     }
   }, [playerState.timer]);
 
+  // 0. FIM DE JOGO
+  if (gameOver) {
+    return (
+      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
+        <div className="text-center">
+          <h1 className="text-6xl font-display font-bold text-[#E5C982] mb-6">FIM DO JOGO</h1>
+          <p className="text-2xl text-white mb-8">{gameOver.message}</p>
+          
+          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-8">
+            <h2 className="text-xl font-bold text-[#D8B66C] mb-4">TESOURO COMUM</h2>
+            <p className="text-3xl text-white mb-2">{gameOver.prizeFund?.bars || 0} Barras</p>
+            <p className="text-2xl text-[#F3EBDD]">{gameOver.prizeFund?.coins || 0} Moedas</p>
+          </div>
+
+          <h3 className="text-xl text-white mb-4">Classificação Final</h3>
+          {gameOver.players.map((p, idx) => (
+            <p key={idx} className="text-lg text-[#F3EBDD]">
+              {idx + 1}. {p.name} - {p.gold + p.bars * 5} Ouro
+              {!p.alive && <span className="text-red-400"> (Eliminado)</span>}
+            </p>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // 1. REVELAÇÃO DA EXPULSÃO
   if (banishmentReveal) {
     const { isTie, banishedName, lostGold } = banishmentReveal;
@@ -30,7 +56,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     return (
       <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div className="text-center animate-pulse">
-          {/* Efeito de "tocha" ou brilho */}
           <div className="w-40 h-40 mx-auto mb-8 rounded-full bg-[#D8B66C]/20 blur-3xl"></div>
           
           {isTie ? (
@@ -47,7 +72,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
             </>
           )}
 
-          {/* Indicador de progresso para o Arsenal */}
           <p className="text-lg text-[#D8B66C] mt-12 animate-bounce">A preparar o Arsenal...</p>
         </div>
       </div>
@@ -61,7 +85,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     let icon, title, description;
 
     if (isWinner) {
-      // Mensagem para o VENCEDOR
       if (reward === '2_coins' || reward === '1_coin') {
         icon = <div className="text-9xl text-[#D8B66C] drop-shadow-lg">◉</div>;
         title = `Ganhaste ${reward === '2_coins' ? '2' : '1'} moeda${reward === '2_coins' ? 's' : ''}!`;
@@ -80,7 +103,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
         description = 'Não foi atribuído nenhum prémio.';
       }
     } else {
-      // Mensagem para os restantes jogadores
       icon = <div className="text-9xl text-[#F3EBDD]/40">😔</div>;
       title = 'Não foste o vencedor!';
       description = `O vencedor foi ${arsenalResult.winnerName}. Prepara-te para a noite.`;
@@ -330,7 +352,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
-        {/* Efeito de fundo místico */}
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#D8B66C]/10 rounded-full blur-3xl pointer-events-none"></div>
         
         <div className="relative z-10 text-center">
@@ -373,10 +394,24 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // 6. TABULEIRO NORMAL (Missão)
-  return (
+// 6. TABULEIRO NORMAL (Missão)
+return (
     <div className="relative">
       <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982]">?</button>
+
+      {/* TESOURO COMUM - SEMPRE VISÍVEL */}
+      <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-6 flex justify-center items-center gap-8 shadow-soft">
+          <div className="text-center">
+              <span className="text-3xl">💰</span>
+              <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.coins || 0} Moedas</div>
+          </div>
+          <div className="w-px h-10 bg-[#D8B66C]/30"></div>
+          <div className="text-center">
+              <span className="text-3xl">🏆</span>
+              <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.bars || 0} Barras</div>
+          </div>
+          <p className="text-xs text-white/60 absolute bottom-1">Prémio final a dividir</p>
+      </div>
 
       {/* TIMER EM DESTAQUE */}
       <div className="text-center mb-8">
@@ -391,7 +426,7 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
         <h2 className="font-display text-3xl font-bold text-[#E5C982] mb-4 text-center">{playerState.currentMission.title}</h2>
         <p className="text-[#F3EBDD] text-lg mb-8 text-center">{playerState.currentMission.description}</p>
 
-        {/* Lógica flexível para diferentes tipos de missões (ÚNICO E LIMPO) */}
+        {/* Lógica flexível para diferentes tipos de missões */}
         {playerState.currentMission.type === 'WORD_GUESSER' && (
           <div className="text-center">
             <p className="text-white mb-4">Tentem adivinhar a palavra secreta de 5 letras.</p>
@@ -413,7 +448,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
           </div>
         )}
 
-        {/* Tipos genéricos - Usar .includes() (Corrigido) */}
         {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION'].includes(playerState.currentMission.type) && (
           <div className="text-center">
             <p className="text-white mb-4">Sigam as instruções da missão e cliquem quando terminarem.</p>
