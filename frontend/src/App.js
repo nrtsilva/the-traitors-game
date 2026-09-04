@@ -14,7 +14,7 @@ function App() {
   const [banishmentReveal, setBanishmentReveal] = useState(null);
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState('welcome'); // MUDANÇA: Começa em 'welcome'
+  const [currentScreen, setCurrentScreen] = useState('lobby');
   const [roomData, setRoomData] = useState(null);
   const [playerName, setPlayerName] = useState('');
   const [isHost, setIsHost] = useState(false);
@@ -63,7 +63,6 @@ function App() {
       const audio = new Audio(`/audio/${filename}`);
       audio.loop = true;
       audio.volume = 0.5;
-      // A tentativa de reprodução é feita aqui. Como o utilizador já clicou no botão "Iniciar Experiência", o navegador permite.
       audio.play().catch(e => console.log("Áudio bloqueado:", e));
       audioRef.current = audio;
     } catch (e) {
@@ -72,7 +71,6 @@ function App() {
   };
 
   useEffect(() => {
-    if (currentScreen === 'welcome') return; // Não tenta tocar som na tela de boas-vindas
     if (currentScreen === 'lobby') playBackgroundSound('lobby.mp3');
     if (currentScreen === 'tutorial') playBackgroundSound('tutorial.mp3');
     if (currentScreen === 'roleReveal') playBackgroundSound('role-reveal.mp3');
@@ -242,20 +240,17 @@ function App() {
   const toggleMute = () => {
     if (isMuted) {
       setIsMuted(false);
+      
+      // Força a recriação do áudio do ecrã atual
       if (currentScreen === 'lobby') playBackgroundSound('lobby.mp3');
       else if (currentScreen === 'tutorial') playBackgroundSound('tutorial.mp3');
       else if (currentScreen === 'roleReveal') playBackgroundSound('role-reveal.mp3');
       else if (currentScreen === 'game') playBackgroundSound('mission.mp3');
+      else if (blindfold) playBackgroundSound('murder-blindfold.mp3');
     } else {
       setIsMuted(true);
       if (audioRef.current) audioRef.current.pause();
     }
-  };
-
-  // MUDANÇA: Função para iniciar a experiência e desbloquear o áudio
-  const handleStartExperience = () => {
-    playBackgroundSound('lobby.mp3'); // Tenta tocar o som do lobby
-    setCurrentScreen('lobby');
   };
 
   return (
@@ -272,22 +267,7 @@ function App() {
           </button>
         )}
 
-        {/* NOVO: Tela de Boas-Vindas (para desbloquear o áudio) */}
-        {currentScreen === 'welcome' && (
-          <div className="text-center">
-            <h1 className="font-display text-6xl mb-4 tracking-widest text-[#D8B66C]">THE TRAITORS</h1>
-            <p className="text-[#F3EBDD] mb-8">Bem-vindo à mansão. Ativa o som para uma experiência imersiva.</p>
-            <button 
-              onClick={handleStartExperience}
-              className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm hover:bg-[#E5C982] transition shadow-soft"
-            >
-              🔊 Iniciar Experiência
-            </button>
-          </div>
-        )}
-
-        {/* A partir daqui, o jogo funciona normalmente */}
-        {!connected && currentScreen !== 'welcome' && (
+        {!connected && (
           <div className="text-center slow-reveal">
             <h1 className="font-display text-6xl mb-4 tracking-widest text-[#D8B66C]">THE TRAITORS</h1>
             <p className="text-[#F3EBDD] mb-8">A ligar ao servidor...</p>
