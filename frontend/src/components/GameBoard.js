@@ -252,7 +252,13 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
               <p className="text-2xl text-white mb-4">Esta noite foi tranquila.</p>
             </>
           )}
-          <button onClick={onContinueAfterReveal} className="mt-8 px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition">Continuar</button>
+          
+          <button 
+            onClick={onContinueAfterReveal} 
+            className="mt-8 px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition"
+          >
+            Continuar
+          </button>
         </div>
       </div>
     );

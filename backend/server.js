@@ -1,6 +1,6 @@
 /* ==========================================================
    THE TRAITORS - BACKEND SERVER (NODE.JS + SOCKET.IO)
-   Versão: 1.8 (Tesouro Comum e Correções Finais)
+   Versão: 2.0 (Anúncio de Morte e Espera pela Confirmação)
    ========================================================== */
 
 const express = require('express');
@@ -25,7 +25,7 @@ const GAME_PHASES = {
     PHASE_3_ARMOURY: 'PHASE_3_ARMOURY', PHASE_4_MURDER: 'PHASE_4_MURDER', GAME_OVER: 'GAME_OVER'
 };
 
-// Carregar as aventuras com proteção contra erros
+// Carregar aventuras
 let adventures = [];
 try {
     const filePath = path.join(__dirname, 'aventuras.json');
@@ -49,21 +49,10 @@ function generateRoomCode() { return crypto.randomBytes(3).toString('hex').toUpp
 function createInitialRoomState(hostId, hostName) {
     return {
         roomCode: generateRoomCode(), hostId: hostId, phase: GAME_PHASES.WAITING_LOBBY, roundNumber: 0,
-        settings: { 
-            maxPlayers: 6, 
-            numTraitors: 1, 
-            sabotageActive: true, 
-            recruitingActive: false, 
-            debateTime: 60, 
-            banishedLoseGold: true, 
-            eliminatedAsSpectator: true, 
-            tutorialMode: true, 
-            gameMode: 'remote', 
-            numPhases: 2 
-        },
+        settings: { maxPlayers: 6, numTraitors: 1, sabotageActive: true, recruitingActive: false, debateTime: 60, banishedLoseGold: true, eliminatedAsSpectator: true, tutorialMode: true, gameMode: 'remote', numPhases: 2 },
         players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 }, phaseTimer: null, currentMissionData: null, readyCount: 0,
-        endMissionVotes: 0, phaseIntroData: null
+        endMissionVotes: 0, phaseIntroData: null, continueVotes: 0
     };
 }
 
@@ -79,7 +68,6 @@ function removePlayerFromRoom(room, playerId) {
     }
 }
 
-// Função para converter moedas em barras no tesouro comum
 function convertCoinsToBars(room) {
     while (room.prizeFund.coins >= 5) {
         room.prizeFund.coins -= 5;
@@ -424,6 +412,21 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- NOVO EVENTO: JOGADOR CLICA EM "CONTINUAR" APÓS O ANÚNCIO DA MORTE ---
+    socket.on('continue_after_reveal', ({ roomCode }) => {
+        const cleanCode = (roomCode || "").trim().toUpperCase();
+        const room = rooms[cleanCode];
+        if (!room) return;
+
+        room.continueVotes++;
+        const aliveCount = room.players.filter(p => p.alive).length;
+
+        if (room.continueVotes >= aliveCount) {
+            room.continueVotes = 0;
+            proceedToNextRound(room);
+        }
+    });
+
     socket.on('end_mission', ({ roomCode }) => {
         const cleanCode = (roomCode || "").trim().toUpperCase();
         const room = rooms[cleanCode];
@@ -558,47 +561,9 @@ function endMurderPhase(room) {
             io.to(room.roomCode).emit('murder_reveal', { type: 'no_one', playerName: null });
         }
 
-        room.roundNumber++;
-        if (room.roundNumber > room.totalRounds) {
-            room.phase = GAME_PHASES.GAME_OVER;
-            io.to(room.roomCode).emit('game_over', { 
-                message: "A aventura terminou!", 
-                prizeFund: room.prizeFund,
-                players: room.players.map(p => ({ name: p.name, gold: p.gold, bars: p.bars, alive: p.alive }))
-            });
-            return;
-        }
-
-        room.phase = GAME_PHASES.PHASE_1_MISSION;
-        room.endMissionVotes = 0;
-        room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; p.isReadyForPhase = false; });
-        
-        const gameMode = room.settings.gameMode || 'remote';
-        const availableAdventures = adventures.filter(a => a.mode === gameMode);
-        const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
-        room.currentMissionData = randomAdventure;
-        room.readyCount = 0;
-
-        room.phaseIntroData = {
-            title: randomAdventure.title,
-            description: randomAdventure.description,
-            secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
-            gameMode: gameMode
-        };
-        
-        room.players.forEach(player => {
-            if (player.role === 'traitor') {
-                player.secretMissions = randomAdventure.traitorSecretMissions || [];
-            }
-        });
-
-        room.players.forEach(player => {
-            const introData = { ...room.phaseIntroData };
-            if (player.role === 'traitor') {
-                introData.secretMission = player.secretMissions[0];
-            }
-            io.to(player.id).emit('phase_intro', introData);
-        });
+        // Reset do contador de confirmação
+        room.continueVotes = 0;
+        // NOTA: NÃO avançar automaticamente. O servidor fica à espera do evento 'continue_after_reveal'
     } catch (error) {
         console.error("Erro no endMurderPhase:", error);
         io.to(room.roomCode).emit('game_over', { message: "Erro no assassinato. A aventura terminou abruptamente." });
@@ -675,7 +640,7 @@ function processBanishment(room) {
             const player = room.players.find(p => p.id === id);
             if (player) {
                 player.gold = Math.max(0, player.gold - 1);
-                room.prizeFund.coins += 1; // Vai para o tesouro comum
+                room.prizeFund.coins += 1;
             }
         });
         actualLostGold = 1;
@@ -685,7 +650,7 @@ function processBanishment(room) {
             p.alive = false;
             if (room.settings.banishedLoseGold) {
                 p.gold = Math.max(0, p.gold - 2);
-                room.prizeFund.coins += 2; // Vai para o tesouro comum
+                room.prizeFund.coins += 2;
             }
             banishedName = p.name;
             actualLostGold = room.settings.banishedLoseGold ? 2 : 0;
@@ -721,6 +686,51 @@ function processBanishment(room) {
             io.to(player.id).emit('phase_intro', { ...room.phaseIntroData });
         });
     }, 5000);
+}
+
+// --- NOVA FUNÇÃO: Avançar para a próxima ronda APÓS confirmação ---
+function proceedToNextRound(room) {
+    room.roundNumber++;
+    if (room.roundNumber > room.totalRounds) {
+        room.phase = GAME_PHASES.GAME_OVER;
+        io.to(room.roomCode).emit('game_over', { 
+            message: "A aventura terminou!", 
+            prizeFund: room.prizeFund,
+            players: room.players.map(p => ({ name: p.name, gold: p.gold, bars: p.bars, alive: p.alive }))
+        });
+        return;
+    }
+
+    room.phase = GAME_PHASES.PHASE_1_MISSION;
+    room.endMissionVotes = 0;
+    room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; p.isReadyForPhase = false; });
+    
+    const gameMode = room.settings.gameMode || 'remote';
+    const availableAdventures = adventures.filter(a => a.mode === gameMode);
+    const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
+    room.currentMissionData = randomAdventure;
+    room.readyCount = 0;
+
+    room.phaseIntroData = {
+        title: randomAdventure.title,
+        description: randomAdventure.description,
+        secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
+        gameMode: gameMode
+    };
+    
+    room.players.forEach(player => {
+        if (player.role === 'traitor') {
+            player.secretMissions = randomAdventure.traitorSecretMissions || [];
+        }
+    });
+
+    room.players.forEach(player => {
+        const introData = { ...room.phaseIntroData };
+        if (player.role === 'traitor') {
+            introData.secretMission = player.secretMissions[0];
+        }
+        io.to(player.id).emit('phase_intro', introData);
+    });
 }
 
 server.keepAliveTimeout = 120000;

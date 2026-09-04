@@ -33,7 +33,6 @@ function App() {
   const [murderReveal, setMurderReveal] = useState(null);
   const [gameOver, setGameOver] = useState(null);
 
-  // Estado de Áudio
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef(null);
   const isMutedRef = useRef(isMuted);
@@ -307,7 +306,13 @@ function App() {
               onTraitorRecruit={(targetId) => socket.emit('traitor_recruit_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}
               onDecoyAnswer={() => socket.emit('decoy_answer', { roomCode: roomData.roomCode })}
               onRecruitDecision={(accepted) => socket.emit('recruit_decision', { roomCode: roomData.roomCode, accepted })}
-              onContinueAfterReveal={() => { setMurderReveal(null); setRecruitResult(null); }}
+              onContinueAfterReveal={() => {
+                  if (roomData && roomData.roomCode) {
+                      socket.emit('continue_after_reveal', { roomCode: roomData.roomCode });
+                  }
+                  setMurderReveal(null); 
+                  setRecruitResult(null);
+              }}
               onArsenalAction={(value) => {
                   if (roomData && roomData.roomCode) {
                       socket.emit('submit_arsenal_action', { roomCode: roomData.roomCode, actionData: { value } });
