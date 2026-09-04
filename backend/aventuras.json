@@ -1,0 +1,412 @@
+[
+  {
+    "id": "presencial_footsies",
+    "mode": "in_person",
+    "title": "Footsies (Pés)",
+    "type": "PHYSICAL_ACTION",
+    "timeLimit": 120,
+    "description": "Sentem-se num círculo. Usando apenas os pés, passem uma carta de jogador para jogador. Se cair, recomeçam.",
+    "rewardLogic": "Numero máximo de passes ÷ 4, arredondado para baixo",
+    "traitorSecretMissions": [
+      "Passar a carta para trás (sentido anti-horário) sem que os outros percebam.",
+      "Deixar cair a carta propositadamente na 5ª ronda."
+    ]
+  },
+  {
+    "id": "presencial_palavra",
+    "mode": "in_person",
+    "title": "Adivinha a Palavra",
+    "type": "WORD_GUESSER",
+    "timeLimit": 180,
+    "description": "Desenhem uma grelha 5x6. O árbitro lê a palavra secreta de 5 letras. Os adivinhadores têm 6 tentativas.",
+    "rewardLogic": "1 peça de ouro se descobrirem.",
+    "traitorSecretMissions": [
+      "Dar uma palavra 'errada' mas com letras corretas para confundir o grupo.",
+      "Escolher uma palavra que o árbitro não consiga validar rapidamente."
+    ]
+  },
+  {
+    "id": "presencial_tesouro",
+    "mode": "in_person",
+    "title": "Caça ao Tesouro",
+    "type": "PHYSICAL_OBJECT_HUNT",
+    "timeLimit": 300,
+    "description": "Encontrem 6 objetos que cumpram os requisitos: contenha letras, redondo, azul, mais pequeno que um rato, feito de papel, maior que uma bola de futebol.",
+    "rewardLogic": "4 peças de ouro se trouxerem os 6.",
+    "traitorSecretMissions": [
+      "Esconder um dos objetos requisitados (ex: o objeto azul).",
+      "Escolher um objeto que não cumpra o requisito."
+    ]
+  },
+  {
+    "id": "presencial_desenho",
+    "mode": "in_person",
+    "title": "O Desenho Coletivo",
+    "type": "COLLABORATIVE_DRAWING",
+    "timeLimit": 180,
+    "description": "Escolham um adivinhador. Os desenhadores, sem falar, desenham o objeto num papel, cada um à vez usando formas geométricas.",
+    "rewardLogic": "3 peças de ouro se adivinharem.",
+    "traitorSecretMissions": [
+      "Desenhar uma linha reta por cima da forma anterior para 'apagar' o desenho.",
+      "Fazer uma pausa longa para o tempo acabar."
+    ]
+  },
+  {
+    "id": "presencial_quem",
+    "mode": "in_person",
+    "title": "Quem é, quem é?",
+    "type": "TEAM_ESTIMATION",
+    "timeLimit": 300,
+    "description": "Estimem: quem tem mais contactos? Quem aparece primeiro no Google? Quem tem a maior cabeça?",
+    "rewardLogic": "2 peças de ouro por resposta correta.",
+    "traitorSecretMissions": [
+      "Mentir sobre o número de contactos no telemóvel.",
+      "Dar uma estimativa falsa sobre o peso/cabeça de outro jogador."
+    ]
+  },
+  {
+    "id": "presencial_memoria",
+    "mode": "in_person",
+    "title": "A Memória do Traidor",
+    "type": "MEMORY_GAME",
+    "timeLimit": 180,
+    "description": "Observem 15 objetos durante 30 segundos. Depois de tapados, escrevam o maior número possível que consigam recordar.",
+    "rewardLogic": "10-11 objetos: 1 ouro | 12-13: 2 ouros | 14: 3 ouros | 15: 5 ouros",
+    "traitorSecretMissions": [
+      "Memorizar apenas 5 objetos, ignorando os outros.",
+      "Esquecer-se de escrever 3 objetos no papel."
+    ]
+  },
+  {
+    "id": "presencial_silencioso",
+    "mode": "in_person",
+    "title": "O Telefone Silencioso",
+    "type": "GESTURE_GAME",
+    "timeLimit": 240,
+    "description": "Em fila, o primeiro jogador recebe uma palavra. Transmita-a por gestos ao seguinte. O último diz a palavra.",
+    "rewardLogic": "Correto: 4 ouros | Aproximado: 2 ouros | Errado: 0",
+    "traitorSecretMissions": [
+      "Fazer gestos demasiado genéricos para a mensagem se perder.",
+      "Mudar subtilmente a palavra a meio da corrente."
+    ]
+  },
+  {
+    "id": "presencial_sim_nao",
+    "mode": "in_person",
+    "title": "Não Digas 'Sim' Nem 'Não'",
+    "type": "FORBIDDEN_WORD",
+    "timeLimit": 60,
+    "description": "Um interrogador faz perguntas. O interrogado não pode dizer 'Sim', 'Não', nem palavras equivalentes.",
+    "rewardLogic": "1 ouro por cada 30 segundos sobrevividos.",
+    "traitorSecretMissions": [
+      "Ser o 'interrogador' e fazer perguntas de resposta fechada para apanhar o grupo.",
+      "Dizer 'sim' muito baixinho para o árbitro não ouvir."
+    ]
+  },
+  {
+    "id": "presencial_adivinha_objeto",
+    "mode": "in_person",
+    "title": "Adivinha o Objeto",
+    "type": "YES_NO_GAME",
+    "timeLimit": 300,
+    "description": "Um jogador sai da sala. Os outros escolhem um objeto. O jogador tem 10 perguntas de sim/não para descobrir.",
+    "rewardLogic": "1-5 perguntas: 4 ouros | 6-8: 3 ouros | 9-10: 1 ouro",
+    "traitorSecretMissions": [
+      "Fazer perguntas que levem o grupo para a direção errada.",
+      "Escolher um objeto que ninguém vá adivinhar."
+    ]
+  },
+  {
+    "id": "presencial_preco",
+    "mode": "in_person",
+    "title": "O Preço Certo",
+    "type": "PRICE_GUESS",
+    "timeLimit": 300,
+    "description": "Escolham 5 objetos. Estimem o preço de cada um. Verifiquem depois com o preço real.",
+    "rewardLogic": "1 ouro por cada estimativa dentro de 20% do preço real.",
+    "traitorSecretMissions": [
+      "Dar uma estimativa irrealista para estragar a média do grupo."
+    ]
+  },
+  {
+    "id": "presencial_quem_sou",
+    "mode": "in_person",
+    "title": "Quem Sou Eu?",
+    "type": "WHO_AM_I",
+    "timeLimit": 300,
+    "description": "Cada jogador recebe uma personagem na testa. Façam perguntas de sim/não para descobrir a vossa personagem.",
+    "rewardLogic": "1º lugar: 3 ouros | 2º: 2 ouros | 3º: 1 ouro",
+    "traitorSecretMissions": [
+      "Fazer perguntas muito específicas para descobrir a sua personagem primeiro.",
+      "Mentir sobre as respostas de outros jogadores."
+    ]
+  },
+  {
+    "id": "presencial_60",
+    "mode": "in_person",
+    "title": "Exatamente 60",
+    "type": "TIMER_GUESS",
+    "timeLimit": 120,
+    "description": "Fechem os olhos. Sem relógios, levantem a mão quando acreditarem que passaram 60 segundos.",
+    "rewardLogic": "Até 1s: 4 ouros | 3s: 3 ouros | 5s: 2 ouros | 10s: 1 ouro",
+    "traitorSecretMissions": [
+      "Levantar a mão no segundo 59 mas distrair os outros a contar errado."
+    ]
+  },
+  {
+    "id": "presencial_lista",
+    "mode": "in_person",
+    "title": "A Lista Impossível",
+    "type": "CATEGORY_GAME",
+    "timeLimit": 180,
+    "description": "O árbitro escolhe uma categoria. À vez, digam uma coisa pertencente à categoria. Quem demorar mais de 3 segundos é eliminado.",
+    "rewardLogic": "3 ouros para o último jogador.",
+    "traitorSecretMissions": [
+      "Inventar uma palavra que não pertence à categoria para eliminar outro jogador."
+    ]
+  },
+  {
+    "id": "presencial_quem_disse",
+    "mode": "in_person",
+    "title": "Quem Disse Isso?",
+    "type": "ANONYMOUS_ANSWER",
+    "timeLimit": 300,
+    "description": "Cada jogador escreve anonimamente uma resposta a uma pergunta. O grupo tem de descobrir quem escreveu cada resposta.",
+    "rewardLogic": "1 ouro por cada resposta corretamente atribuída.",
+    "traitorSecretMissions": [
+      "Escrever uma resposta falsa que pareça genuína.",
+      "Copiar a resposta de outro jogador para não ser associado."
+    ]
+  },
+  {
+    "id": "presencial_duas_verdades",
+    "mode": "in_person",
+    "title": "Duas Verdades e Uma Mentira",
+    "type": "TRUTH_OR_LIE",
+    "timeLimit": 300,
+    "description": "Cada jogador diz 3 afirmações sobre si (2 verdades, 1 mentira). O grupo vota na mentira.",
+    "rewardLogic": "1 ouro por cada mentira identificada. +1 se ninguém descobrir a tua.",
+    "traitorSecretMissions": [
+      "Inventar uma mentira que soe como uma verdade óbvia."
+    ]
+  },
+  {
+    "id": "presencial_traidor_aqui",
+    "mode": "in_person",
+    "title": "O Traidor Está Aqui",
+    "type": "SABOTAGE_BUILD",
+    "timeLimit": 300,
+    "description": "Construam a torre mais alta possível usando 20 folhas de papel. O Traidor tenta sabotar.",
+    "rewardLogic": "Se identificarem o Traidor: 4 ouros. Se não: 4 ouros para o Traidor.",
+    "traitorSecretMissions": [
+      "Quebrar a torre sem que ninguém veja.",
+      "Usar uma folha rasgada para ganhar tempo."
+    ]
+  },
+  {
+    "id": "presencial_nao_rias",
+    "mode": "in_person",
+    "title": "Não Te Rias",
+    "type": "NO_LAUGH",
+    "timeLimit": 120,
+    "description": "Dois jogadores frente a frente. Um tenta fazer o outro rir com caretas, histórias ou gestos. Não pode tocar.",
+    "rewardLogic": "2 ouros por cada jogador que passar 60 segundos sem rir.",
+    "traitorSecretMissions": [
+      "Fazer uma cara tão estranha que os outros se riam, mas ele próprio não se rir."
+    ]
+  },
+  {
+    "id": "presencial_numero_secreto",
+    "mode": "in_person",
+    "title": "O Número Secreto",
+    "type": "NUMBER_GUESS",
+    "timeLimit": 300,
+    "description": "O árbitro escolhe um número entre 1 e 100. A equipa tem 10 tentativas para descobrir com respostas 'Maior' ou 'Menor'.",
+    "rewardLogic": "1-5 tentativas: 4 ouros | 6-8: 3 ouros | 9-10: 1 ouro",
+    "traitorSecretMissions": [
+      "Dar uma dica falsa (ex: 'É maior que 50' quando é 20)."
+    ]
+  },
+  {
+    "id": "presencial_sincronizados",
+    "mode": "in_person",
+    "title": "Sincronizados",
+    "type": "SYNC_ANSWER",
+    "timeLimit": 300,
+    "description": "O árbitro faz perguntas (ex: 'Qual é uma fruta?'). Todos têm de dizer uma resposta ao mesmo tempo. Se metade disser igual, ganham ponto.",
+    "rewardLogic": "1 ouro por cada 2 pontos.",
+    "traitorSecretMissions": [
+      "Responder uma palavra diferente da maioria para quebrar a sincronia."
+    ]
+  },
+  {
+    "id": "presencial_palavra_proibida",
+    "mode": "in_person",
+    "title": "A Palavra Proibida",
+    "type": "FORBIDDEN_WORD",
+    "timeLimit": 300,
+    "description": "O árbitro escolhe uma palavra proibida (ex: 'Eu'). A equipa conversa normalmente. Cada vez que alguém disser, perde 1 ponto.",
+    "rewardLogic": "8-10 pontos: 3 ouros | 5-7: 2 ouros | 1-4: 1 ouro",
+    "traitorSecretMissions": [
+      "Dizer a palavra proibida propositadamente para o grupo perder pontos, mas de forma natural."
+    ]
+  },
+  {
+    "id": "presencial_pontaria",
+    "mode": "in_person",
+    "title": "A Pontaria",
+    "type": "ACCURACY_GAME",
+    "timeLimit": 180,
+    "description": "Coloquem um copo a alguns metros. Cada jogador lança 3 objetos leves. Cada acerto vale 1 ponto.",
+    "rewardLogic": "80%+: 4 ouros | 60-79%: 3 ouros | 40-59%: 2 ouros | <40%: 1 ouro",
+    "traitorSecretMissions": [
+      "Lançar os objetos com demasiada força ou para o lado errado, de forma subtil."
+    ]
+  },
+  {
+    "id": "remoto_foto_misteriosa",
+    "mode": "remote",
+    "title": "A Foto Misteriosa",
+    "type": "PHOTO_UPLOAD",
+    "timeLimit": 120,
+    "description": "Tirem uma foto da vossa cozinha. Carreguem no jogo. O grupo tem de adivinhar de quem é a foto.",
+    "rewardLogic": "1 ponto por cada foto corretamente atribuída.",
+    "traitorSecretMissions": [
+      "Tirar uma foto de um ângulo que não mostre o objeto.",
+      "Carregar uma foto antiga que não corresponda à categoria."
+    ]
+  },
+  {
+    "id": "remoto_mapa_tesouro",
+    "mode": "remote",
+    "title": "O Mapa do Tesouro",
+    "type": "MAP_SEARCH",
+    "timeLimit": 180,
+    "description": "Pesquisem no Google Maps um lugar que comece pela letra C.",
+    "rewardLogic": "1 ponto por cada lugar encontrado.",
+    "traitorSecretMissions": [
+      "Escolher um lugar que comece pela letra C mas que seja num país errado."
+    ]
+  },
+  {
+    "id": "remoto_quiz",
+    "mode": "remote",
+    "title": "O Quiz do Conhecimento",
+    "type": "REMOTE_QUIZ",
+    "timeLimit": 120,
+    "description": "Um quiz de cultura geral com 10 perguntas. Cada pergunta vale 1 ponto.",
+    "rewardLogic": "1 ouro por cada ponto.",
+    "traitorSecretMissions": [
+      "Responder a todas como 'Não sei' para baixar a média.",
+      "Dar deliberadamente a resposta errada."
+    ]
+  },
+  {
+    "id": "remoto_imagens",
+    "mode": "remote",
+    "title": "A Palavra em Imagens",
+    "type": "IMAGE_SEARCH",
+    "timeLimit": 120,
+    "description": "Um jogador escreve uma palavra no chat. Os outros têm de encontrar uma imagem na Internet que represente essa palavra.",
+    "rewardLogic": "1 ouro por cada imagem correta.",
+    "traitorSecretMissions": [
+      "Escolher uma imagem que represente uma palavra diferente, mas que pareça certa."
+    ]
+  },
+  {
+    "id": "remoto_historia",
+    "mode": "remote",
+    "title": "A História Colaborativa",
+    "type": "STORY_BUILDING",
+    "timeLimit": 120,
+    "description": "O jogo apresenta uma frase inicial. Cada jogador, à vez, adiciona uma frase para continuar a história.",
+    "rewardLogic": "2 ouros se a história fizer sentido no final.",
+    "traitorSecretMissions": [
+      "Adicionar uma frase que faça a história perder o sentido."
+    ]
+  },
+  {
+    "id": "remoto_detetive",
+    "mode": "remote",
+    "title": "Quem é o Detetive?",
+    "type": "PHOTO_UPLOAD",
+    "timeLimit": 120,
+    "description": "O jogo mostra uma foto de um objeto. Todos têm de encontrar o mesmo objeto na vossa casa e tirar uma foto.",
+    "rewardLogic": "1 ouro por cada foto correta.",
+    "traitorSecretMissions": [
+      "Tirar uma foto de um objeto parecido mas que não é o mesmo."
+    ]
+  },
+  {
+    "id": "remoto_codigo",
+    "mode": "remote",
+    "title": "O Código Secreto",
+    "type": "CODE_BREAKING",
+    "timeLimit": 180,
+    "description": "O jogo apresenta uma série de símbolos. Cada símbolo representa uma letra. A equipa tem de decifrar o código.",
+    "rewardLogic": "3 ouros se decifrarem.",
+    "traitorSecretMissions": [
+      "Dar uma pista falsa sobre o significado de um símbolo."
+    ]
+  },
+  {
+    "id": "remoto_ritmo",
+    "mode": "remote",
+    "title": "O Ritmo Perfeito",
+    "type": "SYNC_ACTION",
+    "timeLimit": 60,
+    "description": "Todos os jogadores têm de bater palmas ao mesmo tempo.",
+    "rewardLogic": "2 ouros se estiverem sincronizados.",
+    "traitorSecretMissions": [
+      "Atrasar a palma para que o grupo fique dessincronizado."
+    ]
+  },
+  {
+    "id": "remoto_nome",
+    "mode": "remote",
+    "title": "O Segredo do Nome",
+    "type": "NAME_GAME",
+    "timeLimit": 60,
+    "description": "O jogo dá uma letra. Cada jogador tem de escrever um nome próprio que comece por essa letra.",
+    "rewardLogic": "1 ouro por cada nome correto.",
+    "traitorSecretMissions": [
+      "Escrever um nome que não seja uma pessoa real."
+    ]
+  },
+  {
+    "id": "remoto_som",
+    "mode": "remote",
+    "title": "O Som Misterioso",
+    "type": "SOUND_GUESS",
+    "timeLimit": 60,
+    "description": "O jogo toca um som. Todos têm de adivinhar o que é.",
+    "rewardLogic": "1 ouro por cada som correto.",
+    "traitorSecretMissions": [
+      "Adivinhar o som errado de propósito."
+    ]
+  },
+  {
+    "id": "remoto_artista",
+    "mode": "remote",
+    "title": "O Artista Digital",
+    "type": "DIGITAL_DRAWING",
+    "timeLimit": 120,
+    "description": "O jogo mostra uma imagem simples. Todos têm de desenhar a mesma imagem no ecrã.",
+    "rewardLogic": "2 ouros se todos desenharem igual.",
+    "traitorSecretMissions": [
+      "Desenhar uma imagem diferente mas parecida."
+    ]
+  },
+  {
+    "id": "remoto_debate",
+    "mode": "remote",
+    "title": "O Debate Final",
+    "type": "CHAT_ARGUMENT",
+    "timeLimit": 120,
+    "description": "O jogo apresenta uma pergunta (ex: 'É melhor ser rico ou famoso?'). Todos argumentam no chat.",
+    "rewardLogic": "1 ouro por cada argumento válido.",
+    "traitorSecretMissions": [
+      "Argumentar o lado oposto ao do grupo."
+    ]
+  }
+]
