@@ -1,6 +1,6 @@
 /* ==========================================================
    THE TRAITORS - BACKEND SERVER (NODE.JS + SOCKET.IO)
-   Versão: 1.5 (Correções de Reconexão e Arsenal)
+   Versão: 1.6 (Estável, Completa e com Todas as Correções)
    ========================================================== */
 
 const express = require('express');
@@ -28,11 +28,35 @@ function generateRoomCode() { return crypto.randomBytes(3).toString('hex').toUpp
 function createInitialRoomState(hostId, hostName) {
     return {
         roomCode: generateRoomCode(), hostId: hostId, phase: GAME_PHASES.WAITING_LOBBY, roundNumber: 0,
-        settings: { maxPlayers: 6, numTraitors: 1, sabotageActive: true, recruitingActive: false, debateTime: 60, banishedLoseGold: true, eliminatedAsSpectator: true, tutorialMode: true, gameMode: 'remote', numPhases: 2 },
+        settings: { 
+            maxPlayers: 6, 
+            numTraitors: 1, 
+            sabotageActive: true, // FIXADO: Traidor pode sabotar SEMPRE
+            recruitingActive: false, 
+            debateTime: 60, 
+            banishedLoseGold: true, // Apenas para expulsões
+            eliminatedAsSpectator: true, // Se false, eliminados saem da sala
+            tutorialMode: true, 
+            gameMode: 'remote', 
+            numPhases: 2 
+        },
         players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 }, phaseTimer: null, currentMissionData: null, readyCount: 0,
         endMissionVotes: 0, phaseIntroData: null
     };
+}
+
+// Função para eliminar o jogador da sala (se espectador estiver desligado)
+function removePlayerFromRoom(room, playerId) {
+    const playerIndex = room.players.findIndex(p => p.id === playerId);
+    if (playerIndex !== -1) {
+        room.players.splice(playerIndex, 1);
+    }
+    const socket = io.sockets.sockets.get(playerId);
+    if (socket) {
+        socket.leave(room.roomCode);
+        socket.disconnect(true); // Desconecta o jogador
+    }
 }
 
 io.on('connection', (socket) => {
@@ -147,7 +171,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- JOGADOR PRONTO PARA A FASE (CORRIGIDO PARA ARSENAL) ---
+    // --- JOGADOR PRONTO PARA A FASE (RESTAURADO - CRÍTICO) ---
     socket.on('player_ready', ({ roomCode }) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -158,7 +182,7 @@ io.on('connection', (socket) => {
             if (!player) {
                 player = room.players.find(p => !p.isReadyForPhase);
                 if (player) {
-                    player.id = socket.id; // Atualiza o ID para o novo socket
+                    player.id = socket.id;
                     console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
                 }
             }
@@ -252,7 +276,6 @@ io.on('connection', (socket) => {
             const room = rooms[cleanCode];
             if (!room || room.phase !== GAME_PHASES.PHASE_2_BANISHMENT) return;
 
-            // RECUPERAR JOGADOR SE O SOCKET MUDOU
             let player = room.players.find(p => p.id === socket.id);
             if (!player) {
                 player = room.players.find(p => p.alive && p.voteCast === null);
@@ -410,7 +433,6 @@ io.on('connection', (socket) => {
             const room = rooms[cleanCode];
             if (!room || room.phase !== GAME_PHASES.PHASE_3_ARMOURY) return;
 
-            // RECUPERAR JOGADOR SE O SOCKET MUDOU
             let player = room.players.find(p => p.id === socket.id);
             if (!player) {
                 player = room.players.find(p => p.alive && p.arsenalChoice === undefined);
@@ -500,8 +522,13 @@ function endMurderPhase(room) {
         const victim = room.players.find(p => p.id === room.murderedThisRound);
         if (victim) {
             victim.alive = false;
-            if (room.settings.banishedLoseGold) victim.gold = Math.max(0, victim.gold - 2);
-            io.to(room.roomCode).emit('murder_reveal', { type: 'murder', playerName: victim.name, lostGold: 2 });
+            // SEM PERDA DE MOEDAS NO ASSASSINATO
+            io.to(room.roomCode).emit('murder_reveal', { type: 'murder', playerName: victim.name, lostGold: 0 });
+            
+            // Se espectadores estiverem desligados, remover da sala
+            if (!room.settings.eliminatedAsSpectator) {
+                removePlayerFromRoom(room, victim.id);
+            }
         }
     } else if (room.shieldUsed) {
         io.to(room.roomCode).emit('murder_reveal', { type: 'shield', playerName: null });
@@ -569,6 +596,7 @@ function processArsenal(room) {
 
     io.to(room.roomCode).emit('arsenal_result', {
         winnerName: winner ? winner.name : 'Ninguém',
+        winnerId: winner ? winner.id : null, // ADICIONADO PARA O FRONTEND IDENTIFICAR
         reward: winner ? randomReward : null
     });
 
@@ -618,6 +646,11 @@ function processBanishment(room) {
             if (room.settings.banishedLoseGold) p.gold = Math.max(0, p.gold - 2);
             banishedName = p.name;
             actualLostGold = room.settings.banishedLoseGold ? 2 : 0;
+            
+            // Se espectadores estiverem desligados, remover da sala
+            if (!room.settings.eliminatedAsSpectator) {
+                removePlayerFromRoom(room, p.id);
+            }
         }
     }
 

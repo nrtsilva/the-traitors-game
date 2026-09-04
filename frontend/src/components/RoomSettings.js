@@ -88,9 +88,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
         {/* Opções Toggle */}
         <div className="grid grid-cols-1 gap-3">
           {[
-            { key: 'sabotageActive', label: 'Traidor pode sabotar' },
             { key: 'recruitingActive', label: 'Traidor pode recrutar' },
-            { key: 'banishedLoseGold', label: 'Banidos perdem 2 ouro' },
             { key: 'eliminatedAsSpectator', label: 'Eliminados ficam como espectadores' },
           ].map((opt) => (
             <div key={opt.key} className="flex justify-between items-center bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">

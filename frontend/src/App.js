@@ -103,6 +103,7 @@ function App() {
 
     newSocket.on('blindfold_begin', () => {
       setBlindfold(true);
+      setArsenalResult(null);
       setTraitorChoices(null);
       setShowPlayerList(null);
       setMurderReveal(null);

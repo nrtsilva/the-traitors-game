@@ -56,25 +56,36 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
 
   // RESULTADO DO ARSENAL
   if (arsenalResult) {
+    const isWinner = arsenalResult.winnerId === playerId;
     const reward = arsenalResult.reward;
     let icon, title, description;
-    if (reward === '2_coins' || reward === '1_coin') {
-      icon = <div className="text-9xl text-[#D8B66C] drop-shadow-lg">◉</div>;
-      title = `Ganhaste ${reward === '2_coins' ? '2' : '1'} moeda${reward === '2_coins' ? 's' : ''}!`;
-      description = 'O ouro foi adicionado ao teu cofre.';
-    } else if (reward === 'shield') {
-      icon = <div className="text-9xl drop-shadow-lg">🛡️</div>;
-      title = 'Ganhaste um Escudo!';
-      description = 'Este escudo protege-te de um assassinato na próxima noite.';
-    } else if (reward === 'dagger') {
-      icon = <div className="text-9xl drop-shadow-lg">🗡️</div>;
-      title = 'Ganhaste um Punhal!';
-      description = 'Este punhal dá-te direito a 2 votos na próxima votação para expulsão.';
+
+    if (isWinner) {
+      // Mensagem para o VENCEDOR
+      if (reward === '2_coins' || reward === '1_coin') {
+        icon = <div className="text-9xl text-[#D8B66C] drop-shadow-lg">◉</div>;
+        title = `Ganhaste ${reward === '2_coins' ? '2' : '1'} moeda${reward === '2_coins' ? 's' : ''}!`;
+        description = 'O ouro foi adicionado ao teu cofre.';
+      } else if (reward === 'shield') {
+        icon = <div className="text-9xl drop-shadow-lg">🛡️</div>;
+        title = 'Ganhaste um Escudo!';
+        description = 'Este escudo protege-te de um assassinato na próxima noite.';
+      } else if (reward === 'dagger') {
+        icon = <div className="text-9xl drop-shadow-lg">🗡️</div>;
+        title = 'Ganhaste um Punhal!';
+        description = 'Este punhal dá-te direito a 2 votos na próxima votação para expulsão.';
+      } else {
+        icon = <div className="text-9xl text-[#D8B66C]">✖</div>;
+        title = 'Ninguém venceu!';
+        description = 'Não foi atribuído nenhum prémio.';
+      }
     } else {
-      icon = <div className="text-9xl text-[#D8B66C]">✖</div>;
-      title = 'Ninguém venceu!';
-      description = 'Não foi atribuído nenhum prémio.';
+      // Mensagem para os restantes jogadores
+      icon = <div className="text-9xl text-[#F3EBDD]/40">😔</div>;
+      title = 'Não foste o vencedor!';
+      description = `O vencedor foi ${arsenalResult.winnerName}. Prepara-te para a noite.`;
     }
+
     return (
       <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div className="text-center animate-pulse">
@@ -87,7 +98,8 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
       </div>
     );
   }
-// FASE DE VENDA-DOS-OLHOS (Blindfold)
+
+  // FASE DE VENDA-DOS-OLHOS (Blindfold)
   if (blindfold) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
