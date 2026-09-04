@@ -1,12 +1,14 @@
 /* ==========================================================
    THE TRAITORS - BACKEND SERVER (NODE.JS + SOCKET.IO)
-   Versão: 1.6 (Estável, Completa e com Todas as Correções)
+   Versão: 1.7 (Missões Dinâmicas e Correções Finais)
    ========================================================== */
 
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -22,6 +24,9 @@ const GAME_PHASES = {
     WAITING_LOBBY: 'WAITING_LOBBY', PHASE_1_MISSION: 'PHASE_1_MISSION', PHASE_2_BANISHMENT: 'PHASE_2_BANISHMENT',
     PHASE_3_ARMOURY: 'PHASE_3_ARMOURY', PHASE_4_MURDER: 'PHASE_4_MURDER', GAME_OVER: 'GAME_OVER'
 };
+
+// Carregar as aventuras do ficheiro JSON
+const adventures = JSON.parse(fs.readFileSync(path.join(__dirname, 'aventuras.json'), 'utf-8'));
 
 function generateRoomCode() { return crypto.randomBytes(3).toString('hex').toUpperCase(); }
 
@@ -118,24 +123,31 @@ io.on('connection', (socket) => {
             if (room.players.length < 2) return callback({ success: false, message: "Mínimo 2 jogadores para testes." });
 
             const gameMode = room.settings.gameMode || 'remote';
+
             const shuffled = [...room.players].sort(() => Math.random() - 0.5);
             let traitorCount = room.settings.numTraitors;
             if (!traitorCount || traitorCount < 1 || traitorCount >= room.players.length) traitorCount = 1;
 
             room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
 
+            // Atribuir papéis de Traidor
             for (let i = 0; i < traitorCount; i++) {
                 const t = shuffled[i];
                 const pObj = room.players.find(p => p.id === t.id);
-                if (pObj) {
-                    pObj.role = 'traitor';
-                    if (gameMode === 'in_person') {
-                        pObj.secretMissions = ["Escolher o objeto amarelo para último", "Dizer 'Está difícil' 3 vezes"];
-                    } else {
-                        pObj.secretMissions = ["Colocar um país errado no topo da lista", "Dizer 'Está difícil' 3 vezes"];
-                    }
-                }
+                if (pObj) pObj.role = 'traitor';
             }
+
+            // Filtrar aventuras por modo e escolher uma aleatória
+            const availableAdventures = adventures.filter(a => a.mode === gameMode);
+            const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
+            room.currentMissionData = randomAdventure;
+
+            // Atribuir missões secretas dinâmicas ao traidor (DEPOIS da role ser atribuída!)
+            room.players.forEach(player => {
+                if (player.role === 'traitor') {
+                    player.secretMissions = randomAdventure.traitorSecretMissions || [];
+                }
+            });
 
             room.roundNumber = 1;
             room.totalRounds = room.settings.numPhases || 2;
@@ -143,15 +155,12 @@ io.on('connection', (socket) => {
             room.prizeFund = { bars: 0, coins: 0 };
             room.readyCount = 0;
 
-            let missionData;
-            if (gameMode === 'in_person') {
-                missionData = { type: 'PHYSICAL_OBJECT_HUNT', title: 'Caça aos Objetos', timeLimit: 120, description: "Encontrem objetos com as cores indicadas na sala!", items: [{ id: 1, name: 'Objeto Azul', description: 'Encontrem um objeto azul na sala.' }, { id: 2, name: 'Objeto Vermelho', description: 'Encontrem um objeto vermelho na sala.' }, { id: 3, name: 'Objeto de Papel', description: 'Encontrem um objeto de papel na sala.' }] };
-            } else {
-                missionData = { type: 'RANKING', title: 'Ranking de Países', timeLimit: 120, items: [{ id: 1, name: 'Japão', correctPosition: 4 }, { id: 2, name: 'Polónia', correctPosition: 8 }, { id: 3, name: 'Suécia', correctPosition: 10 }, { id: 4, name: 'França', correctPosition: 5 }, { id: 5, name: 'EUA', correctPosition: 2 }, { id: 6, name: 'Índia', correctPosition: 1 }, { id: 7, name: 'Vietname', correctPosition: 6 }, { id: 8, name: 'Nigéria', correctPosition: 3 }, { id: 9, name: 'Coreia do Sul', correctPosition: 7 }, { id: 10, name: 'Austrália', correctPosition: 9 }] };
-            }
-            room.currentMissionData = missionData;
-
-            room.phaseIntroData = { title: "Missão I", description: missionData.title === 'Caça aos Objetos' ? "Encontrem os objetos pedidos na sala. Trabalhem em equipa para ganhar ouro!" : "Cooperem para ordenar os países por população. Ganhem ouro para o cofre.", secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0], gameMode: gameMode };
+            room.phaseIntroData = {
+                title: randomAdventure.title,
+                description: randomAdventure.description,
+                secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
+                gameMode: gameMode
+            };
 
             room.players.forEach(player => {
                 const pState = { phase: room.phase, roundNumber: room.roundNumber, settings: room.settings, prizeFund: room.prizeFund, currentMission: room.currentMissionData, role: player.role, gameMode: gameMode, roomCode: cleanCode, gold: player.gold, bars: player.bars, players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })), secretMissions: (player.role === 'traitor') ? player.secretMissions : [] };
@@ -309,6 +318,12 @@ io.on('connection', (socket) => {
 
         const traitor = room.players.find(p => p.id === socket.id);
         if (!traitor || traitor.role !== 'traitor') return;
+
+        // FIX: ADICIONADO O CASO 'KILL'
+        if (action === 'kill') {
+            io.to(traitor.id).emit('show_player_list', { type: 'kill' });
+            return;
+        }
 
         if (action === 'skip') {
             room.murderedThisRound = null;
@@ -547,22 +562,33 @@ function endMurderPhase(room) {
     room.endMissionVotes = 0;
     room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; p.isReadyForPhase = false; });
     
+    // CORREÇÃO CRÍTICA: Definir gameMode no topo antes de o usar
     const gameMode = room.settings.gameMode || 'remote';
-    let missionData;
-    if (gameMode === 'in_person') {
-        missionData = { type: 'PHYSICAL_OBJECT_HUNT', title: 'Caça aos Objetos - Ronda ' + room.roundNumber, timeLimit: 120, items: [{ id: 1, name: 'Objeto Azul', description: 'Encontrem um objeto azul na sala.' }, { id: 2, name: 'Objeto Verde', description: 'Encontrem um objeto verde na sala.' }] };
-    } else {
-        missionData = { type: 'RANKING', title: 'Ranking de Países - Ronda ' + room.roundNumber, timeLimit: 120, items: [{ id: 1, name: 'Japão', correctPosition: 4 }, { id: 2, name: 'Brasil', correctPosition: 5 }] };
-    }
-    room.currentMissionData = missionData;
+
+    // Filtrar aventuras por modo
+    const availableAdventures = adventures.filter(a => a.mode === gameMode);
+    const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
+    room.currentMissionData = randomAdventure;
     room.readyCount = 0;
 
-    room.phaseIntroData = { title: "Missão " + room.roundNumber, description: "Nova missão começou! Cooperem para ganhar ouro.", secretMission: null, gameMode: gameMode };
+    room.phaseIntroData = {
+        title: randomAdventure.title,
+        description: randomAdventure.description,
+        secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
+        gameMode: gameMode
+    };
+    
+    // Atualizar missões secretas do traidor para a nova ronda
+    room.players.forEach(player => {
+        if (player.role === 'traitor') {
+            player.secretMissions = randomAdventure.traitorSecretMissions || [];
+        }
+    });
 
     room.players.forEach(player => {
         const introData = { ...room.phaseIntroData };
         if (player.role === 'traitor') {
-            introData.secretMission = "Dizer 'Está difícil' 3 vezes";
+            introData.secretMission = player.secretMissions[0]; // Usar a missão dinâmica
         }
         io.to(player.id).emit('phase_intro', introData);
     });

@@ -19,7 +19,7 @@ function App() {
   const [playerName, setPlayerName] = useState('');
   const [isHost, setIsHost] = useState(false);
   const [gameData, setGameData] = useState(null);
-
+  
   const [isTutorialOverlay, setIsTutorialOverlay] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [phaseIntro, setPhaseIntro] = useState(null);
@@ -32,11 +32,49 @@ function App() {
   const [recruitResult, setRecruitResult] = useState(null);
   const [murderReveal, setMurderReveal] = useState(null);
 
-  // SOLUÇÃO: UseRef para aceder ao valor mais recente dentro do socket sem recriar a ligação
+  // NOVO: Estado de Áudio
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef(null);
+  const isMutedRef = useRef(isMuted);
+  const soundEnabledRef = useRef(true);
+
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+  useEffect(() => { soundEnabledRef.current = gameData?.settings?.soundEffects ?? true; }, [gameData?.settings?.soundEffects]);
+
   const isEvaluationRef = useRef(isEvaluation);
+  useEffect(() => { isEvaluationRef.current = isEvaluation; }, [isEvaluation]);
+
+  // NOVO: Função para tocar o som de fundo
+  const playBackgroundSound = (filename) => {
+    // Se os sons estiverem desativados nas configurações, não tocar
+    if (!soundEnabledRef.current) return;
+    // Se estiver mudo, não tocar
+    if (isMutedRef.current) return;
+    
+    // Parar o som anterior
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    try {
+      const audio = new Audio(`/audio/${filename}`);
+      audio.loop = true;
+      audio.volume = 0.5;
+      audio.play().catch(e => console.log("Áudio bloqueado pelo browser:", e));
+      audioRef.current = audio;
+    } catch (e) {
+      console.error("Erro ao carregar áudio", e);
+    }
+  };
+
+  // NOVO: Efeitos para mudar a música conforme o ecrã
   useEffect(() => {
-    isEvaluationRef.current = isEvaluation;
-  }, [isEvaluation]);
+    if (currentScreen === 'lobby') playBackgroundSound('lobby.mp3');
+    if (currentScreen === 'tutorial') playBackgroundSound('tutorial.mp3');
+    if (currentScreen === 'roleReveal') playBackgroundSound('role-reveal.mp3');
+    if (currentScreen === 'game') playBackgroundSound('mission.mp3');
+  }, [currentScreen]);
 
   useEffect(() => {
     const newSocket = io(BACKEND_URL, {
@@ -59,6 +97,10 @@ function App() {
     
     newSocket.on('room_update', (data) => {
       setRoomData(prev => ({ ...prev, players: data.players, settings: data.settings }));
+      // Se as configurações mudarem e os sons forem desligados, para o áudio
+      if (!data.settings.soundEffects && audioRef.current) {
+        audioRef.current.pause();
+      }
     });
     
     newSocket.on('game_started', (playerState) => {
@@ -74,12 +116,14 @@ function App() {
         setPhaseIntro(null);
         setBanishmentReveal(null);
         setIsEvaluation(true);
+        playBackgroundSound('evaluation.mp3'); // NOVO
     });
 
     newSocket.on('arsenal_result', (data) => {
       setArsenalResult(data);
       setPhaseIntro(null);
       setIsEvaluation(false);
+      playBackgroundSound('arsenal.mp3'); // NOVO
     });
 
     newSocket.on('phase_intro', (data) => {
@@ -93,12 +137,18 @@ function App() {
       setPhaseIntro(null);
       setIsEvaluation(false);
       setGameData(prev => ({ ...prev, phase: data.phase, timer: data.timer, roundNumber: data.roundNumber }));
+      
+      // NOVO: Tocar som específico por fase
+      if (data.phase === 'PHASE_2_BANISHMENT') playBackgroundSound('banishment.mp3');
+      else if (data.phase === 'PHASE_3_ARMOURY') playBackgroundSound('arsenal.mp3');
+      else playBackgroundSound('mission.mp3');
     });
 
     newSocket.on('banishment_reveal', (data) => {
       setBanishmentReveal(data);
       setPhaseIntro(null);
       setIsEvaluation(false);
+      playBackgroundSound('banishment.mp3'); // NOVO
     });
 
     newSocket.on('blindfold_begin', () => {
@@ -108,11 +158,13 @@ function App() {
       setShowPlayerList(null);
       setMurderReveal(null);
       setRecruitInvitation(false);
+      playBackgroundSound('murder-blindfold.mp3'); // NOVO
     });
 
     newSocket.on('traitor_choices', (data) => {
       setBlindfold(false);
       setTraitorChoices(data);
+      playBackgroundSound('murder-blindfold.mp3');
     });
 
     newSocket.on('show_player_list', (data) => {
@@ -128,20 +180,28 @@ function App() {
     newSocket.on('recruit_result', (data) => {
       setRecruitInvitation(false);
       setRecruitResult(data);
+      playBackgroundSound('murder-reveal.mp3');
     });
 
     newSocket.on('murder_reveal', (data) => {
       setBlindfold(false);
       setTraitorChoices(null);
       setShowPlayerList(null);
+      setArsenalResult(null);
       setMurderReveal(data);
+      playBackgroundSound('murder-reveal.mp3');
     });
 
     newSocket.on('decoy_question', () => {
-      // Limpa os ecrãs do traidor para ele ver a "decoy"
       setBlindfold(false);
       setTraitorChoices(null);
       setShowPlayerList(null);
+      setArsenalResult(null);
+      setBanishmentReveal(null);
+    });
+    
+    newSocket.on('game_over', () => {
+       playBackgroundSound('game-over.mp3'); // NOVO
     });
 
     return () => newSocket.close();
@@ -176,10 +236,32 @@ function App() {
     setIsTutorialOverlay(true);
   };
 
+  const toggleMute = () => {
+    if (audioRef.current) {
+      if (!isMuted) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(e => console.log(e));
+      }
+    }
+    setIsMuted(!isMuted);
+  };
+
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen">
+      <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen relative">
         
+        {/* NOVO: Botão de Mute/Unmute Global no topo */}
+        {gameData?.settings?.soundEffects !== false && (
+          <button 
+            onClick={toggleMute}
+            className="fixed top-4 right-4 z-[100] w-12 h-12 bg-[#291923] border border-[#D8B66C] rounded-full flex items-center justify-center text-2xl shadow-soft hover:bg-[#412734] transition"
+            title={isMuted ? "Ativar Som" : "Silenciar"}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
+        )}
+
         {!connected && (
           <div className="text-center slow-reveal">
             <h1 className="font-display text-6xl mb-4 tracking-widest text-[#D8B66C]">THE TRAITORS</h1>
@@ -256,7 +338,6 @@ function App() {
                   const code = (roomData && roomData.roomCode) || (gameData && gameData.roomCode);
                   if (code) {
                       socket.emit('submit_evaluation', { roomCode: code, data });
-                      // Não definimos isEvaluation para false aqui; esperamos que o servidor envie a próxima fase.
                   } else {
                       console.error("Erro: roomCode não encontrado. roomData:", roomData, "gameData:", gameData);
                   }

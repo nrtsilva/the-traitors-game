@@ -88,6 +88,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
         {/* Opções Toggle */}
         <div className="grid grid-cols-1 gap-3">
           {[
+            { key: 'soundEffects', label: 'Efeitos Sonoros' },
             { key: 'recruitingActive', label: 'Traidor pode recrutar' },
             { key: 'eliminatedAsSpectator', label: 'Eliminados ficam como espectadores' },
           ].map((opt) => (
