@@ -25,6 +25,13 @@ function App() {
   const [phaseIntro, setPhaseIntro] = useState(null);
   const [isEvaluation, setIsEvaluation] = useState(false);
 
+  const [blindfold, setBlindfold] = useState(false);
+  const [traitorChoices, setTraitorChoices] = useState(null);
+  const [showPlayerList, setShowPlayerList] = useState(null);
+  const [recruitInvitation, setRecruitInvitation] = useState(false);
+  const [recruitResult, setRecruitResult] = useState(null);
+  const [murderReveal, setMurderReveal] = useState(null);
+
   // SOLUÇÃO: UseRef para aceder ao valor mais recente dentro do socket sem recriar a ligação
   const isEvaluationRef = useRef(isEvaluation);
   useEffect(() => {
@@ -92,6 +99,48 @@ function App() {
       setBanishmentReveal(data);
       setPhaseIntro(null);
       setIsEvaluation(false);
+    });
+
+    newSocket.on('blindfold_begin', () => {
+      setBlindfold(true);
+      setTraitorChoices(null);
+      setShowPlayerList(null);
+      setMurderReveal(null);
+      setRecruitInvitation(false);
+    });
+
+    newSocket.on('traitor_choices', (data) => {
+      setBlindfold(false);
+      setTraitorChoices(data);
+    });
+
+    newSocket.on('show_player_list', (data) => {
+      setTraitorChoices(null);
+      setShowPlayerList(data);
+    });
+
+    newSocket.on('recruit_invitation', () => {
+      setBlindfold(false);
+      setRecruitInvitation(true);
+    });
+
+    newSocket.on('recruit_result', (data) => {
+      setRecruitInvitation(false);
+      setRecruitResult(data);
+    });
+
+    newSocket.on('murder_reveal', (data) => {
+      setBlindfold(false);
+      setTraitorChoices(null);
+      setShowPlayerList(null);
+      setMurderReveal(data);
+    });
+
+    newSocket.on('decoy_question', () => {
+      // Limpa os ecrãs do traidor para ele ver a "decoy"
+      setBlindfold(false);
+      setTraitorChoices(null);
+      setShowPlayerList(null);
     });
 
     return () => newSocket.close();
@@ -169,6 +218,18 @@ function App() {
               banishmentReveal={banishmentReveal}
               playerId={socket.id}
               arsenalResult={arsenalResult}
+              blindfold={blindfold}
+              traitorChoices={traitorChoices}
+              showPlayerList={showPlayerList}
+              recruitInvitation={recruitInvitation}
+              recruitResult={recruitResult}
+              murderReveal={murderReveal}
+              onTraitorChoice={(action) => socket.emit('traitor_choice', { roomCode: roomData.roomCode, action })}
+              onTraitorMurder={(targetId) => socket.emit('traitor_murder_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}
+              onTraitorRecruit={(targetId) => socket.emit('traitor_recruit_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}
+              onDecoyAnswer={() => socket.emit('decoy_answer', { roomCode: roomData.roomCode })}
+              onRecruitDecision={(accepted) => socket.emit('recruit_decision', { roomCode: roomData.roomCode, accepted })}
+              onContinueAfterReveal={() => { setMurderReveal(null); setRecruitResult(null); }}
               onArsenalAction={(value) => {
                   if (roomData && roomData.roomCode) {
                       socket.emit('submit_arsenal_action', { roomCode: roomData.roomCode, actionData: { value } });

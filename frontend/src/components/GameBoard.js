@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, onArsenalAction, banishmentReveal, arsenalResult, playerId, onEndMission }) {
+export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, onArsenalAction, banishmentReveal, arsenalResult, playerId, onEndMission, blindfold, onDecoyAnswer, traitorChoices, onTraitorChoice, showPlayerList, onTraitorMurder, onTraitorRecruit, recruitInvitation, onRecruitDecision, recruitResult, murderReveal, onContinueAfterReveal }) {
   const isTraitor = playerState.role === 'traitor';
   const [selectedRating, setSelectedRating] = useState(0);
+  const [traitorAnswer, setTraitorAnswer] = useState(null); // Para não estar selecionado por defeito
   const [selectedVote, setSelectedVote] = useState(null);
   const [useDagger, setUseDagger] = useState(false);
   const [arsenalNumber, setArsenalNumber] = useState(1);
   const [timer, setTimer] = useState(0);
+  const [decoyAnswered, setDecoyAnswered] = useState(false); // Para esconder o botão depois de clicar
 
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
@@ -52,18 +54,172 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // 1.5 RESULTADO DO ARSENAL
+  // RESULTADO DO ARSENAL
   if (arsenalResult) {
+    const reward = arsenalResult.reward;
+    let icon, title, description;
+    if (reward === '2_coins' || reward === '1_coin') {
+      icon = <div className="text-9xl text-[#D8B66C] drop-shadow-lg">◉</div>;
+      title = `Ganhaste ${reward === '2_coins' ? '2' : '1'} moeda${reward === '2_coins' ? 's' : ''}!`;
+      description = 'O ouro foi adicionado ao teu cofre.';
+    } else if (reward === 'shield') {
+      icon = <div className="text-9xl drop-shadow-lg">🛡️</div>;
+      title = 'Ganhaste um Escudo!';
+      description = 'Este escudo protege-te de um assassinato na próxima noite.';
+    } else if (reward === 'dagger') {
+      icon = <div className="text-9xl drop-shadow-lg">🗡️</div>;
+      title = 'Ganhaste um Punhal!';
+      description = 'Este punhal dá-te direito a 2 votos na próxima votação para expulsão.';
+    } else {
+      icon = <div className="text-9xl text-[#D8B66C]">✖</div>;
+      title = 'Ninguém venceu!';
+      description = 'Não foi atribuído nenhum prémio.';
+    }
     return (
-      <div className="text-center">
-        <h1 className="text-5xl font-bold text-[#E5C982] mb-8">RESULTADO DO ARSENAL</h1>
-        <p className="text-2xl mb-4">
-          Vencedor: <span className="font-bold text-white">{arsenalResult.winnerName}</span>
-        </p>
-        <p className="text-xl mb-8">
-          Prémio: <span className="font-bold text-[#D8B66C]">{arsenalResult.reward}</span>
-        </p>
-        <p className="text-white/60 text-sm">A preparar a noite...</p>
+      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+        <div className="text-center animate-pulse">
+          <div className="w-48 h-48 mx-auto mb-8 rounded-full bg-[#D8B66C]/20 blur-3xl"></div>
+          {icon}
+          <h1 className="text-5xl font-display font-bold text-[#E5C982] mt-6 mb-4">{title}</h1>
+          <p className="text-2xl text-white/80 mb-8">{description}</p>
+          <p className="text-lg text-[#D8B66C] animate-bounce">A preparar a noite...</p>
+        </div>
+      </div>
+    );
+  }
+// FASE DE VENDA-DOS-OLHOS (Blindfold)
+  if (blindfold) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="text-8xl mb-8 animate-pulse">🌙</div>
+          <h1 className="text-4xl font-display font-bold text-[#E5C982] mb-6">A Noite Caiu...</h1>
+          <p className="text-2xl text-white mb-4">Coloca o telemóvel virado para baixo.</p>
+          <p className="text-xl text-white/60">Vendem os olhos e aguardem instruções.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // FASE DE DECOY (Estás a gostar do jogo?)
+  if (playerState.phase === 'PHASE_4_MURDER' && !traitorChoices && !recruitInvitation && !recruitResult && !murderReveal) {
+    if (decoyAnswered) {
+      return (
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+          <p className="text-2xl text-white/60 animate-pulse">A aguardar os outros jogadores...</p>
+        </div>
+      );
+    }
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="text-center">
+          <h1 className="text-4xl font-display font-bold text-[#E5C982] mb-6">Aguarda...</h1>
+          <p className="text-2xl text-white mb-8">Estás a gostar do jogo até agora?</p>
+          <div className="flex justify-center gap-6">
+            <button onClick={() => { setDecoyAnswered(true); onDecoyAnswer(); }} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-2xl rounded-lg hover:bg-[#E5C982] transition">Sim</button>
+            <button onClick={() => { setDecoyAnswered(true); onDecoyAnswer(); }} className="px-10 py-4 bg-[#291923] text-white border border-[#D8B66C] font-bold text-2xl rounded-lg hover:border-[#E5C982] transition">Não</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ESCOLHAS DO TRAIDOR (Matar, Recrutar ou Ignorar)
+  if (traitorChoices) {
+    return (
+      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
+        <div className="text-center">
+          <h1 className="text-4xl font-display font-bold text-red-500 mb-8">Escolhe a tua Ação</h1>
+          <div className="space-y-4">
+            {traitorChoices.options.includes('kill') && <button onClick={() => onTraitorChoice('kill')} className="block w-80 py-4 bg-red-900/40 border border-red-500 text-white font-bold text-xl rounded-lg hover:bg-red-900/80 transition">🗡️ Assassinar</button>}
+            {traitorChoices.options.includes('recruit') && <button onClick={() => onTraitorChoice('recruit')} className="block w-80 py-4 bg-[#291923] border border-[#D8B66C] text-[#E5C982] font-bold text-xl rounded-lg hover:bg-[#412734] transition">🎭 Recrutar</button>}
+            {traitorChoices.options.includes('skip') && <button onClick={() => onTraitorChoice('skip')} className="block w-80 py-4 bg-[#291923] border border-white/20 text-white/60 font-bold text-xl rounded-lg hover:bg-[#412734] transition">Passar a Noite</button>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // LISTA DE JOGADORES (Para o Traidor escolher a vítima ou recruta)
+  if (showPlayerList) {
+    const playersToKill = playerState.players.filter(p => p.id !== playerId && p.alive);
+    return (
+      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
+        <div className="text-center">
+          <h1 className="text-4xl font-display font-bold text-[#E5C982] mb-8">{showPlayerList.type === 'recruit' ? 'Quem queres recrutar?' : 'Quem queres assassinar?'}</h1>
+          <div className="space-y-4">
+            {playersToKill.map(player => (
+              <button key={player.id} 
+                onClick={() => showPlayerList.type === 'recruit' ? onTraitorRecruit(player.id) : onTraitorMurder(player.id)}
+                className="block w-80 py-4 bg-[#291923] border border-[#D8B66C]/30 text-white font-bold text-xl rounded-lg hover:border-[#D8B66C] transition">
+                {player.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CONVITE PARA RECRUTAMENTO (Só para o alvo)
+  if (recruitInvitation) {
+    return (
+      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
+        <div className="text-center">
+          <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-8">🤝 Uma Proposta</h1>
+          <p className="text-2xl text-white mb-8">Foste escolhido para te juntares aos Traidores!</p>
+          <div className="flex justify-center gap-6">
+            <button onClick={() => onRecruitDecision(true)} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition">Aceitar</button>
+            <button onClick={() => onRecruitDecision(false)} className="px-10 py-4 bg-[#291923] text-white border border-[#D8B66C] font-bold text-xl rounded-lg hover:border-[#E5C982] transition">Recusar</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // RESULTADO DO RECRUTAMENTO
+  if (recruitResult) {
+    return (
+      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+        <div className="text-center">
+          <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-8">🤫 O Recrutamento</h1>
+          <p className="text-2xl text-white mb-8">
+            {recruitResult.accepted ? `${recruitResult.playerName} juntou-se aos Traidores!` : `${recruitResult.playerName} recusou o convite.`}
+          </p>
+          <p className="text-xl text-white/60 mb-8">Ninguém foi assassinado esta noite.</p>
+          <button onClick={onContinueAfterReveal} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition">Continuar</button>
+        </div>
+      </div>
+    );
+  }
+
+  // RESULTADO DO ASSASSINATO
+  if (murderReveal) {
+    return (
+      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+        <div className="text-center">
+          {murderReveal.type === 'murder' ? (
+            <>
+              <div className="text-8xl mb-6">🗡️</div>
+              <h1 className="text-5xl font-display font-bold text-red-500 mb-6">Assassinato!</h1>
+              <p className="text-3xl text-white mb-4">{murderReveal.playerName} foi assassinado!</p>
+              <p className="text-xl text-white/70">Perdeu {murderReveal.lostGold} moedas.</p>
+            </>
+          ) : murderReveal.type === 'shield' ? (
+            <>
+              <div className="text-8xl mb-6">🛡️</div>
+              <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-6">O Escudo Protegeu!</h1>
+              <p className="text-2xl text-white mb-4">Ninguém foi assassinado. O alvo tinha um Escudo.</p>
+            </>
+          ) : (
+            <>
+              <div className="text-8xl mb-6">🌙</div>
+              <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-6">Ninguém Morreu</h1>
+              <p className="text-2xl text-white mb-4">Esta noite foi tranquila.</p>
+            </>
+          )}
+          <button onClick={onContinueAfterReveal} className="mt-8 px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition">Continuar</button>
+        </div>
       </div>
     );
   }
@@ -90,10 +246,24 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
         {isTraitor ? (
           <div className="mb-8">
             <h3 className="text-2xl text-red-400 mb-4">Completaste a tua missão secreta?</h3>
-            <div className="flex justify-center gap-4">
-              <button onClick={() => onEvaluation({ type: 'traitor_answer', value: true })} className="px-8 py-4 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Sim, completei</button>
-              <button onClick={() => onEvaluation({ type: 'traitor_answer', value: false })} className="px-8 py-4 bg-[#291923] text-[#F3EBDD] border border-[#D8B66C] rounded-sm">Não, falhei</button>
+            <div className="flex justify-center gap-4 mb-6">
+              <button 
+                onClick={() => setTraitorAnswer(true)}
+                className={`px-8 py-4 font-bold rounded-sm transition ${traitorAnswer === true ? 'bg-[#D8B66C] text-[#291923] scale-105' : 'bg-[#291923] text-[#F3EBDD] border border-[#D8B66C]'}`}>
+                Sim, completei
+              </button>
+              <button 
+                onClick={() => setTraitorAnswer(false)}
+                className={`px-8 py-4 font-bold rounded-sm transition ${traitorAnswer === false ? 'bg-[#D8B66C] text-[#291923] scale-105' : 'bg-[#291923] text-[#F3EBDD] border border-[#D8B66C]'}`}>
+                Não, falhei
+              </button>
             </div>
+            <button 
+              onClick={() => onEvaluation({ type: 'traitor_answer', value: traitorAnswer })}
+              disabled={traitorAnswer === null}
+              className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              Confirmar
+            </button>
           </div>
         ) : (
           <div className="mb-8">
@@ -103,7 +273,12 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
                 <button key={star} onClick={() => setSelectedRating(star)} className={`text-5xl transition ${selectedRating >= star ? 'text-[#D8B66C]' : 'text-[#F3EBDD]/30'}`}>★</button>
               ))}
             </div>
-            <button onClick={() => onEvaluation({ type: 'faithful_rating', value: selectedRating })} disabled={selectedRating === 0} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50">Confirmar Avaliação</button>
+            <button 
+              onClick={() => onEvaluation({ type: 'faithful_rating', value: selectedRating })} 
+              disabled={selectedRating === 0} 
+              className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              Confirmar Avaliação
+            </button>
           </div>
         )}
       </div>

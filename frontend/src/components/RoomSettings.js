@@ -82,7 +82,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
             onChange={(e) => updateSetting('numPhases', parseInt(e.target.value))}
             className="w-full accent-[#D8B66C]" 
           />
-          <p className="text-xs text-[#F3EBDD]/50 mt-2">Cada fase inclui: Missão → Expulsão → Arsenal → Assassinato</p>
+          <p className="text-xs text-[#F3EBDD]/50 mt-2">Missão → Expulsão → Arsenal → Assassinato</p>
         </div>
 
         {/* Opções Toggle */}
