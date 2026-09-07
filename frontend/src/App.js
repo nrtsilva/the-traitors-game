@@ -317,6 +317,7 @@ function App() {
               recruitResult={recruitResult}
               murderReveal={murderReveal}
               gameOver={gameOver}
+              roomData={roomData}
               onTraitorChoice={(action) => socket.emit('traitor_choice', { roomCode: roomData.roomCode, action })}
               onTraitorMurder={(targetId) => socket.emit('traitor_murder_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}
               onTraitorRecruit={(targetId) => socket.emit('traitor_recruit_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}

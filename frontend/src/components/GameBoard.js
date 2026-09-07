@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import DrawingCanvas from './DrawingCanvas';
 
-export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, onArsenalAction, banishmentReveal, arsenalResult, playerId, onEndMission, blindfold, onDecoyAnswer, traitorChoices, onTraitorChoice, showPlayerList, onTraitorMurder, onTraitorRecruit, recruitInvitation, onRecruitDecision, recruitResult, murderReveal, onContinueAfterReveal, gameOver }) {
+export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, onArsenalAction, banishmentReveal, arsenalResult, playerId, onEndMission, blindfold, onDecoyAnswer, traitorChoices, onTraitorChoice, showPlayerList, onTraitorMurder, onTraitorRecruit, recruitInvitation, onRecruitDecision, recruitResult, murderReveal, onContinueAfterReveal, gameOver, roomData }) {
   const isTraitor = playerState.role === 'traitor';
   const [selectedRating, setSelectedRating] = useState(0);
   const [traitorAnswer, setTraitorAnswer] = useState(null);
@@ -9,6 +10,7 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
   const [arsenalNumber, setArsenalNumber] = useState(1);
   const [timer, setTimer] = useState(0);
   const [decoyAnswered, setDecoyAnswered] = useState(false);
+  const [openCanvas, setOpenCanvas] = useState(false);
 
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
@@ -429,7 +431,6 @@ return (
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.bars || 0} Barras</div>
               <div className="text-xs text-[#F3EBDD]/60">Barras</div>
           </div>
-          {/* NOVO: Valor em Jogo */}
           <div className="w-px h-10 bg-[#D8B66C]/30"></div>
           <div className="text-center">
               <span className="text-3xl">⚔️</span>
@@ -468,18 +469,27 @@ return (
 
         {playerState.currentMission.type === 'COLLABORATIVE_DRAWING' && (
           <div className="text-center">
-            <p className="text-white mb-4">Usem o quadro branco partilhado para desenhar.</p>
-            <button className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Abrir Quadro</button>
+            <p className="text-white mb-4">Siga as instruções acima. Para a versão online, abram o quadro.</p>
+            {/* Botão para Abrir o Quadro (função para versão remota) */}
+            <button onClick={() => setOpenCanvas(true)} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Abrir Quadro</button>
           </div>
         )}
 
-        {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(playerState.currentMission.type) && (
+        {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING', 'COLLABORATIVE_DRAWING'].includes(playerState.currentMission.type) && (
           <div className="text-center">
             <p className="text-white mb-4">Sigam as instruções da missão e cliquem quando terminarem.</p>
             <button onClick={onEndMission} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Concluir Missão</button>
           </div>
         )}
       </div>
+
+      {/* Modal do Desenho */}
+      {openCanvas && (
+        <DrawingCanvas 
+          socket={socket}
+          roomCode={roomData.roomCode}
+        />
+      )}
     </div>
   );
 }
