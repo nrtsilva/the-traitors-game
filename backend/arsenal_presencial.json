@@ -4,6 +4,7 @@
     "mode": "in_person",
     "title": "The 3 Letters Words",
     "type": "TEXT_FLOOD",
+	
     "timeLimit": 60,
     "description": "TODOS escrevem o máximo de palavras de 3 letras. Quem tiver mais palavras ganha!",
     "rule": "3-letter words"

@@ -357,13 +357,14 @@ export default function GameBoard({
     );
   }
 
-  // 4. ARSENAL (Mini-jogo Individual - Escolher número)
+  // 4. ARSENAL (Mini-jogo Individual)
   if (playerState.phase === 'PHASE_3_ARMOURY') {
     const task = playerState.arsenalTask || null;
 
     return (
       <div className="text-center">
         <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
+        
         {task && (
           <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
             <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
@@ -371,9 +372,14 @@ export default function GameBoard({
             {task.rule && <p className="text-sm text-[#F3EBDD]/70">Regra: {task.rule}</p>}
           </div>
         )}
+
+        {!task && (
+          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
+            <p className="text-[#F3EBDD]">A carregar tarefa...</p>
+          </div>
+        )}
         
-        <p className="text-xl mb-6">Escolhe um número de 1 a 6. O maior número único vence e ganha o prémio!</p>
-        
+        {/* O botão de número continua aqui, mas será usado apenas para tarefas que precisem de o fazer */}
         <div className="flex justify-center gap-4 mb-8">
           {[1, 2, 3, 4, 5, 6].map(num => (
             <button 
@@ -387,7 +393,7 @@ export default function GameBoard({
         </div>
 
         <button onClick={() => onArsenalAction(arsenalNumber)} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm">
-          CONFIRMAR NÚMERO
+          CONFIRMAR
         </button>
       </div>
     );

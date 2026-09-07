@@ -513,6 +513,58 @@ io.on('connection', (socket) => {
         }
     });
 	
+    socket.on('submit_mission_value', ({ roomCode, value }) => {
+        try {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
+
+            // Verifica se a missão precisa de input numérico
+            if (!room.currentMissionData.requiresNumberInput) return;
+
+            // Procura o jogador
+            let player = room.players.find(p => p.id === socket.id);
+            if (!player) {
+                player = room.players.find(p => p.alive);
+                if (player) player.id = socket.id;
+            }
+            if (!player || !player.alive) return;
+
+            // Guarda o valor submetido
+            player.missionValue = parseInt(value);
+            
+            console.log(`[Missão] ${player.name} submeteu o valor: ${player.missionValue}`);
+
+            // Verifica se todos os jogadores vivos submeteram
+            const alivePlayers = room.players.filter(p => p.alive);
+            const allSubmitted = alivePlayers.every(p => p.missionValue !== undefined);
+
+            if (allSubmitted) {
+                // Calcula a recompensa (neste caso, a média do grupo ou o valor mais alto)
+                // Vamos usar a média para ser justo.
+                const total = alivePlayers.reduce((sum, p) => sum + p.missionValue, 0);
+                const average = Math.round(total / alivePlayers.length);
+                
+                // Aplica a fórmula da missão: (Número de passes ÷ 4, arredondado para baixo)
+                const reward = Math.floor(average / 4);
+                
+                // Adiciona ao Tesouro Comum
+                room.prizeFund.coins += reward;
+                convertCoinsToBars(room);
+                
+                console.log(`[Missão] Footsies: Média do grupo = ${average}. Recompensa: ${reward} moedas.`);
+
+                // Limpa os valores para a próxima missão
+                room.players.forEach(p => p.missionValue = undefined);
+
+                // Avança para a avaliação
+                io.to(cleanCode).emit('mission_evaluation');
+            }
+        } catch (error) {
+            console.error("Erro no submit_mission_value:", error);
+        }
+    });	
+	
 	socket.on('drawing_update', ({ roomCode, drawing }) => {
 		const cleanCode = (roomCode || "").trim().toUpperCase();
 		const room = rooms[cleanCode];
@@ -565,7 +617,7 @@ io.on('connection', (socket) => {
 		}
 	});
 	
-    socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
+	socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
@@ -585,9 +637,12 @@ io.on('connection', (socket) => {
             const allChose = alivePlayers.every(p => p.arsenalChoice !== undefined);
 
             if (allChose) {
-                // Carregar tarefa de arsenal conforme modo
+                // CORREÇÃO: Carregar tarefa do ficheiro de ARSENAL correto
                 const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
                 const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
+                
+                // Guardar a tarefa na sala
+                room.currentArsenalTask = tarefaAleatoria;
                 
                 // Enviar para todos a tarefa do arsenal
                 io.to(room.roomCode).emit('arsenal_task', { task: tarefaAleatoria });
