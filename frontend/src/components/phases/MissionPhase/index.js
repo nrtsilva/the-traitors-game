@@ -10,7 +10,7 @@ export default function MissionPhase(props) {
   // Renderiza o conteúdo específico da missão
   let missionContent = null;
   if (mission.type === 'COLLABORATIVE_DRAWING') {
-    missionContent = <MissionCollaborativeDrawing {...props} />;
+    missionContent = <MissionCollaborativeDrawing {...props} playerId={props.playerId} />
   } else if (mission.requiresNumberInput) {
     missionContent = <MissionNumberInput {...props} />;
   } else if (['WORD_GUESSER', 'PHYSICAL_OBJECT_HUNT', 'TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(mission.type)) {

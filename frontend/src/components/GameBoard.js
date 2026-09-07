@@ -140,6 +140,7 @@ export default function GameBoard({
       onMissionOutcome={onMissionOutcome}
       socket={socket}
       roomData={roomData}
+      playerId={playerId}
     />
   );
 }
