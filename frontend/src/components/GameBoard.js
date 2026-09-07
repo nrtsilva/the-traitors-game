@@ -1,31 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import DrawingCanvas from './DrawingCanvas';
+import React from 'react';
+import GameOverScreen from './phases/GameOverScreen';
+import BanishmentRevealScreen from './phases/BanishmentRevealScreen';
+import ArsenalResultScreen from './phases/ArsenalResultScreen';
+import BlindfoldScreen from './phases/BlindfoldScreen';
+import DecoyScreen from './phases/DecoyScreen';
+import TraitorChoicesScreen from './phases/TraitorChoicesScreen';
+import TraitorPlayerListScreen from './phases/TraitorPlayerListScreen';
+import RecruitInvitationScreen from './phases/RecruitInvitationScreen';
+import RecruitResultScreen from './phases/RecruitResultScreen';
+import MurderRevealScreen from './phases/MurderRevealScreen';
+import PhaseIntroScreen from './phases/PhaseIntroScreen';
+import EvaluationScreen from './phases/EvaluationScreen';
+import ArsenalPhase from './phases/ArsenalPhase';
+import BanishmentVoteScreen from './phases/BanishmentVoteScreen';
+import MissionPhase from './phases/MissionPhase';
 
-export default function GameBoard({ 
-  playerState, 
-  onOpenHelp, 
-  phaseIntro, 
-  isEvaluation, 
-  onReady, 
-  onEvaluation, 
-  onVote, 
-  banishmentReveal, 
-  arsenalResult, 
-  playerId, 
-  onEndMission, 
-  blindfold, 
-  onDecoyAnswer, 
-  traitorChoices, 
-  onTraitorChoice, 
-  showPlayerList, 
-  onTraitorMurder, 
-  onTraitorRecruit, 
-  recruitInvitation, 
-  onRecruitDecision, 
-  recruitResult, 
-  murderReveal, 
-  onContinueAfterReveal, 
-  gameOver, 
+export default function GameBoard({
+  playerState,
+  onOpenHelp,
+  phaseIntro,
+  isEvaluation,
+  onReady,
+  onEvaluation,
+  onVote,
+  banishmentReveal,
+  arsenalResult,
+  playerId,
+  onEndMission,
+  blindfold,
+  onDecoyAnswer,
+  traitorChoices,
+  onTraitorChoice,
+  showPlayerList,
+  onTraitorMurder,
+  onTraitorRecruit,
+  recruitInvitation,
+  onRecruitDecision,
+  recruitResult,
+  murderReveal,
+  onContinueAfterReveal,
+  gameOver,
   roomData,
   socket,
   onMissionValueSubmit,
@@ -33,683 +47,119 @@ export default function GameBoard({
   onMissionOutcome
 }) {
   const isTraitor = playerState.role === 'traitor';
-  
-  // --- ESTADOS (TODOS NO TOPO, OBRIGATÓRIO) ---
-  const [selectedRating, setSelectedRating] = useState(0);
-  const [traitorAnswer, setTraitorAnswer] = useState(null);
-  const [selectedVote, setSelectedVote] = useState(null);
-  const [useDagger, setUseDagger] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const [decoyAnswered, setDecoyAnswered] = useState(false);
-  const [openCanvas, setOpenCanvas] = useState(false);
-  const [missionValue, setMissionValue] = useState('');
-  const [missionSecretWord, setMissionSecretWord] = useState('');
-  
-  // Estados para o novo Arsenal
-  const [resultItems, setResultItems] = useState([]);
-  const [guessTime, setGuessTime] = useState('');
-  const [plankSeconds, setPlankSeconds] = useState(0);
-  const [isPlankRunning, setIsPlankRunning] = useState(false);
 
-  // --- TODOS OS useEffect NO TOPO, SEM CONDIÇÕES ---
-
-  // 1. Timer geral (já existente)
-  useEffect(() => {
-    if (playerState.timer && playerState.timer > 0) {
-      setTimer(playerState.timer);
-      const interval = setInterval(() => {
-        setTimer(prev => {
-          if (prev <= 1) { clearInterval(interval); return 0; }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [playerState.timer]);
-
-  // 2. Cronómetro da prancha (TIME_GUESS) – movido para o topo
-  useEffect(() => {
-    // Só executa se estivermos na fase do Arsenal, a tarefa for TIME_GUESS e o cronómetro estiver a correr
-    const task = playerState.arsenalTask;
-    if (playerState.phase === 'PHASE_3_ARMOURY' && task?.type === 'TIME_GUESS' && isPlankRunning) {
-      const interval = setInterval(() => {
-        setPlankSeconds(prev => prev + 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-    // Se não estiver a correr ou não for a fase certa, não faz nada
-  }, [isPlankRunning, playerState.phase, playerState.arsenalTask]);
-
-  // --- RENDERIZAÇÃO CONDICIONAL (retornos antecipados) ---
-  // Estes retornos vêm DEPOIS de todos os hooks, o que é permitido.
-
-  // 0. FIM DE JOGO
+  // Fim de Jogo
   if (gameOver) {
-    return (
-      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
-        <div className="text-center">
-          <h1 className="text-6xl font-display font-bold text-[#E5C982] mb-6">FIM DO JOGO</h1>
-          <p className="text-2xl text-white mb-8">{gameOver.message}</p>
-          
-          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-bold text-[#D8B66C] mb-4">TESOURO COMUM</h2>
-            <p className="text-3xl text-white mb-2">{gameOver.prizeFund?.bars || 0} Barras</p>
-            <p className="text-2xl text-[#F3EBDD]">{gameOver.prizeFund?.coins || 0} Moedas</p>
-          </div>
-
-          <h3 className="text-xl text-white mb-4">Classificação Final</h3>
-          {gameOver.players.map((p, idx) => (
-            <p key={idx} className="text-lg text-[#F3EBDD]">
-              {idx + 1}. {p.name} - {p.gold + p.bars * 5} Ouro
-              {!p.alive && <span className="text-red-400"> (Eliminado)</span>}
-            </p>
-          ))}
-        </div>
-      </div>
-    );
+    return <GameOverScreen gameOver={gameOver} />;
   }
 
-  // 1. REVELAÇÃO DA EXPULSÃO
+  // Revelação da Expulsão
   if (banishmentReveal) {
-    const { isTie, banishedName, lostGold } = banishmentReveal;
-
-    return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-        <div className="text-center animate-pulse">
-          <div className="w-40 h-40 mx-auto mb-8 rounded-full bg-[#D8B66C]/20 blur-3xl"></div>
-          
-          {isTie ? (
-            <>
-              <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">EMPATE</h1>
-              <p className="text-3xl text-white mb-4">NINGUÉM FOI EXPULSO</p>
-              <p className="text-xl text-white/70 mb-8">Todos os jogadores empatados perderam <span className="font-bold text-[#D8B66C]">1 moeda</span>.</p>
-            </>
-          ) : (
-            <>
-              <h1 className="text-6xl font-display font-bold mb-6 text-[#E5C982]">EXPULSÃO</h1>
-              <p className="text-4xl text-red-400 font-bold mb-4">{banishedName} FOI EXPULSO</p>
-              <p className="text-xl text-white/70 mb-8">Perdeu <span className="font-bold text-[#D8B66C]">{lostGold} moedas</span>.</p>
-            </>
-          )}
-
-          <p className="text-lg text-[#D8B66C] mt-12 animate-bounce">A preparar o Arsenal...</p>
-        </div>
-      </div>
-    );
+    return <BanishmentRevealScreen data={banishmentReveal} />;
   }
 
-  // RESULTADO DO ARSENAL
+  // Resultado do Arsenal
   if (arsenalResult) {
-    const isWinner = arsenalResult.winnerId === playerId;
-    const reward = arsenalResult.reward;
-    let icon, title, description;
-
-    if (isWinner) {
-      if (reward === '2_coins' || reward === '1_coin') {
-        icon = <div className="text-9xl text-[#D8B66C] drop-shadow-lg">◉</div>;
-        title = `Ganhaste ${reward === '2_coins' ? '2' : '1'} moeda${reward === '2_coins' ? 's' : ''}!`;
-        description = 'O ouro foi adicionado ao teu cofre.';
-      } else if (reward === 'shield') {
-        icon = <div className="text-9xl drop-shadow-lg">🛡️</div>;
-        title = 'Ganhaste um Escudo!';
-        description = 'Este escudo protege-te de um assassinato na próxima noite.';
-      } else if (reward === 'dagger') {
-        icon = <div className="text-9xl drop-shadow-lg">🗡️</div>;
-        title = 'Ganhaste um Punhal!';
-        description = 'Este punhal dá-te direito a 2 votos em QUALQUER votação para expulsão. Usa-o quando quiseres!';
-      } else {
-        icon = <div className="text-9xl text-[#D8B66C]">✖</div>;
-        title = 'Ninguém venceu!';
-        description = 'Não foi atribuído nenhum prémio.';
-      }
-    } else {
-      icon = <div className="text-9xl text-[#F3EBDD]/40">😔</div>;
-      title = 'Não foste o vencedor!';
-      description = `O vencedor foi ${arsenalResult.winnerName}. Prepara-te para a noite.`;
-    }
-
-    return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-        <div className="text-center animate-pulse">
-          <div className="w-48 h-48 mx-auto mb-8 rounded-full bg-[#D8B66C]/20 blur-3xl"></div>
-          {icon}
-          <h1 className="text-5xl font-display font-bold text-[#E5C982] mt-6 mb-4">{title}</h1>
-          <p className="text-2xl text-white/80 mb-8">{description}</p>
-          <p className="text-lg text-[#D8B66C] animate-bounce">A preparar a noite...</p>
-        </div>
-      </div>
-    );
+    return <ArsenalResultScreen result={arsenalResult} playerId={playerId} />;
   }
 
-  // FASE DE VENDA-DOS-OLHOS (Blindfold)
+  // Blindfold (Noite)
   if (blindfold) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center">
-          <div className="text-8xl mb-8 animate-pulse">🌙</div>
-          <h1 className="text-4xl font-display font-bold text-[#E5C982] mb-6">A Noite Caiu...</h1>
-          <p className="text-2xl text-white mb-4">Coloca o telemóvel virado para baixo.</p>
-          <p className="text-xl text-white/60">Vendem os olhos e aguardem instruções.</p>
-        </div>
-      </div>
-    );
+    return <BlindfoldScreen />;
   }
-  
-  // FASE DE DECOY (Estás a gostar do jogo?)
+
+  // Decoy (durante a noite, para não traidores)
   if (playerState.phase === 'PHASE_4_MURDER' && !traitorChoices && !recruitInvitation && !recruitResult && !murderReveal) {
-    if (decoyAnswered) {
-      return (
-        <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-          <p className="text-2xl text-white/60 animate-pulse">A aguardar os outros jogadores...</p>
-        </div>
-      );
-    }
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center">
-          <h1 className="text-4xl font-display font-bold text-[#E5C982] mb-6">Aguarda...</h1>
-          <p className="text-2xl text-white mb-8">Estás a gostar do jogo até agora?</p>
-          <div className="flex justify-center gap-6">
-            <button onClick={() => { setDecoyAnswered(true); onDecoyAnswer(); }} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-2xl rounded-lg hover:bg-[#E5C982] transition">Sim</button>
-            <button onClick={() => { setDecoyAnswered(true); onDecoyAnswer(); }} className="px-10 py-4 bg-[#291923] text-white border border-[#D8B66C] font-bold text-2xl rounded-lg hover:border-[#E5C982] transition">Não</button>
-          </div>
-        </div>
-      </div>
-    );
+    return <DecoyScreen onDecoyAnswer={onDecoyAnswer} />;
   }
 
-  // ESCOLHAS DO TRAIDOR (Matar, Recrutar ou Ignorar)
+  // Escolhas do Traidor
   if (traitorChoices) {
-    return (
-      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
-        <div className="text-center">
-          <h1 className="text-4xl font-display font-bold text-red-500 mb-8">Escolhe a tua Ação</h1>
-          <div className="space-y-4">
-            {traitorChoices.options.includes('kill') && <button onClick={() => onTraitorChoice('kill')} className="block w-80 py-4 bg-red-900/40 border border-red-500 text-white font-bold text-xl rounded-lg hover:bg-red-900/80 transition">🗡️ Assassinar</button>}
-            {traitorChoices.options.includes('recruit') && <button onClick={() => onTraitorChoice('recruit')} className="block w-80 py-4 bg-[#291923] border border-[#D8B66C] text-[#E5C982] font-bold text-xl rounded-lg hover:bg-[#412734] transition">🎭 Recrutar</button>}
-            {traitorChoices.options.includes('skip') && <button onClick={() => onTraitorChoice('skip')} className="block w-80 py-4 bg-[#291923] border border-white/20 text-white/60 font-bold text-xl rounded-lg hover:bg-[#412734] transition">Passar a Noite</button>}
-          </div>
-        </div>
-      </div>
-    );
+    return <TraitorChoicesScreen choices={traitorChoices} onChoice={onTraitorChoice} />;
   }
 
-  // LISTA DE JOGADORES (Para o Traidor escolher a vítima ou recruta)
+  // Lista de jogadores para o Traidor (assassinar ou recrutar)
   if (showPlayerList) {
-    const playersToKill = playerState.players.filter(p => p.id !== playerId && p.alive);
     return (
-      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
-        <div className="text-center">
-          <h1 className="text-4xl font-display font-bold text-[#E5C982] mb-8">{showPlayerList.type === 'recruit' ? 'Quem queres recrutar?' : 'Quem queres assassinar?'}</h1>
-          <div className="space-y-4">
-            {playersToKill.map(player => (
-              <button key={player.id} 
-                onClick={() => showPlayerList.type === 'recruit' ? onTraitorRecruit(player.id) : onTraitorMurder(player.id)}
-                className="block w-80 py-4 bg-[#291923] border border-[#D8B66C]/30 text-white font-bold text-xl rounded-lg hover:border-[#D8B66C] transition">
-                {player.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      <TraitorPlayerListScreen
+        players={playerState.players}
+        type={showPlayerList.type}
+        playerId={playerId}
+        onSelect={showPlayerList.type === 'recruit' ? onTraitorRecruit : onTraitorMurder}
+      />
     );
   }
 
-  // CONVITE PARA RECRUTAMENTO (Só para o alvo)
+  // Convite para recrutamento
   if (recruitInvitation) {
-    return (
-      <div className="fixed inset-0 bg-black/95 flex items-center justify-center z-50">
-        <div className="text-center">
-          <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-8">🤝 Uma Proposta</h1>
-          <p className="text-2xl text-white mb-8">Foste escolhido para te juntares aos Traidores!</p>
-          <div className="flex justify-center gap-6">
-            <button onClick={() => onRecruitDecision(true)} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition">Aceitar</button>
-            <button onClick={() => onRecruitDecision(false)} className="px-10 py-4 bg-[#291923] text-white border border-[#D8B66C] font-bold text-xl rounded-lg hover:border-[#E5C982] transition">Recusar</button>
-          </div>
-        </div>
-      </div>
-    );
+    return <RecruitInvitationScreen onDecision={onRecruitDecision} />;
   }
 
-  // RESULTADO DO RECRUTAMENTO
+  // Resultado do recrutamento
   if (recruitResult) {
-    return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-        <div className="text-center">
-          <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-8">🤫 O Recrutamento</h1>
-          <p className="text-2xl text-white mb-8">
-            {recruitResult.accepted ? `${recruitResult.playerName} juntou-se aos Traidores!` : `${recruitResult.playerName} recusou o convite.`}
-          </p>
-          <p className="text-xl text-white/60 mb-8">Ninguém foi assassinado esta noite.</p>
-          <button onClick={onContinueAfterReveal} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition">Continuar</button>
-        </div>
-      </div>
-    );
+    return <RecruitResultScreen data={recruitResult} onContinue={onContinueAfterReveal} />;
   }
 
-  // RESULTADO DO ASSASSINATO
+  // Resultado do assassinato
   if (murderReveal) {
-    return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-        <div className="text-center">
-          {murderReveal.type === 'murder' ? (
-            <>
-              <div className="text-8xl mb-6">🗡️</div>
-              <h1 className="text-5xl font-display font-bold text-red-500 mb-6">Assassinato!</h1>
-              <p className="text-3xl text-white mb-4">{murderReveal.playerName} foi assassinado!</p>
-              <p className="text-xl text-white/70">Perdeu {murderReveal.lostGold} moedas.</p>
-            </>
-          ) : murderReveal.type === 'shield' ? (
-            <>
-              <div className="text-8xl mb-6">🛡️</div>
-              <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-6">O Escudo Protegeu!</h1>
-              <p className="text-2xl text-white mb-4">Ninguém foi assassinado. O alvo tinha um Escudo.</p>
-            </>
-          ) : (
-            <>
-              <div className="text-8xl mb-6">🌙</div>
-              <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-6">Ninguém Morreu</h1>
-              <p className="text-2xl text-white mb-4">Esta noite foi tranquila.</p>
-            </>
-          )}
-          
-          <button 
-            onClick={onContinueAfterReveal} 
-            className="mt-8 px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition"
-          >
-            Continuar
-          </button>
-        </div>
-      </div>
-    );
+    return <MurderRevealScreen data={murderReveal} onContinue={onContinueAfterReveal} />;
   }
 
-  // 2. INTRODUÇÃO DE FASE
+  // Introdução de fase
   if (phaseIntro) {
     return (
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-[#E5C982] mb-4">{phaseIntro.title}</h1>
-        <p className="text-xl mb-8">{phaseIntro.description}</p>
-        {isTraitor && phaseIntro.secretMission && <p className="text-red-400 mb-8">TAREFA SECRETA: {phaseIntro.secretMission}</p>}
-        <button onClick={onReady} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm">INICIAR FASE</button>
-      </div>
+      <PhaseIntroScreen
+        data={phaseIntro}
+        isTraitor={isTraitor}
+        onReady={onReady}
+      />
     );
   }
 
-  // 3. AVALIAÇÃO DA MISSÃO (Fiéis dão estrelas, Traidor confirma)
+  // Avaliação da missão
   if (isEvaluation) {
     return (
-      <div className="w-full max-w-6xl mx-auto p-4 text-center">
-        <h2 className="font-display text-3xl text-[#E5C982] mb-6">MISSÃO TERMINADA</h2>
-        <p className="text-[#F3EBDD] text-lg mb-10">A missão terminou. Todos devem avaliar esta missão.</p>
-        
-        {isTraitor ? (
-          <div className="mb-8">
-            <h3 className="text-2xl text-red-400 mb-4">Completaste a tua missão secreta?</h3>
-            <div className="flex justify-center gap-4 mb-6">
-              <button 
-                onClick={() => setTraitorAnswer(true)}
-                className={`px-8 py-4 font-bold rounded-sm transition ${traitorAnswer === true ? 'bg-[#D8B66C] text-[#291923] scale-105' : 'bg-[#291923] text-[#F3EBDD] border border-[#D8B66C]'}`}>
-                Sim, completei
-              </button>
-              <button 
-                onClick={() => setTraitorAnswer(false)}
-                className={`px-8 py-4 font-bold rounded-sm transition ${traitorAnswer === false ? 'bg-[#D8B66C] text-[#291923] scale-105' : 'bg-[#291923] text-[#F3EBDD] border border-[#D8B66C]'}`}>
-                Não, falhei
-              </button>
-            </div>
-            <button 
-              onClick={() => onEvaluation({ type: 'traitor_answer', value: traitorAnswer })}
-              disabled={traitorAnswer === null}
-              className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50 disabled:cursor-not-allowed">
-              Confirmar
-            </button>
-          </div>
-        ) : (
-          <div className="mb-8">
-            <h3 className="text-2xl text-[#F3EBDD] mb-4">Avalia a missão (1 a 5 estrelas)</h3>
-            <div className="flex justify-center gap-2 mb-6">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button key={star} onClick={() => setSelectedRating(star)} className={`text-5xl transition ${selectedRating >= star ? 'text-[#D8B66C]' : 'text-[#F3EBDD]/30'}`}>★</button>
-              ))}
-            </div>
-            <button 
-              onClick={() => onEvaluation({ type: 'faithful_rating', value: selectedRating })} 
-              disabled={selectedRating === 0} 
-              className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50 disabled:cursor-not-allowed">
-              Confirmar Avaliação
-            </button>
-          </div>
-        )}
-      </div>
+      <EvaluationScreen
+        playerState={playerState}
+        isTraitor={isTraitor}
+        onEvaluation={onEvaluation}
+      />
     );
   }
 
-  // 4. ARSENAL (Mini-jogo Individual)
+  // Fase do Arsenal
   if (playerState.phase === 'PHASE_3_ARMOURY') {
-    const task = playerState.arsenalTask || null;
-
-    if (!task) {
-      return (
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
-          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
-            <p className="text-[#F3EBDD]">A aguardar tarefa...</p>
-          </div>
-        </div>
-      );
-    }
-
-    const handleAddItem = () => {
-      setResultItems([...resultItems, '']);
-    };
-
-    const handleSubmitText = () => {
-      const validItems = resultItems.filter(item => item.trim() !== '');
-      onArsenalResultSubmit({ type: 'TEXT_FLOOD', items: validItems });
-    };
-
-    const handleSubmitTime = () => {
-      onArsenalResultSubmit({ type: 'TIME_GUESS', guessTime: parseInt(guessTime) });
-    };
-
-    // Agora a lógica do TIME_GUESS NÃO contém useEffect, apenas a UI
-    if (task.type === 'TIME_GUESS') {
-      // Função para parar a prancha (já definida fora, mas pode ser inline)
-      const handleStopPlank = () => {
-        setIsPlankRunning(false);
-        // Enviar o tempo real para o servidor
-        if (socket && roomData) {
-          socket.emit('stop_plank', { roomCode: roomData.roomCode, elapsedTime: plankSeconds });
-        }
-      };
-
-      return (
-        <div className="text-center">
-          <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
-          
-          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
-            <p className="text-[#F3EBDD] mb-4">{task.description}</p>
-          </div>
-
-          <div className="mb-6">
-            <p className="text-white mb-4">Quanto tempo (em segundos) achas que dura a prancha?</p>
-            <input
-              type="number"
-              value={guessTime}
-              onChange={(e) => setGuessTime(e.target.value)}
-              className="w-32 px-4 py-2 bg-[#291923] border border-[#D8B66C] text-white text-center rounded-sm mb-4"
-            />
-            <br />
-            <button onClick={handleSubmitTime} className="px-8 py-2 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">
-              Submeter Estimativa
-            </button>
-          </div>
-
-          {/* Cronómetro em tempo real da Prancha */}
-          <div className="mt-6 border-t border-[#D8B66C]/30 pt-6">
-            <p className="text-white mb-4">⏱️ Cronómetro da Prancha</p>
-            <div className="text-6xl font-display text-[#D8B66C] mb-4">
-              {plankSeconds}s
-            </div>
-            <div className="flex justify-center gap-4">
-              <button 
-                onClick={() => setIsPlankRunning(true)}
-                disabled={isPlankRunning}
-                className="px-8 py-2 bg-[#291923] text-white border border-[#D8B66C] rounded-sm disabled:opacity-50"
-              >
-                Iniciar Prancha
-              </button>
-              <button 
-                onClick={handleStopPlank}
-                disabled={!isPlankRunning}
-                className="px-8 py-2 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50"
-              >
-                Parar Prancha
-              </button>
-            </div>
-            <p className="text-xs text-white/60 mt-2">Qualquer jogador pode parar o cronómetro.</p>
-          </div>
-
-          <p className="text-xs text-white/60 mt-4">Aguarda que todos os jogadores submetam os resultados...</p>
-        </div>
-      );
-    }
-
-    // TEXT_FLOOD (Palavras/Países) – este não tinha hooks, mantém-se igual
     return (
-      <div className="text-center">
-        <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
-        
-        <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
-          <p className="text-[#F3EBDD] mb-4">{task.description}</p>
-          {task.rule && <p className="text-sm text-[#F3EBDD]/70">Regra: {task.rule}</p>}
-        </div>
-
-        <div className="mb-6">
-          <p className="text-white mb-4">Escreve as palavras/países (um por linha)</p>
-          <div className="flex flex-col items-center gap-2 mb-4">
-            {resultItems.map((item, idx) => (
-              <input
-                key={idx}
-                type="text"
-                value={item}
-                onChange={(e) => {
-                  const newItems = [...resultItems];
-                  newItems[idx] = e.target.value;
-                  setResultItems(newItems);
-                }}
-                className="w-64 px-4 py-2 bg-[#291923] border border-[#D8B66C] text-white rounded-sm"
-              />
-            ))}
-          </div>
-          <button onClick={handleAddItem} className="px-4 py-2 bg-[#291923] text-white border border-[#D8B66C] rounded-sm mr-2">
-            Adicionar Linha
-          </button>
-          <button onClick={handleSubmitText} className="px-8 py-2 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">
-            Submeter Lista
-          </button>
-        </div>
-        <p className="text-xs text-white/60">Aguarda que todos os jogadores submetam os resultados...</p>
-      </div>
+      <ArsenalPhase
+        playerState={playerState}
+        socket={socket}
+        roomData={roomData}
+        onArsenalResultSubmit={onArsenalResultSubmit}
+      />
     );
   }
 
-  // 5. FASE DE VOTAÇÃO (Expulsão com Dagger)
+  // Fase de Votação (Expulsão)
   if (playerState.phase === 'PHASE_2_BANISHMENT') {
-    const votablePlayers = playerState.players.filter(p => p.id !== playerId && p.alive);
-    const hasDagger = playerState.inventory && playerState.inventory.includes('dagger');
-
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#D8B66C]/10 rounded-full blur-3xl pointer-events-none"></div>
-        
-        <div className="relative z-10 text-center">
-          <h1 className="font-display text-5xl font-bold text-[#E5C982] mb-4 tracking-widest">A EXPULSÃO</h1>
-          <p className="text-[#F3EBDD] text-xl mb-8">Quem será o traidor? A decisão está nas tuas mãos.</p>
-          
-          <div className="mb-8">
-            <div className="text-7xl font-bold text-[#D8B66C] font-display drop-shadow-lg">{timer}</div>
-            <p className="text-sm text-[#F3EBDD]/60 uppercase tracking-widest mt-2">Tempo restante</p>
-          </div>
-
-          <div className="space-y-4 mb-8 max-w-md mx-auto">
-            {votablePlayers.map(player => (
-              <div 
-                key={player.id} 
-                onClick={() => setSelectedVote(player.id)}
-                className={`bg-[#291923] border-2 p-5 rounded-lg cursor-pointer transition-all duration-300 ${selectedVote === player.id ? 'border-[#D8B66C] bg-[#412734] scale-105 shadow-lg' : 'border-[#D8B66C]/30 hover:border-[#D8B66C] hover:bg-[#291923]/80'}`}
-              >
-                <span className="text-2xl text-white font-bold">{player.name}</span>
-              </div>
-            ))}
-          </div>
-
-          {hasDagger && (
-            <div className="mb-6 flex items-center justify-center gap-3 text-[#E5C982]">
-              <span className="text-lg">Usar Adaga (2 Votos):</span>
-              <input type="checkbox" checked={useDagger} onChange={(e) => setUseDagger(e.target.checked)} className="w-6 h-6 accent-[#D8B66C] cursor-pointer" />
-            </div>
-          )}
-
-          <button 
-            onClick={() => onVote(selectedVote, useDagger)}
-            disabled={!selectedVote}
-            className="px-12 py-4 bg-[#D8B66C] text-[#291923] font-bold text-2xl rounded-lg shadow-soft hover:bg-[#E5C982] transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            CONFIRMAR VOTO
-          </button>
-        </div>
-      </div>
+      <BanishmentVoteScreen
+        playerState={playerState}
+        onVote={onVote}
+        timer={playerState.timer}
+      />
     );
   }
 
-  // 6. TABULEIRO NORMAL (Missão) – este é o retorno final
+  // Missão (padrão)
   return (
-    <div className="relative">
-      <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982]">?</button>
-
-      {/* TESOURO COMUM E VALOR EM JOGO */}
-      <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-6 flex justify-center items-center gap-8 shadow-soft">
-          <div className="text-center">
-              <span className="text-3xl">💰</span>
-              <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.coins || 0} Moedas</div>
-              <div className="text-xs text-[#F3EBDD]/60">Acumulado no Tesouro</div>
-          </div>
-          <div className="w-px h-10 bg-[#D8B66C]/30"></div>
-          <div className="text-center">
-              <span className="text-3xl">🏆</span>
-              <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.bars || 0} Barras</div>
-              <div className="text-xs text-[#F3EBDD]/60">Barras</div>
-          </div>
-          <div className="w-px h-10 bg-[#D8B66C]/30"></div>
-          <div className="text-center">
-              <span className="text-3xl">⚔️</span>
-              <div className="text-2xl font-bold text-[#D8B66C]">{playerState.reward || "Variável"}</div>
-              <div className="text-xs text-[#F3EBDD]/60">Valor em Jogo</div>
-          </div>
-      </div>
-
-      {/* TIMER EM DESTAQUE */}
-      <div className="text-center mb-8">
-        <div className="inline-block bg-[#D8B66C] text-[#291923] font-display text-5xl font-bold px-10 py-4 rounded-lg shadow-soft">
-          {timer}s
-        </div>
-        <p className="text-white mt-2">Tempo restante</p>
-      </div>
-
-      {/* Missão */}
-      <div className="bg-[#291923] border border-[#D8B66C] p-8 rounded-md">
-        <h2 className="font-display text-3xl font-bold text-[#E5C982] mb-4 text-center">{playerState.currentMission.title}</h2>
-        <p className="text-[#F3EBDD] text-lg mb-8 text-center">{playerState.currentMission.description}</p>
-
-        {/* Lógica flexível para diferentes tipos de missões */}
-        {playerState.currentMission.type === 'WORD_GUESSER' && (
-          <div className="text-center">
-            <p className="text-white mb-4">Tentem adivinhar a palavra secreta de 5 letras.</p>
-            <button className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Enviar Palavra</button>
-          </div>
-        )}
-
-        {playerState.currentMission.type === 'PHYSICAL_OBJECT_HUNT' && (
-          <div className="text-center">
-            <p className="text-white mb-4">Encontrem os objetos e tirem fotos com o vosso telemóvel.</p>
-            <button className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Carregar Fotos</button>
-          </div>
-        )}
-
-        {/* DESENHO COLETIVO: Presencial vs Remoto */}
-        {playerState.currentMission.type === 'COLLABORATIVE_DRAWING' && (
-          <div className="text-center">
-            {playerState.gameMode === 'in_person' ? (
-              <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6 text-left">
-                <h3 className="text-2xl font-bold text-white mb-4 text-center">🎨 Desenho nas Costas</h3>
-                <ol className="list-decimal text-[#F3EBDD] space-y-2 mb-6">
-                  <li><strong>Formem uma fila</strong> e definam a ordem dos jogadores, do primeiro ao último.</li>
-                  <li>O <strong>primeiro jogador</strong> recebe secretamente uma palavra ou objeto que terá de transmitir.</li>
-                  <li>Sem falar, o primeiro jogador <strong>desenha a palavra com o dedo nas costas do segundo jogador</strong>.</li>
-                  <li>O segundo jogador tenta perceber o que sentiu e, <strong>sem fazer perguntas</strong>, desenha a mesma coisa nas costas do terceiro.</li>
-                  <li>O processo continua, passando o desenho de jogador para jogador, até chegar ao <strong>último jogador da fila</strong>.</li>
-                  <li>O último jogador deve dizer <strong>em voz alta o que acha que foi desenhado nas suas costas</strong>.</li>
-                  <li>🎉 <strong>Se a resposta for a palavra/objeto original, a equipa ganha!</strong></li>
-                </ol>
-                <p className="text-[#F3EBDD]/80 mb-6"><strong>Regra importante:</strong> ninguém pode falar, mostrar o desenho ou dar pistas durante a transmissão. A ideia é descobrir <strong>até que ponto a mensagem consegue chegar ao fim sem se perder pelo caminho!</strong></p>
-                
-                <div className="mb-6">
-                  <p className="text-white mb-2">Palavra/objeto secreto (apenas para o 1º jogador):</p>
-                  <input 
-                    type="text" 
-                    value={missionSecretWord}
-                    onChange={(e) => setMissionSecretWord(e.target.value)}
-                    className="w-64 px-4 py-2 bg-[#291923] border border-[#D8B66C] text-white rounded-sm mb-4"
-                    placeholder="Ex: Barco"
-                  />
-                </div>
-
-                {/* Botões para concluir a missão */}
-                <div className="text-center">
-                  <button 
-                    onClick={() => onMissionOutcome(true)} // Ganharam o prémio
-                    className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm mr-2"
-                  >
-                    ✅ Concluir com Sucesso
-                  </button>
-                  <button 
-                    onClick={() => onMissionOutcome(false)} // Falharam a missão
-                    className="px-8 py-3 bg-[#291923] text-white border border-[#D8B66C] font-bold rounded-sm"
-                  >
-                    ❌ Falhar Missão
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-white mb-4">Abram o quadro para desenharem em conjunto.</p>
-                <button onClick={() => setOpenCanvas(true)} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Abrir Quadro</button>
-                <button onClick={onEndMission} className="ml-2 px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Concluir Missão</button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* MISSÕES QUE PRECISAM DE INPUT NUMÉRICO (EX: FOOTSIES) */}
-        {playerState.currentMission.requiresNumberInput && (
-          <div className="text-center">
-            <p className="text-white mb-4">Quantos passes conseguiram?</p>
-            <input 
-              type="number" 
-              min="0"
-              value={missionValue}
-              onChange={(e) => setMissionValue(e.target.value)}
-              className="w-32 px-4 py-2 bg-[#291923] border border-[#D8B66C] text-white text-center text-xl rounded-sm mb-4"
-            />
-            <br />
-            <button 
-              onClick={() => onMissionValueSubmit(missionValue)}
-              className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm"
-            >
-              Submeter Valor e Terminar
-            </button>
-          </div>
-        )}
-
-        {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(playerState.currentMission.type) && (
-          <div className="text-center">
-            <p className="text-white mb-4">Sigam as instruções da missão e cliquem quando terminarem.</p>
-            <button onClick={onEndMission} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Concluir Missão</button>
-          </div>
-        )}
-      </div>
-
-      {/* Modal do Desenho */}
-      {openCanvas && (
-        <DrawingCanvas 
-          socket={socket}
-          roomCode={roomData.roomCode}
-        />
-      )}
-    </div>
+    <MissionPhase
+      playerState={playerState}
+      onOpenHelp={onOpenHelp}
+      onEndMission={onEndMission}
+      onMissionValueSubmit={onMissionValueSubmit}
+      onMissionOutcome={onMissionOutcome}
+      socket={socket}
+      roomData={roomData}
+    />
   );
 }
