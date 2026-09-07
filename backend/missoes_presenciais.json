@@ -18,15 +18,16 @@
     "description": "O árbitro lê uma palavra de 5 letras. Os adivinhadores têm 6 tentativas.",
     "reward": "1 peça de ouro por adivinhar em 0-6 tentativas.",
     "traitorSecretMissions": ["Escolher uma palavra errada para confundir o grupo"]
-  },  
+  },
   {
     "id": "presencial_drawing",
     "mode": "in_person",
     "title": "O Desenho nas Costas (Coletivo)",
     "type": "COLLABORATIVE_DRAWING",
     "timeLimit": 180,
-    "description": "1. Definam a ordem dos jogadores. 2. O 1º recebe a palavra e desenha-a nas costas do 2º. 3. O 2º desenha o que sentiu nas costas do 3º. 4. Repitam até ao último, que diz o objeto em voz alta. Se acertarem, ganham!",
+    "description": "Sem falar, desenhem uma palavra nas costas uns dos outros até chegar ao último jogador.",
     "reward": "3 peças de ouro",
+    "secretWord": "BARCO",
     "traitorSecretMissions": ["Desenhar uma forma errada nas costas para confundir o jogador seguinte"]
   },
   {

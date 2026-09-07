@@ -323,6 +323,11 @@ function App() {
               onTraitorRecruit={(targetId) => socket.emit('traitor_recruit_choice', { roomCode: roomData.roomCode, targetPlayerId: targetId })}
               onDecoyAnswer={() => socket.emit('decoy_answer', { roomCode: roomData.roomCode })}
               onRecruitDecision={(accepted) => socket.emit('recruit_decision', { roomCode: roomData.roomCode, accepted })}
+              onMissionOutcome={(success) => {
+                  if (roomData && roomData.roomCode) {
+                      socket.emit('end_mission', { roomCode: roomData.roomCode, outcome: success });
+                  }
+              }}
               onArsenalResultSubmit={(data) => {
                   if (roomData && roomData.roomCode) {
                       socket.emit('submit_arsenal_task_result', { roomCode: roomData.roomCode, resultData: data });

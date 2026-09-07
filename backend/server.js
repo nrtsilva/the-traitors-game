@@ -70,7 +70,7 @@ function createInitialRoomState(hostId, hostName) {
         },
         players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 }, phaseTimer: null, currentMissionData: null, readyCount: 0,
-        endMissionVotes: 0, phaseIntroData: null, continueVotes: 0, drawingState: null
+        endMissionVotes: 0, phaseIntroData: null, continueVotes: 0, drawingState: null, currentArsenalTask: null, arsenalReadyCount: 0
     };
 }
 
@@ -284,8 +284,14 @@ io.on('connection', (socket) => {
                         room.phaseTimer = setTimeout(() => processBanishment(room), debateTime * 1000);
                     } 
                     else if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
-                        io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: null });
-                    } 
+						io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: null });
+						
+						// Enviar a tarefa imediatamente sem esperar por ações
+						const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
+						const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
+						room.currentArsenalTask = tarefaAleatoria;
+						io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
+					} 
                     else {
                         io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
                         startMissionTimer(room);
@@ -491,27 +497,23 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('end_mission', ({ roomCode }) => {
-        const cleanCode = (roomCode || "").trim().toUpperCase();
-        const room = rooms[cleanCode];
-        if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
+    socket.on('end_mission', ({ roomCode, outcome }) => {
+		const cleanCode = (roomCode || "").trim().toUpperCase();
+		const room = rooms[cleanCode];
+		if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
 
-        const player = room.players.find(p => p.id === socket.id);
-        if (!player || !player.alive) return;
+		// Se outcome for true, adiciona o prémio ao cofre
+		if (outcome) {
+			const reward = parseInt(room.currentMissionData.reward) || 0;
+			room.prizeFund.coins += reward;
+			convertCoinsToBars(room);
+		}
 
-        if (!player.hasEndMissionVote) {
-            player.hasEndMissionVote = true;
-            room.endMissionVotes++;
-            const aliveCount = room.players.filter(p => p.alive).length;
-            io.to(cleanCode).emit('end_mission_vote_update', { votes: room.endMissionVotes, total: aliveCount });
-
-            if (room.endMissionVotes >= aliveCount) {
-                if (room.phaseTimer) clearTimeout(room.phaseTimer);
-                room.phaseTimer = null;
-                io.to(cleanCode).emit('mission_evaluation');
-            }
-        }
-    });
+		// Limpa os estados e avança para a avaliação
+		room.players.forEach(p => p.hasEndMissionVote = false);
+		room.endMissionVotes = 0;
+		io.to(cleanCode).emit('mission_evaluation');
+	});
 	
     socket.on('submit_mission_value', ({ roomCode, value }) => {
         try {
