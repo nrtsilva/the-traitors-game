@@ -416,18 +416,26 @@ return (
     <div className="relative">
       <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982]">?</button>
 
-      {/* TESOURO COMUM - SEMPRE VISÍVEL */}
+      {/* TESOURO COMUM E VALOR EM JOGO */}
       <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-6 flex justify-center items-center gap-8 shadow-soft">
           <div className="text-center">
               <span className="text-3xl">💰</span>
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.coins || 0} Moedas</div>
+              <div className="text-xs text-[#F3EBDD]/60">Acumulado no Tesouro</div>
           </div>
           <div className="w-px h-10 bg-[#D8B66C]/30"></div>
           <div className="text-center">
               <span className="text-3xl">🏆</span>
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.bars || 0} Barras</div>
+              <div className="text-xs text-[#F3EBDD]/60">Barras</div>
           </div>
-          <p className="text-xs text-white/60 absolute bottom-1">Prémio final a dividir</p>
+          {/* NOVO: Valor em Jogo */}
+          <div className="w-px h-10 bg-[#D8B66C]/30"></div>
+          <div className="text-center">
+              <span className="text-3xl">⚔️</span>
+              <div className="text-2xl font-bold text-[#D8B66C]">{playerState.reward || "Variável"}</div>
+              <div className="text-xs text-[#F3EBDD]/60">Valor em Jogo</div>
+          </div>
       </div>
 
       {/* TIMER EM DESTAQUE */}
@@ -465,7 +473,7 @@ return (
           </div>
         )}
 
-        {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION'].includes(playerState.currentMission.type) && (
+        {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(playerState.currentMission.type) && (
           <div className="text-center">
             <p className="text-white mb-4">Sigam as instruções da missão e cliquem quando terminarem.</p>
             <button onClick={onEndMission} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Concluir Missão</button>

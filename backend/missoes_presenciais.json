@@ -1,20 +1,42 @@
 [
   {
-    "id": "presencial_1",
+    "id": "presencial_footsies",
     "mode": "in_person",
-    "title": "Caça aos Objetos",
-    "type": "PHYSICAL_OBJECT_HUNT",
+    "title": "Footsies",
+    "type": "PHYSICAL_ACTION",
     "timeLimit": 120,
-    "description": "Encontrem objetos que cumpram os requisitos: redondo, azul, de papel, maior que uma bola de futebol.",
-    "traitorSecretMissions": ["Esconder um objeto azul", "Escolher um objeto errado"]
+    "description": "Sentem-se num círculo. Usando apenas os pés, passem uma carta. Se cair, recomeçam. Qual é o maior número de passes sem deixar cair?",
+    "reward": "Número de passes ÷ 4, arredondado para baixo.",
+    "traitorSecretMissions": ["Passar a carta para trás sem os outros perceberem"]
   },
   {
-    "id": "presencial_2",
+    "id": "presencial_word_guesser",
     "mode": "in_person",
-    "title": "Adivinha a Palavra",
+    "title": "Word Guesser",
     "type": "WORD_GUESSER",
     "timeLimit": 180,
-    "description": "O árbitro lê uma palavra de 5 letras. Os outros têm 6 tentativas.",
-    "traitorSecretMissions": ["Escolher uma palavra errada", "Confundir o grupo"]
+    "description": "O árbitro lê uma palavra de 5 letras. Os adivinhadores têm 6 tentativas.",
+    "reward": "1 peça de ouro por adivinhar em 0-6 tentativas.",
+    "traitorSecretMissions": ["Escolher uma palavra errada para confundir o grupo"]
+  },
+  {
+    "id": "presencial_drawing",
+    "mode": "in_person",
+    "title": "The Collective Drawing",
+    "type": "COLLABORATIVE_DRAWING",
+    "timeLimit": 180,
+    "description": "Sem discutir, desenhem coletivamente um objeto usando apenas formas geométricas. O adivinhador tem 3 minutos para descobrir.",
+    "reward": "3 peças de ouro",
+    "traitorSecretMissions": ["Desenhar uma linha reta por cima da forma anterior para apagar o desenho"]
+  },
+  {
+    "id": "presencial_awkward",
+    "mode": "in_person",
+    "title": "Awkward",
+    "type": "CATEGORY_GAME",
+    "timeLimit": 120,
+    "description": "Cada jogador escolhe uma afirmação (1 a 6). Ganham ouro por cada afirmação escolhida apenas uma vez.",
+    "reward": "1 peça de ouro por resposta única",
+    "traitorSecretMissions": ["Escolher a mesma afirmação que outro para roubar o ouro"]
   }
 ]

@@ -208,7 +208,7 @@ io.on('connection', (socket) => {
             };
 
             room.players.forEach(player => {
-                const pState = { phase: room.phase, roundNumber: room.roundNumber, settings: room.settings, prizeFund: room.prizeFund, currentMission: room.currentMissionData, role: player.role, gameMode: gameMode, roomCode: cleanCode, gold: player.gold, bars: player.bars, players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })), secretMissions: (player.role === 'traitor') ? player.secretMissions : [] };
+                const pState = { phase: room.phase, roundNumber: room.roundNumber, settings: room.settings, prizeFund: room.prizeFund, currentMission: room.currentMissionData, reward: room.currentMissionData.reward, role: player.role, gameMode: gameMode, roomCode: cleanCode, gold: player.gold, bars: player.bars, players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })), secretMissions: (player.role === 'traitor') ? player.secretMissions : [] };
                 io.to(player.id).emit('game_started', pState);
             });
 

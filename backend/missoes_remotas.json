@@ -1,20 +1,22 @@
 [
   {
-    "id": "remota_1",
+    "id": "remota_treasure_hunt",
+    "mode": "remote",
+    "title": "Caça aos Objetos",
+    "type": "PHYSICAL_OBJECT_HUNT",
+    "timeLimit": 300,
+    "description": "Encontrem os 6 objetos e tirem fotos com o vosso telemóvel. 1) Contém letras. 2) Redondo. 3) Azul. 4) Mais pequeno que um rato. 5) Feito de papel. 6) Maior que uma bola de futebol.",
+    "reward": "4 peças de ouro",
+    "traitorSecretMissions": ["Esconder um dos objetos requisitados", "Tirar foto de um objeto que não cumpre os requisitos"]
+  },
+  {
+    "id": "remota_ranking",
     "mode": "remote",
     "title": "Ranking de Países",
     "type": "RANKING",
     "timeLimit": 120,
     "description": "Ordenem os países por população.",
-    "traitorSecretMissions": ["Colocar um país errado no topo"]
-  },
-  {
-    "id": "remota_2",
-    "mode": "remote",
-    "title": "A Foto Misteriosa",
-    "type": "PHOTO_UPLOAD",
-    "timeLimit": 120,
-    "description": "Tirem uma foto da vossa cozinha e adivinhem de quem é.",
-    "traitorSecretMissions": ["Tirar foto de um ângulo errado"]
+    "reward": "2 peças de ouro por cada 2 países na posição correta",
+    "traitorSecretMissions": ["Colocar um país errado no topo da lista"]
   }
 ]
