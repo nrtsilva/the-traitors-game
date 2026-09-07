@@ -70,7 +70,7 @@ function createInitialRoomState(hostId, hostName) {
         },
         players: [{ id: hostId, name: hostName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false }],
         prizeFund: { bars: 0, coins: 0 }, phaseTimer: null, currentMissionData: null, readyCount: 0,
-        endMissionVotes: 0, phaseIntroData: null, continueVotes: 0
+        endMissionVotes: 0, phaseIntroData: null, continueVotes: 0, drawingState: null
     };
 }
 
@@ -187,6 +187,29 @@ io.on('connection', (socket) => {
             const missoes = getMissoesPorModo(gameMode);
             const randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
             room.currentMissionData = randomMissao;
+			
+			// Inicializar estado para desenho coletivo
+			if (room.currentMissionData.type === 'COLLABORATIVE_DRAWING') {
+				const ids = room.players.map(p => p.id);
+				const guesserId = ids[ids.length - 1]; // O último jogador é o adivinhador
+				const secretWord = "BICICLETA"; // Para já, palavra fixa. (Depois pode ser aleatória de uma lista)
+				
+				room.drawingState = {
+					order: ids,
+					currentDrawerIndex: 0,
+					secretWord: secretWord,
+					guesserId: guesserId
+				};
+
+				// Enviar a palavra secreta a todos os desenhadores
+				room.players.forEach(player => {
+					if (player.id === guesserId) {
+						io.to(player.id).emit('drawing_status', { type: 'guesser', isYourTurn: false });
+					} else {
+						io.to(player.id).emit('drawing_status', { type: 'drawer', secretWord: secretWord, isYourTurn: (player.id === ids[0]) });
+					}
+				});
+			}
 
             room.players.forEach(player => {
                 if (player.role === 'traitor') {
@@ -489,7 +512,59 @@ io.on('connection', (socket) => {
             }
         }
     });
+	
+	socket.on('drawing_update', ({ roomCode, drawing }) => {
+		const cleanCode = (roomCode || "").trim().toUpperCase();
+		const room = rooms[cleanCode];
+		if (!room || !room.drawingState) return;
 
+		const currentDrawerId = room.drawingState.order[room.drawingState.currentDrawerIndex];
+		if (socket.id === currentDrawerId) {
+			io.to(cleanCode).emit('drawing_update', { drawing });
+		}
+	});
+
+	socket.on('next_drawer', ({ roomCode }) => {
+		const cleanCode = (roomCode || "").trim().toUpperCase();
+		const room = rooms[cleanCode];
+		if (!room || !room.drawingState) return;
+
+		const currentDrawerId = room.drawingState.order[room.drawingState.currentDrawerIndex];
+		if (socket.id !== currentDrawerId) return;
+
+		room.drawingState.currentDrawerIndex++;
+		
+		if (room.drawingState.currentDrawerIndex >= room.drawingState.order.length - 1) {
+			// Chegou ao último (o adivinhador)
+			io.to(room.drawingState.guesserId).emit('drawing_status', { type: 'guessing', isYourTurn: true });
+		} else {
+			const nextId = room.drawingState.order[room.drawingState.currentDrawerIndex];
+			io.to(nextId).emit('drawing_status', { type: 'turn_started', isYourTurn: true });
+			// Avisar os outros que não é a vez deles
+			room.players.forEach(p => {
+				if (p.id !== nextId && p.id !== room.drawingState.guesserId) {
+					io.to(p.id).emit('drawing_status', { type: 'drawer', secretWord: room.drawingState.secretWord, isYourTurn: false });
+				}
+			});
+		}
+	});
+
+	socket.on('drawing_guess', ({ roomCode, guess }) => {
+		const cleanCode = (roomCode || "").trim().toUpperCase();
+		const room = rooms[cleanCode];
+		if (!room || !room.drawingState) return;
+
+		if (socket.id !== room.drawingState.guesserId) return;
+
+		if (guess.trim().toUpperCase() === room.drawingState.secretWord) {
+			// Acertou! Termina a missão com sucesso.
+			io.to(cleanCode).emit('mission_evaluation'); // Avança para a avaliação
+		} else {
+			// Errou, o jogador pode tentar de novo (opcional).
+			io.to(socket.id).emit('drawing_status', { type: 'guessing', isYourTurn: true, error: "Não foi dessa vez. Tenta novamente." });
+		}
+	});
+	
     socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();

@@ -1,7 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import DrawingCanvas from './DrawingCanvas';
 
-export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvaluation, onReady, onEvaluation, onVote, onArsenalAction, banishmentReveal, arsenalResult, playerId, onEndMission, blindfold, onDecoyAnswer, traitorChoices, onTraitorChoice, showPlayerList, onTraitorMurder, onTraitorRecruit, recruitInvitation, onRecruitDecision, recruitResult, murderReveal, onContinueAfterReveal, gameOver, roomData }) {
+export default function GameBoard({ 
+  playerState, 
+  onOpenHelp, 
+  phaseIntro, 
+  isEvaluation, 
+  onReady, 
+  onEvaluation, 
+  onVote, 
+  onArsenalAction, 
+  banishmentReveal, 
+  arsenalResult, 
+  playerId, 
+  onEndMission, 
+  blindfold, 
+  onDecoyAnswer, 
+  traitorChoices, 
+  onTraitorChoice, 
+  showPlayerList, 
+  onTraitorMurder, 
+  onTraitorRecruit, 
+  recruitInvitation, 
+  onRecruitDecision, 
+  recruitResult, 
+  murderReveal, 
+  onContinueAfterReveal, 
+  gameOver, 
+  roomData,
+  socket
+}) {
   const isTraitor = playerState.role === 'traitor';
   const [selectedRating, setSelectedRating] = useState(0);
   const [traitorAnswer, setTraitorAnswer] = useState(null);
@@ -329,7 +357,6 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
 
   // 4. ARSENAL (Mini-jogo Individual - Escolher número)
   if (playerState.phase === 'PHASE_3_ARMOURY') {
-    // Tarefa do Arsenal (vinda do servidor)
     const task = playerState.arsenalTask || null;
 
     return (
@@ -467,15 +494,25 @@ return (
           </div>
         )}
 
+        {/* DESENHO COLETIVO: Presencial vs Remoto */}
         {playerState.currentMission.type === 'COLLABORATIVE_DRAWING' && (
           <div className="text-center">
-            <p className="text-white mb-4">Siga as instruções acima. Para a versão online, abram o quadro.</p>
-            {/* Botão para Abrir o Quadro (função para versão remota) */}
-            <button onClick={() => setOpenCanvas(true)} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Abrir Quadro</button>
+            {playerState.gameMode === 'in_person' ? (
+              <>
+                <p className="text-white mb-4">Sigam as instruções. O desenho é feito nas costas do colega!</p>
+                <button onClick={onEndMission} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Concluir Missão</button>
+              </>
+            ) : (
+              <>
+                <p className="text-white mb-4">Abram o quadro para desenharem em conjunto.</p>
+                <button onClick={() => setOpenCanvas(true)} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Abrir Quadro</button>
+                <button onClick={onEndMission} className="ml-2 px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Concluir Missão</button>
+              </>
+            )}
           </div>
         )}
 
-        {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING', 'COLLABORATIVE_DRAWING'].includes(playerState.currentMission.type) && (
+        {['TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(playerState.currentMission.type) && (
           <div className="text-center">
             <p className="text-white mb-4">Sigam as instruções da missão e cliquem quando terminarem.</p>
             <button onClick={onEndMission} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Concluir Missão</button>

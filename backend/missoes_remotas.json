@@ -18,5 +18,15 @@
     "description": "Ordenem os países por população.",
     "reward": "2 peças de ouro por cada 2 países na posição correta",
     "traitorSecretMissions": ["Colocar um país errado no topo da lista"]
+  },
+  {
+    "id": "remota_drawing",
+    "mode": "remote",
+    "title": "O Desenho Coletivo (Online)",
+    "type": "COLLABORATIVE_DRAWING",
+    "timeLimit": 180,
+    "description": "1. Todos, exceto o último jogador, recebem a palavra misteriosa. 2. Por ordem, cada jogador desenha uma forma geométrica no quadro. 3. O último jogador adivinha o objeto. Se acertarem, ganham!",
+    "reward": "3 peças de ouro",
+    "traitorSecretMissions": ["Desenhar uma forma errada para sabotar o desenho"]
   }
 ]
