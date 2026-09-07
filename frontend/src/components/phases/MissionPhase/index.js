@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import MissionCollaborativeDrawing from './MissionCollaborativeDrawing';
 import MissionNumberInput from './MissionNumberInput';
 import MissionDefault from './MissionDefault';
 
 export default function MissionPhase(props) {
-  const { playerState, onOpenHelp, onEndMission, onMissionValueSubmit, onMissionOutcome } = props;
+  const { playerState, onOpenHelp } = props;
   const mission = playerState.currentMission;
 
   // Renderiza o conteúdo específico da missão

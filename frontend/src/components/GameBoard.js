@@ -1,4 +1,5 @@
 import React from 'react';
+
 import GameOverScreen from './phases/GameOverScreen';
 import BanishmentRevealScreen from './phases/BanishmentRevealScreen';
 import ArsenalResultScreen from './phases/ArsenalResultScreen';
@@ -46,8 +47,6 @@ export default function GameBoard({
   onArsenalResultSubmit,
   onMissionOutcome
 }) {
-  const isTraitor = playerState.role === 'traitor';
-
   // Fim de Jogo
   if (gameOver) {
     return <GameOverScreen gameOver={gameOver} />;
@@ -110,7 +109,7 @@ export default function GameBoard({
     return (
       <PhaseIntroScreen
         data={phaseIntro}
-        isTraitor={isTraitor}
+        isTraitor={playerState.role === 'traitor'}
         onReady={onReady}
       />
     );
@@ -118,39 +117,20 @@ export default function GameBoard({
 
   // Avaliação da missão
   if (isEvaluation) {
-    return (
-      <EvaluationScreen
-        playerState={playerState}
-        isTraitor={isTraitor}
-        onEvaluation={onEvaluation}
-      />
-    );
+    return <EvaluationScreen {...{ playerState, isTraitor: playerState.role === 'traitor', onEvaluation }} />;
   }
 
   // Fase do Arsenal
   if (playerState.phase === 'PHASE_3_ARMOURY') {
-    return (
-      <ArsenalPhase
-        playerState={playerState}
-        socket={socket}
-        roomData={roomData}
-        onArsenalResultSubmit={onArsenalResultSubmit}
-      />
-    );
+    return <ArsenalPhase {...{ playerState, socket, roomData, onArsenalResultSubmit }} />;
   }
 
   // Fase de Votação (Expulsão)
   if (playerState.phase === 'PHASE_2_BANISHMENT') {
-    return (
-      <BanishmentVoteScreen
-        playerState={playerState}
-        onVote={onVote}
-        timer={playerState.timer}
-      />
-    );
+    return <BanishmentVoteScreen {...{ playerState, onVote, timer: playerState.timer }} />;
   }
 
-  // Missão (padrão)
+  // Missão (padrão) – passa todas as props necessárias
   return (
     <MissionPhase
       playerState={playerState}

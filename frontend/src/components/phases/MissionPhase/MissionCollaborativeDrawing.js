@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DrawingCanvas from '../../DrawingCanvas';
 
-export default function MissionCollaborativeDrawing({ playerState, socket, roomData, onMissionOutcome }) {
+export default function MissionCollaborativeDrawing({ playerState, onMissionOutcome, socket, roomData }) {
   const [openCanvas, setOpenCanvas] = useState(false);
   const [missionSecretWord, setMissionSecretWord] = useState('');
 
@@ -19,11 +19,11 @@ export default function MissionCollaborativeDrawing({ playerState, socket, roomD
           <li>🎉 <strong>Se a resposta for a palavra/objeto original, a equipa ganha!</strong></li>
         </ol>
         <p className="text-[#F3EBDD]/80 mb-6"><strong>Regra importante:</strong> ninguém pode falar, mostrar o desenho ou dar pistas durante a transmissão. A ideia é descobrir <strong>até que ponto a mensagem consegue chegar ao fim sem se perder pelo caminho!</strong></p>
-
+        
         <div className="mb-6">
           <p className="text-white mb-2">Palavra/objeto secreto (apenas para o 1º jogador):</p>
-          <input
-            type="text"
+          <input 
+            type="text" 
             value={missionSecretWord}
             onChange={(e) => setMissionSecretWord(e.target.value)}
             className="w-64 px-4 py-2 bg-[#291923] border border-[#D8B66C] text-white rounded-sm mb-4"
@@ -32,13 +32,13 @@ export default function MissionCollaborativeDrawing({ playerState, socket, roomD
         </div>
 
         <div className="text-center">
-          <button
+          <button 
             onClick={() => onMissionOutcome(true)}
             className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm mr-2"
           >
             ✅ Concluir com Sucesso
           </button>
-          <button
+          <button 
             onClick={() => onMissionOutcome(false)}
             className="px-8 py-3 bg-[#291923] text-white border border-[#D8B66C] font-bold rounded-sm"
           >
@@ -49,18 +49,12 @@ export default function MissionCollaborativeDrawing({ playerState, socket, roomD
     );
   }
 
+  // Modo remoto
   return (
-    <>
+    <div className="text-center">
       <p className="text-white mb-4">Abram o quadro para desenharem em conjunto.</p>
-      <button onClick={() => setOpenCanvas(true)} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">
-        Abrir Quadro
-      </button>
-      <button onClick={() => onMissionOutcome(true)} className="ml-2 px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">
-        Concluir Missão
-      </button>
-      {openCanvas && (
-        <DrawingCanvas socket={socket} roomCode={roomData.roomCode} />
-      )}
-    </>
+      <button onClick={() => setOpenCanvas(true)} className="px-8 py-3 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">Abrir Quadro</button>
+      {openCanvas && <DrawingCanvas socket={socket} roomCode={roomData?.roomCode} />}
+    </div>
   );
 }
