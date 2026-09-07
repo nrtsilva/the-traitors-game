@@ -1,6 +1,6 @@
 /* ==========================================================
    THE TRAITORS - BACKEND SERVER (NODE.JS + SOCKET.IO)
-   Versão: 2.2 (Regras de Recrutamento e Traidores Corrigidas)
+   Versão: 2.3 (Ficheiros de Missões e Arsenal Separados)
    ========================================================== */
 
 const express = require('express');
@@ -25,25 +25,31 @@ const GAME_PHASES = {
     PHASE_3_ARMOURY: 'PHASE_3_ARMOURY', PHASE_4_MURDER: 'PHASE_4_MURDER', GAME_OVER: 'GAME_OVER'
 };
 
-// Carregar aventuras
-let adventures = [];
-try {
-    const filePath = path.join(__dirname, 'aventuras.json');
-    if (fs.existsSync(filePath)) {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        if (fileContent.trim().length > 0) {
-            adventures = JSON.parse(fileContent);
-            console.log(`[Config] ${adventures.length} aventuras carregadas com sucesso.`);
-        } else {
-            console.error("[Config] ERRO: O ficheiro aventuras.json está vazio!");
+// --- FUNÇÕES DE CARREGAMENTO DE FICHEIROS JSON ---
+const loadJSON = (filename) => {
+    try {
+        const filePath = path.join(__dirname, filename);
+        if (fs.existsSync(filePath)) {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            if (content.trim().length > 0) {
+                return JSON.parse(content);
+            }
         }
-    } else {
-        console.error("[Config] ERRO: O ficheiro aventuras.json não foi encontrado!");
+    } catch (error) {
+        console.error(`Erro ao ler ${filename}:`, error.message);
     }
-} catch (error) {
-    console.error("[Config] ERRO CRÍTICO ao ler aventuras.json:", error.message);
-}
+    return [];
+};
 
+const missoesPresenciais = loadJSON('missoes_presenciais.json');
+const missoesRemotas = loadJSON('missoes_remotas.json');
+const arsenalPresencial = loadJSON('arsenal_presencial.json');
+const arsenalRemoto = loadJSON('arsenal_remoto.json');
+
+const getMissoesPorModo = (modo) => modo === 'in_person' ? missoesPresenciais : missoesRemotas;
+const getArsenalPorModo = (modo) => modo === 'in_person' ? arsenalPresencial : arsenalRemoto;
+
+// --- FUNÇÕES AUXILIARES ---
 function generateRoomCode() { return crypto.randomBytes(3).toString('hex').toUpperCase(); }
 
 function createInitialRoomState(hostId, hostName) {
@@ -53,7 +59,7 @@ function createInitialRoomState(hostId, hostName) {
             maxPlayers: 6, 
             numTraitors: 1, 
             sabotageActive: true, 
-            recruitingActive: false, // Começa desligado
+            recruitingActive: false, 
             debateTime: 60, 
             banishedLoseGold: true, 
             eliminatedAsSpectator: true, 
@@ -87,10 +93,10 @@ function convertCoinsToBars(room) {
     }
 }
 
+// --- EVENTOS DO SOCKET ---
 io.on('connection', (socket) => {
     console.log(`[Nova Conexão] Socket ID: ${socket.id}`);
 
-    // --- CRIAR SALA ---
     socket.on('create_room', ({ playerName }, callback) => {
         try {
             const roomState = createInitialRoomState(socket.id, (playerName || "Anfitrião").trim());
@@ -102,7 +108,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- ENTRAR NA SALA ---
     socket.on('join_room', ({ roomCode, playerName }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -127,7 +132,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- CONFIGURAÇÕES ---
     socket.on('update_settings', ({ roomCode, newSettings }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -136,12 +140,10 @@ io.on('connection', (socket) => {
 
             let updatedSettings = { ...room.settings, ...newSettings };
             
-            // REGRA: Se o limite máximo de jogadores for 6 ou menos, forçar 1 traidor e desligar recrutamento
             if (updatedSettings.maxPlayers <= 6) {
                 updatedSettings.numTraitors = 1;
                 updatedSettings.recruitingActive = false;
             } else {
-                // Se for 7 ou mais, permitir 2 traidores e recrutamento
                 updatedSettings.numTraitors = (updatedSettings.numTraitors === 2) ? 2 : 1;
             }
 
@@ -153,7 +155,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- INICIAR JOGO ---
     socket.on('start_game', ({ roomCode }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -162,7 +163,7 @@ io.on('connection', (socket) => {
             room.players.forEach(p => p.hasEndMissionVote = false);
             if (!room || room.hostId !== socket.id) return;
             
-            const minPlayers = 4;
+            const minPlayers = 2; // TEMPORÁRIO PARA TESTES
             if (room.players.length < minPlayers) {
                 return callback({ 
                     success: false, 
@@ -173,20 +174,8 @@ io.on('connection', (socket) => {
             const gameMode = room.settings.gameMode || 'in_person';
             const shuffled = [...room.players].sort(() => Math.random() - 0.5);
             
-            // REGRA IMPORTANTE: Usar o número REAL de jogadores na sala
-            let traitorCount = room.settings.numTraitors;
-            let recruitingActive = room.settings.recruitingActive;
-
-            if (room.players.length <= 6) {
-                traitorCount = 1;
-                recruitingActive = false;
-            } else {
-                if (traitorCount > 2) traitorCount = 2;
-            }
-
-            room.settings.numTraitors = traitorCount;
-            room.settings.recruitingActive = recruitingActive;
-
+            let traitorCount = 1; // Para 2-6 jogadores, é sempre 1
+            
             room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
 
             for (let i = 0; i < traitorCount; i++) {
@@ -195,25 +184,25 @@ io.on('connection', (socket) => {
                 if (pObj) pObj.role = 'traitor';
             }
 
-            const availableAdventures = adventures.filter(a => a.mode === gameMode);
-            const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
-            room.currentMissionData = randomAdventure;
+            const missoes = getMissoesPorModo(gameMode);
+            const randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
+            room.currentMissionData = randomMissao;
 
             room.players.forEach(player => {
                 if (player.role === 'traitor') {
-                    player.secretMissions = randomAdventure.traitorSecretMissions || [];
+                    player.secretMissions = randomMissao.traitorSecretMissions || [];
                 }
             });
 
             room.roundNumber = 1;
             room.totalRounds = room.settings.numPhases || 2;
             room.phase = GAME_PHASES.PHASE_1_MISSION;
-			room.prizeFund = { bars: 0, coins: 0 };
+            room.prizeFund = { bars: 0, coins: 0 };
             room.readyCount = 0;
 
             room.phaseIntroData = {
-                title: randomAdventure.title,
-                description: randomAdventure.description,
+                title: randomMissao.title,
+                description: randomMissao.description,
                 secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
                 gameMode: gameMode
             };
@@ -236,7 +225,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- JOGADOR PRONTO PARA A FASE ---
     socket.on('player_ready', ({ roomCode }) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -286,7 +274,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- AVALIAÇÃO DA MISSÃO ---
     socket.on('submit_evaluation', ({ roomCode, data }) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -330,7 +317,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- VOTO DE EXPULSÃO ---
     socket.on('submit_banishment_vote', ({ roomCode, targetPlayerId, useDagger }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -362,7 +348,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- EVENTOS DO ASSASSINATO / RECRUTAMENTO ---
     socket.on('traitor_choice', ({ roomCode, action }) => {
         const cleanCode = (roomCode || "").trim().toUpperCase();
         const room = rooms[cleanCode];
@@ -469,7 +454,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- EVENTO: CONTINUAR APÓS ANÚNCIO ---
     socket.on('continue_after_reveal', ({ roomCode }) => {
         const cleanCode = (roomCode || "").trim().toUpperCase();
         const room = rooms[cleanCode];
@@ -484,7 +468,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- TERMINAR MISSÃO ANTECIPADAMENTE ---
     socket.on('end_mission', ({ roomCode }) => {
         const cleanCode = (roomCode || "").trim().toUpperCase();
         const room = rooms[cleanCode];
@@ -507,7 +490,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- ARSENAL (Competitivo) ---
     socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -528,6 +510,14 @@ io.on('connection', (socket) => {
             const allChose = alivePlayers.every(p => p.arsenalChoice !== undefined);
 
             if (allChose) {
+                // Carregar tarefa de arsenal conforme modo
+                const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
+                const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
+                
+                // Enviar para todos a tarefa do arsenal
+                io.to(room.roomCode).emit('arsenal_task', { task: tarefaAleatoria });
+                
+                // Processar vencedor (lógica simples de maior número único)
                 processArsenal(room);
             }
             if (typeof callback === 'function') callback({ success: true });
@@ -536,7 +526,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- DESCONEXÃO ---
     socket.on('disconnect', () => {
         for (const roomCode in rooms) {
             const room = rooms[roomCode];
@@ -763,21 +752,21 @@ function proceedToNextRound(room) {
     room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; p.isReadyForPhase = false; });
     
     const gameMode = room.settings.gameMode || 'in_person';
-    const availableAdventures = adventures.filter(a => a.mode === gameMode);
-    const randomAdventure = availableAdventures[Math.floor(Math.random() * availableAdventures.length)];
-    room.currentMissionData = randomAdventure;
+    const missoes = getMissoesPorModo(gameMode);
+    const randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
+    room.currentMissionData = randomMissao;
     room.readyCount = 0;
 
     room.phaseIntroData = {
-        title: randomAdventure.title,
-        description: randomAdventure.description,
+        title: randomMissao.title,
+        description: randomMissao.description,
         secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
         gameMode: gameMode
     };
     
     room.players.forEach(player => {
         if (player.role === 'traitor') {
-            player.secretMissions = randomAdventure.traitorSecretMissions || [];
+            player.secretMissions = randomMissao.traitorSecretMissions || [];
         }
     });
 

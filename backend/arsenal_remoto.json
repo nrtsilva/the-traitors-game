@@ -1,0 +1,26 @@
+[
+  {
+    "id": "arsenal_rem_1",
+    "mode": "remote",
+    "title": "The 3 Letters Words",
+    "type": "TEXT_FLOOD",
+    "timeLimit": 60,
+    "description": "Todos escrevem palavras de 3 letras no chat. O que tiver mais ganha!"
+  },
+  {
+    "id": "arsenal_rem_2",
+    "mode": "remote",
+    "title": "Speed Quiz",
+    "type": "QUIZ",
+    "timeLimit": 60,
+    "description": "Respondam ao máximo de perguntas de cultura geral em 1 minuto. O que acertar mais ganha!"
+  },
+  {
+    "id": "arsenal_rem_3",
+    "mode": "remote",
+    "title": "The Countries",
+    "type": "TEXT_FLOOD",
+    "timeLimit": 60,
+    "description": "Escrevam o máximo de países começados por 'S'. O que escrever mais ganha!"
+  }
+]

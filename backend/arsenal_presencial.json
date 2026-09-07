@@ -1,0 +1,27 @@
+[
+  {
+    "id": "arsenal_pres_1",
+    "mode": "in_person",
+    "title": "The 3 Letters Words",
+    "type": "TEXT_FLOOD",
+    "timeLimit": 60,
+    "description": "TODOS escrevem o máximo de palavras de 3 letras. Quem tiver mais palavras ganha!",
+    "rule": "3-letter words"
+  },
+  {
+    "id": "arsenal_pres_2",
+    "mode": "in_person",
+    "title": "The Show-Off",
+    "type": "TIME_GUESS",
+    "timeLimit": 120,
+    "description": "Escolham quem é o show-off. Os outros escrevem quanto tempo acham que ele aguenta em prancha. Quem acertar mais perto ganha!"
+  },
+  {
+    "id": "arsenal_pres_3",
+    "mode": "in_person",
+    "title": "The Countries",
+    "type": "TEXT_FLOOD",
+    "timeLimit": 60,
+    "description": "Escrevam o máximo de países começados por 'S'. Quem escrever mais ganha!"
+  }
+]

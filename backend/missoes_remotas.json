@@ -1,0 +1,20 @@
+[
+  {
+    "id": "remota_1",
+    "mode": "remote",
+    "title": "Ranking de Países",
+    "type": "RANKING",
+    "timeLimit": 120,
+    "description": "Ordenem os países por população.",
+    "traitorSecretMissions": ["Colocar um país errado no topo"]
+  },
+  {
+    "id": "remota_2",
+    "mode": "remote",
+    "title": "A Foto Misteriosa",
+    "type": "PHOTO_UPLOAD",
+    "timeLimit": 120,
+    "description": "Tirem uma foto da vossa cozinha e adivinhem de quem é.",
+    "traitorSecretMissions": ["Tirar foto de um ângulo errado"]
+  }
+]

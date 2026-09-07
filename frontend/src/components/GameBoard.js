@@ -325,11 +325,22 @@ export default function GameBoard({ playerState, onOpenHelp, phaseIntro, isEvalu
     );
   }
 
-  // 4. ARSENAL (Mini-jogo Individual)
+  // 4. ARSENAL (Mini-jogo Individual - Escolher número)
   if (playerState.phase === 'PHASE_3_ARMOURY') {
+    // Tarefa do Arsenal (vinda do servidor)
+    const task = playerState.arsenalTask || null;
+
     return (
       <div className="text-center">
         <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
+        {task && (
+          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
+            <p className="text-[#F3EBDD] mb-4">{task.description}</p>
+            {task.rule && <p className="text-sm text-[#F3EBDD]/70">Regra: {task.rule}</p>}
+          </div>
+        )}
+        
         <p className="text-xl mb-6">Escolhe um número de 1 a 6. O maior número único vence e ganha o prémio!</p>
         
         <div className="flex justify-center gap-4 mb-8">

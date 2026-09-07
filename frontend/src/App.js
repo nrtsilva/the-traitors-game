@@ -134,6 +134,10 @@ function App() {
       setIsEvaluation(false);
     });
 
+    newSocket.on('arsenal_task', (data) => {
+      setGameData(prev => ({ ...prev, arsenalTask: data.task }));
+    });
+
     newSocket.on('phase_started', (data) => {
       setPhaseIntro(null);
       setIsEvaluation(false);

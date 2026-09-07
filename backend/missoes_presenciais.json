@@ -1,0 +1,20 @@
+[
+  {
+    "id": "presencial_1",
+    "mode": "in_person",
+    "title": "Caça aos Objetos",
+    "type": "PHYSICAL_OBJECT_HUNT",
+    "timeLimit": 120,
+    "description": "Encontrem objetos que cumpram os requisitos: redondo, azul, de papel, maior que uma bola de futebol.",
+    "traitorSecretMissions": ["Esconder um objeto azul", "Escolher um objeto errado"]
+  },
+  {
+    "id": "presencial_2",
+    "mode": "in_person",
+    "title": "Adivinha a Palavra",
+    "type": "WORD_GUESSER",
+    "timeLimit": 180,
+    "description": "O árbitro lê uma palavra de 5 letras. Os outros têm 6 tentativas.",
+    "traitorSecretMissions": ["Escolher uma palavra errada", "Confundir o grupo"]
+  }
+]
