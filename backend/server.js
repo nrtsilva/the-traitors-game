@@ -346,6 +346,7 @@ io.on('connection', (socket) => {
         }
     });
 
+	// --- VOTO DE EXPULSÃO (COM PUNHAL) ---
     socket.on('submit_banishment_vote', ({ roomCode, targetPlayerId, useDagger }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -359,11 +360,14 @@ io.on('connection', (socket) => {
             }
             if (!player || !player.alive) return;
 
-            player.voteCast = targetPlayerId;
             if (useDagger) {
-                player.voteCast = [targetPlayerId, targetPlayerId];
+                player.voteCast = [targetPlayerId, targetPlayerId]; // Dois votos
+                
+                // ⚠️ CORREÇÃO: Remover o punhal após o uso
+                const daggerIndex = player.inventory.indexOf('dagger');
+                if (daggerIndex !== -1) player.inventory.splice(daggerIndex, 1);
             } else {
-                player.voteCast = targetPlayerId;
+                player.voteCast = targetPlayerId; // Um voto
             }
 
             const allVoted = room.players.filter(p => p.alive).every(p => p.voteCast !== null);
@@ -619,41 +623,15 @@ io.on('connection', (socket) => {
 		}
 	});
 	
-    // --- ARSENAL (Competitivo) ---
-    socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
-        try {
-            const cleanCode = (roomCode || "").trim().toUpperCase();
-            const room = rooms[cleanCode];
-            if (!room || room.phase !== GAME_PHASES.PHASE_3_ARMOURY) return;
+	// --- EVENTO: PARAR PRANCHA (Show-Off) ---
+    socket.on('stop_plank', ({ roomCode, elapsedTime }) => {
+        const cleanCode = (roomCode || "").trim().toUpperCase();
+        const room = rooms[cleanCode];
+        if (!room || !room.currentArsenalTask) return;
 
-            let player = room.players.find(p => p.id === socket.id);
-            if (!player) {
-                player = room.players.find(p => p.alive && p.arsenalChoice === undefined);
-                if (player) player.id = socket.id;
-            }
-            if (!player || !player.alive) return;
-
-            player.arsenalChoice = actionData.value;
-            console.log(`[Arsenal] ${player.name} escolheu ${player.arsenalChoice}`);
-
-            const alivePlayers = room.players.filter(p => p.alive);
-            const allChose = alivePlayers.every(p => p.arsenalChoice !== undefined);
-
-            if (allChose) {
-                // CORREÇÃO: Carregar tarefa do ficheiro de ARSENAL correto e enviar aos jogadores
-                const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
-                const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
-                
-                room.currentArsenalTask = tarefaAleatoria;
-                io.to(room.roomCode).emit('arsenal_task', { task: tarefaAleatoria });
-
-                // NÃO chamar processArsenal ainda! Esperar pelos resultados dos jogadores.
-                room.arsenalReadyCount = 0;
-            }
-            if (typeof callback === 'function') callback({ success: true });
-        } catch (error) {
-            console.error("Erro no submit_arsenal_action:", error);
-        }
+        // Guardar o tempo real
+        room.currentArsenalTask.actualTime = elapsedTime;
+        console.log(`[Arsenal] Tempo de prancha parado em ${elapsedTime}s`);
     });
 	
 	// --- NOVO EVENTO: RECEBER RESULTADO DA TAREFA DO ARSENAL ---
@@ -681,8 +659,8 @@ io.on('connection', (socket) => {
                 let winner = null;
                 let bestScore = -Infinity;
 
-                if (task.type === 'TIME_GUESS') {
-                    // Para Show-Off, o vencedor é quem está mais perto do tempo real (simulado aqui como 30s)
+				if (task.type === 'TIME_GUESS') {
+                    // Determinar o tempo real do Show-Off (definido pelo evento stop_plank)
                     const actualTime = task.actualTime || 30; 
                     let bestDiff = Infinity;
                     alivePlayers.forEach(p => {
@@ -749,8 +727,18 @@ function startMurderPhase(room) {
     room.recruitPending = false;
     room.murderedThisRound = null;
 
+    // ⚠️ CORREÇÃO CRÍTICA: Atualizar a fase no frontend imediatamente
+    // (Isto garante que o ecrã do Arsenal desaparece e a Noite aparece)
+    io.to(room.roomCode).emit('phase_started', { 
+        phase: room.phase, 
+        timer: null, 
+        roundNumber: room.roundNumber 
+    });
+
+    // Enviar instrução para todos colocarem o telemóvel virado para baixo
     io.to(room.roomCode).emit('blindfold_begin', { duration: 10 });
 
+    // Após 10 segundos, acordar o traidor
     setTimeout(() => {
         try {
             let traitor = room.players.find(p => p.role === 'traitor' && p.alive);
@@ -777,6 +765,7 @@ function startMurderPhase(room) {
             }
         } catch (error) {
             console.error("Erro no startMurderPhase:", error);
+            // Fallback: Se algo falhar, envia a decoy para não ficar preso
             io.to(room.roomCode).emit('decoy_question');
             room.pendingDecoys = room.players.filter(p => p.alive).length;
         }

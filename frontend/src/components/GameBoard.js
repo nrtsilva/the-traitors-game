@@ -9,7 +9,6 @@ export default function GameBoard({
   onReady, 
   onEvaluation, 
   onVote, 
-  onArsenalAction, 
   banishmentReveal, 
   arsenalResult, 
   playerId, 
@@ -40,7 +39,6 @@ export default function GameBoard({
   const [traitorAnswer, setTraitorAnswer] = useState(null);
   const [selectedVote, setSelectedVote] = useState(null);
   const [useDagger, setUseDagger] = useState(false);
-  const [arsenalNumber, setArsenalNumber] = useState(1);
   const [timer, setTimer] = useState(0);
   const [decoyAnswered, setDecoyAnswered] = useState(false);
   const [openCanvas, setOpenCanvas] = useState(false);
@@ -50,6 +48,8 @@ export default function GameBoard({
   // Estados para o novo Arsenal
   const [resultItems, setResultItems] = useState([]);
   const [guessTime, setGuessTime] = useState('');
+  const [plankSeconds, setPlankSeconds] = useState(0);
+  const [isPlankRunning, setIsPlankRunning] = useState(false);
 
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
@@ -137,7 +137,7 @@ export default function GameBoard({
       } else if (reward === 'dagger') {
         icon = <div className="text-9xl drop-shadow-lg">🗡️</div>;
         title = 'Ganhaste um Punhal!';
-        description = 'Este punhal dá-te direito a 2 votos na próxima votação para expulsão.';
+        description = 'Este punhal dá-te direito a 2 votos em QUALQUER votação para expulsão. Usa-o quando quiseres!';
       } else {
         icon = <div className="text-9xl text-[#D8B66C]">✖</div>;
         title = 'Ninguém venceu!';
@@ -395,6 +395,24 @@ export default function GameBoard({
     };
 
     if (task.type === 'TIME_GUESS') {
+      // Lógica do cronómetro
+      useEffect(() => {
+        if (isPlankRunning) {
+          const interval = setInterval(() => {
+            setPlankSeconds(prev => prev + 1);
+          }, 1000);
+          return () => clearInterval(interval);
+        }
+      }, [isPlankRunning]);
+
+      const handleStopPlank = () => {
+        setIsPlankRunning(false);
+        // Enviar o tempo real para o servidor
+        if (socket && roomData) {
+          socket.emit('stop_plank', { roomCode: roomData.roomCode, elapsedTime: plankSeconds });
+        }
+      };
+
       return (
         <div className="text-center">
           <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
@@ -417,7 +435,33 @@ export default function GameBoard({
               Submeter Estimativa
             </button>
           </div>
-          <p className="text-xs text-white/60">Aguarda que todos os jogadores submetam os resultados...</p>
+
+          {/* Cronómetro em tempo real da Prancha */}
+          <div className="mt-6 border-t border-[#D8B66C]/30 pt-6">
+            <p className="text-white mb-4">⏱️ Cronómetro da Prancha</p>
+            <div className="text-6xl font-display text-[#D8B66C] mb-4">
+              {plankSeconds}s
+            </div>
+            <div className="flex justify-center gap-4">
+              <button 
+                onClick={() => setIsPlankRunning(true)}
+                disabled={isPlankRunning}
+                className="px-8 py-2 bg-[#291923] text-white border border-[#D8B66C] rounded-sm disabled:opacity-50"
+              >
+                Iniciar Prancha
+              </button>
+              <button 
+                onClick={handleStopPlank}
+                disabled={!isPlankRunning}
+                className="px-8 py-2 bg-[#D8B66C] text-[#291923] font-bold rounded-sm disabled:opacity-50"
+              >
+                Parar Prancha
+              </button>
+            </div>
+            <p className="text-xs text-white/60 mt-2">Qualquer jogador pode parar o cronómetro.</p>
+          </div>
+
+          <p className="text-xs text-white/60 mt-4">Aguarda que todos os jogadores submetam os resultados...</p>
         </div>
       );
     }
