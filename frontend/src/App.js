@@ -340,6 +340,11 @@ function App() {
                       socket.emit('submit_banishment_vote', { roomCode: roomData.roomCode, targetPlayerId, useDagger });
                   }
               }}
+              onMissionValueSubmit={(value) => {
+                  if (roomData && roomData.roomCode) {
+                      socket.emit('submit_mission_value', { roomCode: roomData.roomCode, value });
+                  }
+              }}
               isEvaluation={isEvaluation}
               onReady={() => {
                 if (roomData && roomData.roomCode) {

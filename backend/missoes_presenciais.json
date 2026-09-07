@@ -1,5 +1,4 @@
-[
-  {
+[  {
     "id": "presencial_footsies",
     "mode": "in_person",
     "title": "Footsies",
@@ -7,6 +6,7 @@
     "timeLimit": 120,
     "description": "Sentem-se num círculo. Usando apenas os pés, passem uma carta. Se cair, recomeçam. Qual é o maior número de passes sem deixar cair?",
     "reward": "Número de passes ÷ 4, arredondado para baixo.",
+    "requiresNumberInput": true,
     "traitorSecretMissions": ["Passar a carta para trás sem os outros perceberem"]
   },
   {
