@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useAudio } from './hooks/useAudio';
 import { useGameState } from './hooks/useGameState';
@@ -16,124 +16,121 @@ function App() {
   const { socket, connected } = useSocket(BACKEND_URL);
   const { isMuted, toggleMute, play, stop } = useAudio();
   const [state, dispatch] = useGameState();
+  const [playerName, setPlayerName] = useState('');
 
   // Reagir a eventos do socket
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('room_update', (data) => {
-      dispatch({ type: 'SET_ROOM_DATA', payload: { ...state.roomData, players: data.players, settings: data.settings } });
-    });
-
-    socket.on('game_started', (playerState) => {
-      dispatch({ type: 'SET_GAME_DATA', payload: playerState });
-      dispatch({ type: 'SET_SCREEN', payload: 'tutorial' });
-      dispatch({ type: 'SET_PHASE_INTRO', payload: null });
-      dispatch({ type: 'SET_GAME_OVER', payload: null });
-    });
-
-    socket.on('phase_intro', (data) => {
-      dispatch({ type: 'SET_PHASE_INTRO', payload: data });
-      dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
-      dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-      dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-    });
-
-    socket.on('mission_evaluation', () => {
-      dispatch({ type: 'SET_PHASE_INTRO', payload: null });
-      dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
-      dispatch({ type: 'SET_IS_EVALUATION', payload: true });
-      play('evaluation.mp3');
-    });
-
-    socket.on('arsenal_result', (data) => {
-      dispatch({ type: 'SET_ARSENAL_RESULT', payload: data });
-      dispatch({ type: 'SET_PHASE_INTRO', payload: null });
-      dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-      play('arsenal.mp3');
-    });
-
-    socket.on('banishment_reveal', (data) => {
-      dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: data });
-      dispatch({ type: 'SET_PHASE_INTRO', payload: null });
-      dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-      play('banishment.mp3');
-    });
-
-    socket.on('blindfold_begin', () => {
-      dispatch({ type: 'SET_BLINDFOLD', payload: true });
-      dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-      dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
-      dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
-      dispatch({ type: 'SET_MURDER_REVEAL', payload: null });
-      dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
-      play('murder-blindfold.mp3');
-    });
-
-    socket.on('traitor_choices', (data) => {
-      dispatch({ type: 'SET_BLINDFOLD', payload: false });
-      dispatch({ type: 'SET_TRAITOR_CHOICES', payload: data });
-      play('murder-blindfold.mp3');
-    });
-
-    socket.on('show_player_list', (data) => {
-      dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
-      dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: data });
-    });
-
-    socket.on('recruit_invitation', () => {
-      dispatch({ type: 'SET_BLINDFOLD', payload: false });
-      dispatch({ type: 'SET_RECRUIT_INVITATION', payload: true });
-    });
-
-    socket.on('recruit_result', (data) => {
-      dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
-      dispatch({ type: 'SET_RECRUIT_RESULT', payload: data });
-      play('murder-reveal.mp3');
-    });
-
-    socket.on('murder_reveal', (data) => {
-      dispatch({ type: 'SET_BLINDFOLD', payload: false });
-      dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
-      dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
-      dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-      dispatch({ type: 'SET_MURDER_REVEAL', payload: data });
-      play('murder-reveal.mp3');
-    });
-
-    socket.on('decoy_question', () => {
-      dispatch({ type: 'SET_BLINDFOLD', payload: false });
-      dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
-      dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
-      dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-      dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
-    });
-
-    socket.on('game_over', (data) => {
-      dispatch({ type: 'SET_GAME_OVER', payload: data });
-      play('game-over.mp3');
-    });
-
-    socket.on('phase_started', (data) => {
-      dispatch({ type: 'SET_PHASE_INTRO', payload: null });
-      dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-      // Atualizar gameData com a nova fase
-      dispatch({ type: 'SET_GAME_DATA', payload: { ...state.gameData, phase: data.phase, timer: data.timer, roundNumber: data.roundNumber } });
-
-      if (data.phase === 'PHASE_2_BANISHMENT') play('banishment.mp3');
-      else if (data.phase === 'PHASE_3_ARMOURY') play('arsenal.mp3');
-      else play('mission.mp3');
-    });
-
-    // Limpeza
-    return () => {
-      socket.off('room_update');
-      socket.off('game_started');
-      // ... etc (todos os eventos)
+    const handlers = {
+      room_update: (data) => {
+        dispatch({ type: 'SET_ROOM_DATA', payload: { ...state.roomData, players: data.players, settings: data.settings } });
+      },
+      game_started: (playerState) => {
+        dispatch({ type: 'SET_GAME_DATA', payload: playerState });
+        dispatch({ type: 'SET_SCREEN', payload: 'tutorial' });
+        dispatch({ type: 'SET_PHASE_INTRO', payload: null });
+        dispatch({ type: 'SET_GAME_OVER', payload: null });
+      },
+      phase_intro: (data) => {
+        dispatch({ type: 'SET_PHASE_INTRO', payload: data });
+        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+      },
+      mission_evaluation: () => {
+        dispatch({ type: 'SET_PHASE_INTRO', payload: null });
+        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+        dispatch({ type: 'SET_IS_EVALUATION', payload: true });
+        play('evaluation.mp3');
+      },
+      arsenal_result: (data) => {
+        dispatch({ type: 'SET_ARSENAL_RESULT', payload: data });
+        dispatch({ type: 'SET_PHASE_INTRO', payload: null });
+        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        play('arsenal.mp3');
+      },
+      banishment_reveal: (data) => {
+        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: data });
+        dispatch({ type: 'SET_PHASE_INTRO', payload: null });
+        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        play('banishment.mp3');
+      },
+      blindfold_begin: () => {
+        dispatch({ type: 'SET_BLINDFOLD', payload: true });
+        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+        dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
+        dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
+        dispatch({ type: 'SET_MURDER_REVEAL', payload: null });
+        dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
+        play('murder-blindfold.mp3');
+      },
+      traitor_choices: (data) => {
+        dispatch({ type: 'SET_BLINDFOLD', payload: false });
+        dispatch({ type: 'SET_TRAITOR_CHOICES', payload: data });
+        play('murder-blindfold.mp3');
+      },
+      show_player_list: (data) => {
+        dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
+        dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: data });
+      },
+      recruit_invitation: () => {
+        dispatch({ type: 'SET_BLINDFOLD', payload: false });
+        dispatch({ type: 'SET_RECRUIT_INVITATION', payload: true });
+      },
+      recruit_result: (data) => {
+        dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
+        dispatch({ type: 'SET_RECRUIT_RESULT', payload: data });
+        play('murder-reveal.mp3');
+      },
+      murder_reveal: (data) => {
+        dispatch({ type: 'SET_BLINDFOLD', payload: false });
+        dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
+        dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
+        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+        dispatch({ type: 'SET_MURDER_REVEAL', payload: data });
+        play('murder-reveal.mp3');
+      },
+      decoy_question: () => {
+        dispatch({ type: 'SET_BLINDFOLD', payload: false });
+        dispatch({ type: 'SET_TRAITOR_CHOICES', payload: null });
+        dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
+        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+      },
+      game_over: (data) => {
+        dispatch({ type: 'SET_GAME_OVER', payload: data });
+        play('game-over.mp3');
+      },
+      phase_started: (data) => {
+        dispatch({ type: 'SET_PHASE_INTRO', payload: null });
+        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        dispatch({ type: 'SET_GAME_DATA', payload: { ...state.gameData, phase: data.phase, timer: data.timer, roundNumber: data.roundNumber } });
+        if (data.phase === 'PHASE_2_BANISHMENT') play('banishment.mp3');
+        else if (data.phase === 'PHASE_3_ARMOURY') play('arsenal.mp3');
+        else play('mission.mp3');
+      },
+      arsenal_task: (data) => {
+        dispatch({ type: 'SET_GAME_DATA', payload: { ...state.gameData, arsenalTask: data.task } });
+      },
+      player_status_update: (data) => {
+        // Para atualizar contagem de prontos, se necessário
+        dispatch({ type: 'SET_READY_COUNT', payload: data });
+      }
     };
-  }, [socket, play, state.gameData]);
 
-  // Handlers para navegação
+    Object.keys(handlers).forEach(event => {
+      socket.on(event, handlers[event]);
+    });
+
+    return () => {
+      Object.keys(handlers).forEach(event => {
+        socket.off(event, handlers[event]);
+      });
+    };
+  }, [socket, play, state.roomData, state.gameData, dispatch]);
+
+  // Handlers de navegação
   const handleRoomCreated = useCallback((data) => {
     dispatch({ type: 'SET_ROOM_DATA', payload: data });
     dispatch({ type: 'SET_IS_HOST', payload: true });
@@ -158,9 +155,82 @@ function App() {
     dispatch({ type: 'SET_SCREEN', payload: 'game' });
   }, [dispatch]);
 
-  // ... outros handlers (onVote, onTraitorChoice, etc.)
+  // Handlers para ações do jogo (passados para o GameBoard)
+  const handleTraitorChoice = useCallback((action) => {
+    socket.emit('traitor_choice', { roomCode: state.roomData?.roomCode, action });
+  }, [socket, state.roomData]);
 
-  // Context value
+  const handleTraitorMurder = useCallback((targetId) => {
+    socket.emit('traitor_murder_choice', { roomCode: state.roomData?.roomCode, targetPlayerId: targetId });
+  }, [socket, state.roomData]);
+
+  const handleTraitorRecruit = useCallback((targetId) => {
+    socket.emit('traitor_recruit_choice', { roomCode: state.roomData?.roomCode, targetPlayerId: targetId });
+  }, [socket, state.roomData]);
+
+  const handleDecoyAnswer = useCallback(() => {
+    socket.emit('decoy_answer', { roomCode: state.roomData?.roomCode });
+  }, [socket, state.roomData]);
+
+  const handleRecruitDecision = useCallback((accepted) => {
+    socket.emit('recruit_decision', { roomCode: state.roomData?.roomCode, accepted });
+  }, [socket, state.roomData]);
+
+  const handleMissionOutcome = useCallback((success) => {
+    if (state.roomData?.roomCode) {
+      socket.emit('end_mission', { roomCode: state.roomData.roomCode, outcome: success });
+    }
+  }, [socket, state.roomData]);
+
+  const handleArsenalResultSubmit = useCallback((data) => {
+    if (state.roomData?.roomCode) {
+      socket.emit('submit_arsenal_task_result', { roomCode: state.roomData.roomCode, resultData: data });
+    }
+  }, [socket, state.roomData]);
+
+  const handleContinueAfterReveal = useCallback(() => {
+    if (state.roomData?.roomCode) {
+      socket.emit('continue_after_reveal', { roomCode: state.roomData.roomCode });
+    }
+    dispatch({ type: 'SET_MURDER_REVEAL', payload: null });
+    dispatch({ type: 'SET_RECRUIT_RESULT', payload: null });
+  }, [socket, state.roomData, dispatch]);
+
+  const handleVote = useCallback((targetPlayerId, useDagger) => {
+    if (state.roomData?.roomCode) {
+      socket.emit('submit_banishment_vote', { roomCode: state.roomData.roomCode, targetPlayerId, useDagger });
+    }
+  }, [socket, state.roomData]);
+
+  const handleMissionValueSubmit = useCallback((value) => {
+    if (state.roomData?.roomCode) {
+      socket.emit('submit_mission_value', { roomCode: state.roomData.roomCode, value });
+    }
+  }, [socket, state.roomData]);
+
+  const handleReady = useCallback(() => {
+    if (state.roomData?.roomCode) {
+      socket.emit('player_ready', { roomCode: state.roomData.roomCode });
+    }
+  }, [socket, state.roomData]);
+
+  const handleEndMission = useCallback(() => {
+    if (state.roomData?.roomCode) {
+      socket.emit('end_mission', { roomCode: state.roomData.roomCode });
+    }
+  }, [socket, state.roomData]);
+
+  const handleEvaluation = useCallback((data) => {
+    const code = state.roomData?.roomCode || state.gameData?.roomCode;
+    if (code) {
+      socket.emit('submit_evaluation', { roomCode: code, data });
+    }
+  }, [socket, state.roomData, state.gameData]);
+
+  const handleOpenHelp = useCallback((step) => {
+    dispatch({ type: 'SET_TUTORIAL', payload: { tutorialStep: step || 0, isTutorialOverlay: true } });
+  }, [dispatch]);
+
   const contextValue = {
     socket,
     connected,
@@ -170,11 +240,26 @@ function App() {
     toggleMute,
     play,
     stop,
+    playerName,
+    setPlayerName,
     handleRoomCreated,
     handleRoomJoined,
     handleTutorialClose,
     handleRoleRevealContinue,
-    // ... passar outros handlers
+    handleTraitorChoice,
+    handleTraitorMurder,
+    handleTraitorRecruit,
+    handleDecoyAnswer,
+    handleRecruitDecision,
+    handleMissionOutcome,
+    handleArsenalResultSubmit,
+    handleContinueAfterReveal,
+    handleVote,
+    handleMissionValueSubmit,
+    handleReady,
+    handleEndMission,
+    handleEvaluation,
+    handleOpenHelp,
   };
 
   return (
@@ -199,13 +284,28 @@ function App() {
           )}
 
           {connected && state.currentScreen === 'lobby' && (
-            <Lobby socket={socket} setPlayerName={(name) => {}} playerName="" onRoomCreated={handleRoomCreated} onRoomJoined={handleRoomJoined} />
+            <Lobby
+              socket={socket}
+              playerName={playerName}
+              setPlayerName={setPlayerName}
+              onRoomCreated={handleRoomCreated}
+              onRoomJoined={handleRoomJoined}
+            />
           )}
           {connected && state.currentScreen === 'settings' && state.isHost && (
-            <RoomSettings socket={socket} roomData={state.roomData} setRoomData={(data) => dispatch({ type: 'SET_ROOM_DATA', payload: data })} onBack={() => dispatch({ type: 'SET_SCREEN', payload: 'lobby' })} />
+            <RoomSettings
+              socket={socket}
+              roomData={state.roomData}
+              setRoomData={(data) => dispatch({ type: 'SET_ROOM_DATA', payload: data })}
+              onBack={() => dispatch({ type: 'SET_SCREEN', payload: 'lobby' })}
+            />
           )}
           {connected && state.currentScreen === 'waiting' && !state.isHost && (
-            <WaitingRoom socket={socket} roomData={state.roomData} onBack={() => dispatch({ type: 'SET_SCREEN', payload: 'lobby' })} />
+            <WaitingRoom
+              socket={socket}
+              roomData={state.roomData}
+              onBack={() => dispatch({ type: 'SET_SCREEN', payload: 'lobby' })}
+            />
           )}
           {connected && state.currentScreen === 'tutorial' && (
             <GameTutorial onClose={handleTutorialClose} initialStep={0} />
@@ -216,21 +316,34 @@ function App() {
           {connected && state.currentScreen === 'game' && state.gameData && (
             <GameBoard
               playerState={state.gameData}
-              onOpenHelp={(step) => dispatch({ type: 'SET_TUTORIAL', payload: { tutorialStep: step, isTutorialOverlay: true } })}
+              onOpenHelp={handleOpenHelp}
               socket={socket}
               phaseIntro={state.phaseIntro}
+              isEvaluation={state.isEvaluation}
+              onReady={handleReady}
+              onEvaluation={handleEvaluation}
+              onVote={handleVote}
               banishmentReveal={state.banishmentReveal}
-              playerId={socket.id}
               arsenalResult={state.arsenalResult}
+              playerId={socket.id}
+              onEndMission={handleEndMission}
               blindfold={state.blindfold}
+              onDecoyAnswer={handleDecoyAnswer}
               traitorChoices={state.traitorChoices}
+              onTraitorChoice={handleTraitorChoice}
               showPlayerList={state.showPlayerList}
+              onTraitorMurder={handleTraitorMurder}
+              onTraitorRecruit={handleTraitorRecruit}
               recruitInvitation={state.recruitInvitation}
+              onRecruitDecision={handleRecruitDecision}
               recruitResult={state.recruitResult}
               murderReveal={state.murderReveal}
+              onContinueAfterReveal={handleContinueAfterReveal}
               gameOver={state.gameOver}
               roomData={state.roomData}
-              // ... passar todos os outros handlers necessários
+              onMissionValueSubmit={handleMissionValueSubmit}
+              onArsenalResultSubmit={handleArsenalResultSubmit}
+              onMissionOutcome={handleMissionOutcome}
             />
           )}
           {state.isTutorialOverlay && (
