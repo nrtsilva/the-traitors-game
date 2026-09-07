@@ -1,43 +1,64 @@
-[  {
+[
+  {
     "id": "presencial_footsies",
     "mode": "in_person",
-    "title": "Footsies",
+    "title": "🦶 Footsies – O Desafio dos Pés",
     "type": "PHYSICAL_ACTION",
     "timeLimit": 120,
-    "description": "Sentem-se num círculo. Usando apenas os pés, passem uma carta. Se cair, recomeçam. Qual é o maior número de passes sem deixar cair?",
-    "reward": "Número de passes ÷ 4, arredondado para baixo.",
+    "description": "Sentem-se em círculo no chão. Usando **apenas os pés**, passem uma carta (ou um objeto leve) de jogador para jogador, sem a deixar cair. Se cair, recomeçam do zero. **Objetivo:** obter o maior número de passes consecutivos sem deixar cair. No final, o grupo regista o número total de passes conseguidos.",
+    "reward": "Número de passes ÷ 4 (arredondado para baixo) em moedas.",
     "requiresNumberInput": true,
-    "traitorSecretMissions": ["Passar a carta para trás sem os outros perceberem"]
+    "traitorSecretMissions": [
+      "Dizer 'Ui, escorregou!' sempre que alguém estiver prestes a passar.",
+      "Rir-se de forma exagerada sempre que a carta for passada com sucesso.",
+      "Cantar uma música baixinho durante os passes para distrair.",
+      "Piscar o olho a outro jogador cada vez que recebe a carta."
+    ]
   },
   {
     "id": "presencial_word_guesser",
     "mode": "in_person",
-    "title": "Word Guesser",
+    "title": "🔍 Palavra Secreta (6 Tentativas)",
     "type": "WORD_GUESSER",
     "timeLimit": 180,
-    "description": "O árbitro lê uma palavra de 5 letras. Os adivinhadores têm 6 tentativas.",
-    "reward": "1 peça de ouro por adivinhar em 0-6 tentativas.",
-    "traitorSecretMissions": ["Escolher uma palavra errada para confundir o grupo"]
+    "description": "Um jogador (o 'Mestre') escolhe secretamente uma palavra de 5 letras (todas relacionadas com um tema: por exemplo, 'Animais', 'Comida', 'Objetos de Casa'). Os restantes jogadores têm **6 tentativas** para adivinhar a palavra. A cada tentativa, o Mestre diz se a letra existe e se está na posição correta (como no jogo Wordle). **Ganham uma moeda por cada tentativa não utilizada** (se acertarem à primeira, ganham 6 moedas; à segunda, 5; etc.). Se não acertarem em 6 tentativas, não ganham nada.",
+    "reward": "6 − (número de tentativas usadas) moedas.",
+    "traitorSecretMissions": [
+      "Sugerir uma palavra que não esteja relacionada com o tema escolhido.",
+      "Dizer 'Essa letra existe' quando na verdade não existe (mas corrigir de imediato, como se fosse engano).",
+      "Fazer uma pausa dramática antes de responder a cada tentativa.",
+      "Mudar de posição na cadeira a cada tentativa, como se estivesse nervoso."
+    ]
   },
   {
     "id": "presencial_drawing",
     "mode": "in_person",
-    "title": "O Desenho nas Costas (Coletivo)",
+    "title": "🎨 Desenho nas Costas",
     "type": "COLLABORATIVE_DRAWING",
     "timeLimit": 180,
-    "description": "Sem falar, desenhem uma palavra nas costas uns dos outros até chegar ao último jogador.",
-    "reward": "3 peças de ouro",
-    "secretWord": "BARCO",
-    "traitorSecretMissions": ["Desenhar uma forma errada nas costas para confundir o jogador seguinte"]
+    "description": "1. **Formem uma fila** e definam a ordem dos jogadores, do primeiro ao último.\n2. O **primeiro jogador** recebe secretamente uma palavra que terá de transmitir.\n3. **Sem falar**, o primeiro jogador desenha a palavra com o dedo nas costas do segundo jogador.\n4. O segundo jogador tenta perceber o que sentiu e, **sem fazer perguntas**, desenha a mesma coisa nas costas do terceiro.\n5. O processo continua até chegar ao **último jogador da fila**.\n6. O último jogador diz **em voz alta** o que acha que foi desenhado.\n7. 🎉 **Se a resposta for a palavra original, a equipa ganha 3 moedas!**",
+    "reward": "3 moedas (se acertarem) ou 0 (se falharem).",
+    "secretWords": ["BARCO", "BICICLETA", "CASA", "ÁRVORE", "SOL", "FLOR", "CARRO", "AVIÃO", "PEIXE", "GATO", "ESTRELA", "CHUVA", "MONTANHA", "RELÓGIO", "CHAPÉU", "ÓCULOS"],
+    "traitorSecretMissions": [
+      "Dizer 'Estou com comichão nas costas' enquanto o desenho é feito, para desconcentrar.",
+      "Fazer uma pausa exagerada antes de desenhar, como se estivesse a pensar no que desenhar.",
+      "Rir-se discretamente quando a mensagem passar para o jogador seguinte.",
+      "Suspirar fundo antes de começar a desenhar, como se a tarefa fosse difícil."
+    ]
   },
   {
     "id": "presencial_awkward",
     "mode": "in_person",
-    "title": "Awkward",
+    "title": "🤔 Awkward – Respostas Únicas",
     "type": "CATEGORY_GAME",
     "timeLimit": 120,
-    "description": "Cada jogador escolhe uma afirmação (1 a 6). Ganham ouro por cada afirmação escolhida apenas uma vez.",
-    "reward": "1 peça de ouro por resposta única",
-    "traitorSecretMissions": ["Escolher a mesma afirmação que outro para roubar o ouro"]
+    "description": "O animador lê em voz alta 6 afirmações (ex: 'O meu maior medo', 'Uma coisa que nunca fiz', 'O que mais gosto de comer', etc.). **Cada jogador escolhe uma afirmação** e escreve-a num papel, sem mostrar aos outros. Depois, todos revelam ao mesmo tempo. **Ganham 1 moeda por cada afirmação que foi escolhida por apenas uma pessoa** (respostas únicas). Se duas ou mais pessoas escolherem a mesma, ninguém ganha por essa afirmação. **Objetivo:** maximizar o número de respostas únicas.",
+    "reward": "1 moeda por cada resposta única.",
+    "traitorSecretMissions": [
+      "Escolher a mesma afirmação que o jogador à sua direita (observando-o discretamente).",
+      "Dizer em voz alta 'Eu vou escolher a número 3!' para influenciar os outros.",
+      "Mudar de escolha depois de ver a reação dos outros, como se estivesse indeciso.",
+      "Perguntar 'Posso escolher duas?' para criar confusão."
+    ]
   }
 ]

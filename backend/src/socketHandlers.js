@@ -2,6 +2,7 @@ const { GAME_PHASES } = require('./constants');
 const { rooms, createInitialRoomState, removePlayerFromRoom } = require('./roomManager');
 const { getMissoesPorModo, getArsenalPorModo } = require('./missionLoader');
 const {
+    loadNewMission,
     startMissionTimer,
     startMurderPhase,
     endMurderPhase,
@@ -78,9 +79,13 @@ function registerSocketHandlers(io) {
             try {
                 const cleanCode = (roomCode || "").trim().toUpperCase();
                 const room = rooms[cleanCode];
+                if (!room || room.hostId !== socket.id) {
+                    return callback({ success: false, message: "Não autorizado." });
+                }
+
+                // Reset de estados gerais
                 room.endMissionVotes = 0;
                 room.players.forEach(p => p.hasEndMissionVote = false);
-                if (!room || room.hostId !== socket.id) return;
 
                 const minPlayers = 2;
                 if (room.players.length < minPlayers) {
@@ -92,58 +97,44 @@ function registerSocketHandlers(io) {
 
                 const gameMode = room.settings.gameMode || 'in_person';
                 const shuffled = [...room.players].sort(() => Math.random() - 0.5);
-                let traitorCount = 1; // Para 2-6 jogadores, é sempre 1
 
-                room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
+                // Número de traidores baseado na configuração (com limite para <=6)
+                let traitorCount = room.settings.numTraitors || 1;
+                if (room.players.length <= 6) traitorCount = 1;
 
+                // Reset completo dos jogadores
+                room.players.forEach(p => {
+                    p.role = 'faithful';
+                    p.alive = true;
+                    p.gold = 3;
+                    p.bars = 0;
+                    p.inventory = [];
+                    p.secretMissions = [];
+                    p.secretMissionsCompleted = [];
+                    p.voteCast = null;
+                    p.isReadyForPhase = false;
+                    p.evaluation = undefined;
+                    p.missionValue = undefined;
+                });
+
+                // Atribuir papéis de traidor
                 for (let i = 0; i < traitorCount; i++) {
                     const t = shuffled[i];
                     const pObj = room.players.find(p => p.id === t.id);
                     if (pObj) pObj.role = 'traitor';
                 }
 
-                const missoes = getMissoesPorModo(gameMode);
-                const randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
-                room.currentMissionData = randomMissao;
-
-                if (room.currentMissionData.type === 'COLLABORATIVE_DRAWING') {
-                    const ids = room.players.map(p => p.id);
-                    const guesserId = ids[ids.length - 1];
-                    const secretWord = "BICICLETA";
-                    room.drawingState = {
-                        order: ids,
-                        currentDrawerIndex: 0,
-                        secretWord: secretWord,
-                        guesserId: guesserId
-                    };
-                    room.players.forEach(player => {
-                        if (player.id === guesserId) {
-                            io.to(player.id).emit('drawing_status', { type: 'guesser', isYourTurn: false });
-                        } else {
-                            io.to(player.id).emit('drawing_status', { type: 'drawer', secretWord: secretWord, isYourTurn: (player.id === ids[0]) });
-                        }
-                    });
-                }
-
-                room.players.forEach(player => {
-                    if (player.role === 'traitor') {
-                        player.secretMissions = randomMissao.traitorSecretMissions || [];
-                    }
-                });
-
+                // Inicializar estado do jogo
                 room.roundNumber = 1;
                 room.totalRounds = room.settings.numPhases || 2;
                 room.phase = GAME_PHASES.PHASE_1_MISSION;
                 room.prizeFund = { bars: 0, coins: 0 };
                 room.readyCount = 0;
 
-                room.phaseIntroData = {
-                    title: randomMissao.title,
-                    description: randomMissao.description,
-                    secretMission: room.players.find(p => p.role === 'traitor')?.secretMissions[0],
-                    gameMode: gameMode
-                };
+                // Carregar a primeira missão usando a função auxiliar
+                loadNewMission(room, io);
 
+                // Enviar estado inicial para cada jogador
                 room.players.forEach(player => {
                     const pState = {
                         phase: room.phase,
@@ -157,12 +148,20 @@ function registerSocketHandlers(io) {
                         roomCode: cleanCode,
                         gold: player.gold,
                         bars: player.bars,
-                        players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })),
-                        secretMissions: (player.role === 'traitor') ? player.secretMissions : []
+                        players: room.players.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            alive: p.alive,
+                            role: (p.id === player.id) ? p.role : null,
+                            gold: p.gold,
+                            bars: p.bars
+                        })),
+                        secretMissions: player.secretMissions || []
                     };
                     io.to(player.id).emit('game_started', pState);
                 });
 
+                // Enviar introdução da fase a cada jogador (com ou sem missão secreta)
                 room.players.forEach(player => {
                     const introData = { ...room.phaseIntroData };
                     if (player.role !== 'traitor') delete introData.secretMission;

@@ -2,31 +2,47 @@
   {
     "id": "remota_treasure_hunt",
     "mode": "remote",
-    "title": "Caça aos Objetos",
+    "title": "🔎 Caça aos Objetos (Fotos)",
     "type": "PHYSICAL_OBJECT_HUNT",
     "timeLimit": 300,
-    "description": "Encontrem os 6 objetos e tirem fotos com o vosso telemóvel. 1) Contém letras. 2) Redondo. 3) Azul. 4) Mais pequeno que um rato. 5) Feito de papel. 6) Maior que uma bola de futebol.",
-    "reward": "4 peças de ouro",
-    "traitorSecretMissions": ["Esconder um dos objetos requisitados", "Tirar foto de um objeto que não cumpre os requisitos"]
+    "description": "Cada jogador, na sua casa, tem **5 minutos** para encontrar e fotografar **6 objetos** que correspondam a estas pistas:\n1. Contém letras (ex: livro, caixa de cereais)\n2. É redondo (ex: relógio, prato)\n3. É azul (ex: caneta, roupa)\n4. É mais pequeno que um rato (ex: chave, moeda)\n5. É feito de papel (ex: bilhete, jornal)\n6. É maior que uma bola de futebol (ex: almofada, mochila)\n\n**Objetivo:** cada jogador partilha as suas fotos no chat do jogo. A equipa ganha 4 moedas se **todos** os jogadores encontrarem pelo menos 5 dos 6 objetos. Se alguém falhar, ganham apenas 1 moeda.",
+    "reward": "4 moedas (se todos cumprirem) ou 1 moeda (caso contrário).",
+    "traitorSecretMissions": [
+      "Tirar uma foto de um objeto que **não** cumpre os requisitos e tentar convencer os outros de que serve.",
+      "Dizer 'Isso não é azul!' quando alguém mostra um objeto, mesmo que seja.",
+      "Demorar mais tempo do que os outros a encontrar os objetos, para criar ansiedade.",
+      "Sugerir que um objeto é mais pequeno do que parece, para desviar a atenção."
+    ]
   },
   {
     "id": "remota_ranking",
     "mode": "remote",
-    "title": "Ranking de Países",
+    "title": "📊 Ranking de Países",
     "type": "RANKING",
     "timeLimit": 120,
-    "description": "Ordenem os países por população.",
-    "reward": "2 peças de ouro por cada 2 países na posição correta",
-    "traitorSecretMissions": ["Colocar um país errado no topo da lista"]
+    "description": "No chat, é apresentada uma lista de **8 países** (ex: Brasil, Alemanha, Índia, Nigéria, México, Reino Unido, França, Japão). A equipa tem **2 minutos** para ordená-los por **população** (do maior para o menor). Cada jogador escreve a sua ordem num papel ou no chat privado. Depois, comparam as respostas. **Ganham 2 moedas por cada 2 países que estiverem na posição correta** (ex: se acertarem 4 posições, ganham 4 moedas).",
+    "reward": "2 moedas por cada 2 países na posição correta.",
+    "traitorSecretMissions": [
+      "Colocar o Brasil no topo da lista, mesmo que não seja o mais populoso.",
+      "Dizer 'Eu acho que a Índia é maior que a China' para semear dúvida.",
+      "Mudar a sua ordem várias vezes, como se estivesse indeciso.",
+      "Perguntar 'Podemos usar o Google?' para testar a reação do grupo."
+    ]
   },
   {
     "id": "remota_drawing",
     "mode": "remote",
-    "title": "O Desenho Coletivo (Online)",
+    "title": "🎨 Desenho Coletivo (Online)",
     "type": "COLLABORATIVE_DRAWING",
     "timeLimit": 180,
-    "description": "1. Todos, exceto o último jogador, recebem a palavra misteriosa. 2. Por ordem, cada jogador desenha uma forma geométrica no quadro. 3. O último jogador adivinha o objeto. Se acertarem, ganham!",
-    "reward": "3 peças de ouro",
-    "traitorSecretMissions": ["Desenhar uma forma errada para sabotar o desenho"]
+    "description": "1. Todos os jogadores, **exceto o último da lista**, recebem secretamente uma palavra (ex: 'Casa', 'Sol', 'Árvore').\n2. Por ordem, cada jogador desenha **apenas uma forma geométrica** no quadro digital (partilhado no ecrã).\n3. O desenho vai-se construindo aos poucos, sem ninguém saber o resultado final.\n4. O **último jogador** observa o desenho completo e tenta adivinhar a palavra.\n5. 🎉 **Se acertar, a equipa ganha 3 moedas!**",
+    "reward": "3 moedas (se acertarem) ou 0 (se falharem).",
+    "secretWords": ["CASA", "SOL", "ÁRVORE", "FLOR", "GATO", "CORAÇÃO", "ESTRELA", "BOLA"],
+    "traitorSecretMissions": [
+      "Desenhar uma forma que não combina com a palavra, mas que possa ser interpretada de outra maneira.",
+      "Dizer 'Acho que estou a ver um pássaro' durante o desenho, para desviar.",
+      "Fazer um desenho muito rápido, como se estivesse a sabotar, mas que na verdade é correto.",
+      "Perguntar 'Posso desenhar uma linha curva?' para quebrar o ritmo."
+    ]
   }
 ]
