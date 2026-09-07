@@ -51,6 +51,9 @@ export default function GameBoard({
   const [plankSeconds, setPlankSeconds] = useState(0);
   const [isPlankRunning, setIsPlankRunning] = useState(false);
 
+  // --- TODOS OS useEffect NO TOPO, SEM CONDIÇÕES ---
+
+  // 1. Timer geral (já existente)
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
       setTimer(playerState.timer);
@@ -63,6 +66,22 @@ export default function GameBoard({
       return () => clearInterval(interval);
     }
   }, [playerState.timer]);
+
+  // 2. Cronómetro da prancha (TIME_GUESS) – movido para o topo
+  useEffect(() => {
+    // Só executa se estivermos na fase do Arsenal, a tarefa for TIME_GUESS e o cronómetro estiver a correr
+    const task = playerState.arsenalTask;
+    if (playerState.phase === 'PHASE_3_ARMOURY' && task?.type === 'TIME_GUESS' && isPlankRunning) {
+      const interval = setInterval(() => {
+        setPlankSeconds(prev => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+    // Se não estiver a correr ou não for a fase certa, não faz nada
+  }, [isPlankRunning, playerState.phase, playerState.arsenalTask]);
+
+  // --- RENDERIZAÇÃO CONDICIONAL (retornos antecipados) ---
+  // Estes retornos vêm DEPOIS de todos os hooks, o que é permitido.
 
   // 0. FIM DE JOGO
   if (gameOver) {
@@ -394,17 +413,9 @@ export default function GameBoard({
       onArsenalResultSubmit({ type: 'TIME_GUESS', guessTime: parseInt(guessTime) });
     };
 
+    // Agora a lógica do TIME_GUESS NÃO contém useEffect, apenas a UI
     if (task.type === 'TIME_GUESS') {
-      // Lógica do cronómetro
-      useEffect(() => {
-        if (isPlankRunning) {
-          const interval = setInterval(() => {
-            setPlankSeconds(prev => prev + 1);
-          }, 1000);
-          return () => clearInterval(interval);
-        }
-      }, [isPlankRunning]);
-
+      // Função para parar a prancha (já definida fora, mas pode ser inline)
       const handleStopPlank = () => {
         setIsPlankRunning(false);
         // Enviar o tempo real para o servidor
@@ -466,7 +477,7 @@ export default function GameBoard({
       );
     }
 
-    // TEXT_FLOOD (Palavras/Países)
+    // TEXT_FLOOD (Palavras/Países) – este não tinha hooks, mantém-se igual
     return (
       <div className="text-center">
         <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
@@ -555,8 +566,8 @@ export default function GameBoard({
     );
   }
 
-// 6. TABULEIRO NORMAL (Missão)
-return (
+  // 6. TABULEIRO NORMAL (Missão) – este é o retorno final
+  return (
     <div className="relative">
       <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982]">?</button>
 
