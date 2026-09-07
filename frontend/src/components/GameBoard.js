@@ -29,9 +29,12 @@ export default function GameBoard({
   gameOver, 
   roomData,
   socket,
-  onMissionValueSubmit
+  onMissionValueSubmit,
+  onArsenalResultSubmit // <-- Adicionada
 }) {
   const isTraitor = playerState.role === 'traitor';
+  
+  // --- ESTADOS (TODOS NO TOPO, OBRIGATÓRIO) ---
   const [selectedRating, setSelectedRating] = useState(0);
   const [traitorAnswer, setTraitorAnswer] = useState(null);
   const [selectedVote, setSelectedVote] = useState(null);
@@ -41,6 +44,10 @@ export default function GameBoard({
   const [decoyAnswered, setDecoyAnswered] = useState(false);
   const [openCanvas, setOpenCanvas] = useState(false);
   const [missionValue, setMissionValue] = useState('');
+  
+  // Estados para o novo Arsenal
+  const [resultItems, setResultItems] = useState([]);
+  const [guessTime, setGuessTime] = useState('');
 
   useEffect(() => {
     if (playerState.timer && playerState.timer > 0) {
@@ -361,40 +368,94 @@ export default function GameBoard({
   if (playerState.phase === 'PHASE_3_ARMOURY') {
     const task = playerState.arsenalTask || null;
 
+    if (!task) {
+      return (
+        <div className="text-center">
+          <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
+          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
+            <p className="text-[#F3EBDD]">A aguardar tarefa...</p>
+          </div>
+        </div>
+      );
+    }
+
+    const handleAddItem = () => {
+      setResultItems([...resultItems, '']);
+    };
+
+    const handleSubmitText = () => {
+      const validItems = resultItems.filter(item => item.trim() !== '');
+      onArsenalResultSubmit({ type: 'TEXT_FLOOD', items: validItems });
+    };
+
+    const handleSubmitTime = () => {
+      onArsenalResultSubmit({ type: 'TIME_GUESS', guessTime: parseInt(guessTime) });
+    };
+
+    if (task.type === 'TIME_GUESS') {
+      return (
+        <div className="text-center">
+          <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
+          
+          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
+            <p className="text-[#F3EBDD] mb-4">{task.description}</p>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-white mb-4">Quanto tempo (em segundos) achas que dura a prancha?</p>
+            <input
+              type="number"
+              value={guessTime}
+              onChange={(e) => setGuessTime(e.target.value)}
+              className="w-32 px-4 py-2 bg-[#291923] border border-[#D8B66C] text-white text-center rounded-sm mb-4"
+            />
+            <br />
+            <button onClick={handleSubmitTime} className="px-8 py-2 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">
+              Submeter Estimativa
+            </button>
+          </div>
+          <p className="text-xs text-white/60">Aguarda que todos os jogadores submetam os resultados...</p>
+        </div>
+      );
+    }
+
+    // TEXT_FLOOD (Palavras/Países)
     return (
       <div className="text-center">
         <h1 className="text-5xl font-bold text-[#E5C982] mb-8">O ARSENAL</h1>
         
-        {task && (
-          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
-            <p className="text-[#F3EBDD] mb-4">{task.description}</p>
-            {task.rule && <p className="text-sm text-[#F3EBDD]/70">Regra: {task.rule}</p>}
-          </div>
-        )}
-
-        {!task && (
-          <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
-            <p className="text-[#F3EBDD]">A carregar tarefa...</p>
-          </div>
-        )}
-        
-        {/* O botão de número continua aqui, mas será usado apenas para tarefas que precisem de o fazer */}
-        <div className="flex justify-center gap-4 mb-8">
-          {[1, 2, 3, 4, 5, 6].map(num => (
-            <button 
-              key={num} 
-              onClick={() => setArsenalNumber(num)}
-              className={`w-16 h-16 rounded-full text-2xl font-bold border-2 ${arsenalNumber === num ? 'bg-[#D8B66C] text-[#291923] border-white' : 'bg-[#412734] text-white border-[#D8B66C]/30'}`}
-            >
-              {num}
-            </button>
-          ))}
+        <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold text-white mb-2">{task.title}</h2>
+          <p className="text-[#F3EBDD] mb-4">{task.description}</p>
+          {task.rule && <p className="text-sm text-[#F3EBDD]/70">Regra: {task.rule}</p>}
         </div>
 
-        <button onClick={() => onArsenalAction(arsenalNumber)} className="px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-sm">
-          CONFIRMAR
-        </button>
+        <div className="mb-6">
+          <p className="text-white mb-4">Escreve as palavras/países (um por linha)</p>
+          <div className="flex flex-col items-center gap-2 mb-4">
+            {resultItems.map((item, idx) => (
+              <input
+                key={idx}
+                type="text"
+                value={item}
+                onChange={(e) => {
+                  const newItems = [...resultItems];
+                  newItems[idx] = e.target.value;
+                  setResultItems(newItems);
+                }}
+                className="w-64 px-4 py-2 bg-[#291923] border border-[#D8B66C] text-white rounded-sm"
+              />
+            ))}
+          </div>
+          <button onClick={handleAddItem} className="px-4 py-2 bg-[#291923] text-white border border-[#D8B66C] rounded-sm mr-2">
+            Adicionar Linha
+          </button>
+          <button onClick={handleSubmitText} className="px-8 py-2 bg-[#D8B66C] text-[#291923] font-bold rounded-sm">
+            Submeter Lista
+          </button>
+        </div>
+        <p className="text-xs text-white/60">Aguarda que todos os jogadores submetam os resultados...</p>
       </div>
     );
   }

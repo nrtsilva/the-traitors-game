@@ -617,7 +617,8 @@ io.on('connection', (socket) => {
 		}
 	});
 	
-	socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
+    // --- ARSENAL (Competitivo) ---
+    socket.on('submit_arsenal_action', ({ roomCode, actionData }, callback) => {
         try {
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
@@ -637,25 +638,83 @@ io.on('connection', (socket) => {
             const allChose = alivePlayers.every(p => p.arsenalChoice !== undefined);
 
             if (allChose) {
-                // CORREÇÃO: Carregar tarefa do ficheiro de ARSENAL correto
+                // CORREÇÃO: Carregar tarefa do ficheiro de ARSENAL correto e enviar aos jogadores
                 const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
                 const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
                 
-                // Guardar a tarefa na sala
                 room.currentArsenalTask = tarefaAleatoria;
-                
-                // Enviar para todos a tarefa do arsenal
                 io.to(room.roomCode).emit('arsenal_task', { task: tarefaAleatoria });
-                
-                // Processar vencedor (lógica simples de maior número único)
-                processArsenal(room);
+
+                // NÃO chamar processArsenal ainda! Esperar pelos resultados dos jogadores.
+                room.arsenalReadyCount = 0;
             }
             if (typeof callback === 'function') callback({ success: true });
         } catch (error) {
             console.error("Erro no submit_arsenal_action:", error);
         }
     });
+	
+	// --- NOVO EVENTO: RECEBER RESULTADO DA TAREFA DO ARSENAL ---
+    socket.on('submit_arsenal_task_result', ({ roomCode, resultData }, callback) => {
+        try {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || room.phase !== GAME_PHASES.PHASE_3_ARMOURY) return;
 
+            let player = room.players.find(p => p.id === socket.id);
+            if (!player) {
+                player = room.players.find(p => p.alive);
+                if (player) player.id = socket.id;
+            }
+            if (!player || !player.alive) return;
+
+            player.arsenalTaskResult = resultData;
+            room.arsenalReadyCount++;
+
+            const alivePlayers = room.players.filter(p => p.alive);
+            
+            if (room.arsenalReadyCount >= alivePlayers.length) {
+                // Todos submeteram! Calcular vencedor.
+                const task = room.currentArsenalTask;
+                let winner = null;
+                let bestScore = -Infinity;
+
+                if (task.type === 'TIME_GUESS') {
+                    // Para Show-Off, o vencedor é quem está mais perto do tempo real (simulado aqui como 30s)
+                    const actualTime = task.actualTime || 30; 
+                    let bestDiff = Infinity;
+                    alivePlayers.forEach(p => {
+                        const guess = p.arsenalTaskResult.guessTime || 0;
+                        const diff = Math.abs(guess - actualTime);
+                        if (diff < bestDiff) {
+                            bestDiff = diff;
+                            winner = p;
+                        }
+                    });
+                } else {
+                    // Para TEXT_FLOOD, o vencedor é quem tem mais itens válidos
+                    alivePlayers.forEach(p => {
+                        const count = (p.arsenalTaskResult.items || []).length;
+                        if (count > bestScore) {
+                            bestScore = count;
+                            winner = p;
+                        }
+                    });
+                }
+
+                // Atribuir prémio aleatório
+                const rewards = ['2_coins', '1_coin', 'shield', 'dagger'];
+                const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
+                
+                // CORREÇÃO: Passar tudo para a função processArsenal (em vez de duplicar aqui)
+                processArsenal(room, winner, randomReward);
+            }
+            if (typeof callback === 'function') callback({ success: true });
+        } catch (error) {
+            console.error("Erro no submit_arsenal_task_result:", error);
+        }
+    });
+	
     socket.on('disconnect', () => {
         for (const roomCode in rooms) {
             const room = rooms[roomCode];
@@ -747,39 +806,27 @@ function endMurderPhase(room) {
     }
 }
 
-function processArsenal(room) {
-    const choices = {};
-    room.players.filter(p => p.alive).forEach(p => {
-        if (p.arsenalChoice !== undefined) {
-            choices[p.arsenalChoice] = choices[p.arsenalChoice] || [];
-            choices[p.arsenalChoice].push(p);
-        }
-    });
-
-    let winner = null;
-    for (let num = 6; num >= 1; num--) {
-        if (choices[num] && choices[num].length === 1) {
-            winner = choices[num][0];
-            break;
-        }
-    }
-
-    const rewards = ['2_coins', '1_coin', 'shield', 'dagger'];
-    const randomReward = rewards[Math.floor(Math.random() * rewards.length)];
-
+function processArsenal(room, winner, randomReward) {
+    // Atribuir Prémio
     if (winner) {
         if (randomReward === '2_coins') winner.gold += 2;
         else if (randomReward === '1_coin') winner.gold += 1;
         else winner.inventory.push(randomReward);
     }
 
+    // Emitir Resultado
     io.to(room.roomCode).emit('arsenal_result', {
         winnerName: winner ? winner.name : 'Ninguém',
         winnerId: winner ? winner.id : null,
         reward: winner ? randomReward : null
     });
 
-    room.players.forEach(p => p.arsenalChoice = undefined);
+    // Limpar dados para a próxima fase
+    room.players.forEach(p => p.arsenalTaskResult = undefined);
+    room.arsenalReadyCount = 0;
+    room.arsenalChoice = undefined; // Limpar para evitar conflitos
+
+    // Avançar para a noite (Murder)
     setTimeout(() => startMurderPhase(room), 5000);
 }
 
