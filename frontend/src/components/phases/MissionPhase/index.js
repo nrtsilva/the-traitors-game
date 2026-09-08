@@ -15,6 +15,7 @@ export default function MissionPhase(props) {
   } = props;
 
   const mission = playerState.currentMission;
+  const isTraitor = playerState.role === 'traitor';
 
   // Renderiza o conteúdo específico da missão
   let missionContent = null;
@@ -43,11 +44,23 @@ export default function MissionPhase(props) {
     missionContent = <div className="text-center"><p className="text-white">Tipo de missão não suportado.</p></div>;
   }
 
+  // Obtém a tarefa secreta do traidor (se houver)
+  const secretMission = isTraitor && playerState.secretMissions && playerState.secretMissions.length > 0 
+    ? playerState.secretMissions[0] 
+    : null;
+
   return (
     <div className="relative">
-      <button onClick={() => onOpenHelp(0)} className="absolute top-0 right-4 text-3xl text-[#E5C982]">?</button>
+      {/* Botão de ajuda */}
+      <button 
+        onClick={() => onOpenHelp(0)} 
+        className="absolute top-0 right-4 text-3xl text-[#E5C982] hover:text-[#D8B66C] transition-colors z-10"
+        title="Ajuda"
+      >
+        ?
+      </button>
 
-      {/* TESOURO COMUM E VALOR EM JOGO */}
+      {/* TESOURO COMUM E VALOR EM JOGO - mantido igual */}
       <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-6 flex justify-center items-center gap-8 shadow-soft">
         <div className="text-center">
           <span className="text-3xl">💰</span>
@@ -68,21 +81,53 @@ export default function MissionPhase(props) {
         </div>
       </div>
 
-      {/* TIMER EM DESTAQUE */}
+      {/* TIMER EM DESTAQUE - versão circular melhorada */}
       <div className="text-center mb-8">
-        <div className="inline-block bg-[#D8B66C] text-[#291923] font-display text-5xl font-bold px-10 py-4 rounded-lg shadow-soft">
-          {playerState.timer || 0}s
+        <div className="inline-block relative">
+          <div className="w-24 h-24 rounded-full border-4 border-[#D8B66C] flex items-center justify-center bg-[#291923] shadow-lg">
+            <span className="font-display text-4xl font-bold text-[#D8B66C]">
+              {playerState.timer || 0}
+            </span>
+          </div>
+          <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-[#F3EBDD]/60 uppercase tracking-widest">
+            Tempo
+          </span>
         </div>
-        <p className="text-white mt-2">Tempo restante</p>
       </div>
 
-      {/* Missão */}
-      <div className="bg-[#291923] border border-[#D8B66C] p-8 rounded-md">
-        <h2 className="font-display text-3xl font-bold text-[#E5C982] mb-4 text-center">{mission.title}</h2>
-        <div className="text-[#F3EBDD] text-lg mb-8 text-left">
+      {/* CARD DA MISSÃO - com efeito de pergaminho e borda decorativa */}
+      <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-8 shadow-2xl relative overflow-hidden">
+        {/* Linha decorativa superior */}
+        <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent opacity-70"></div>
+        
+        {/* Título com separador */}
+        <h2 className="font-display text-4xl font-bold text-[#E5C982] mb-2 text-center tracking-widest">
+          {mission.title}
+        </h2>
+        <div className="w-24 h-0.5 bg-[#D8B66C] mx-auto mb-6"></div>
+
+        {/* Descrição da missão (formatada pelo MissionDescription) */}
+        <div className="text-[#F3EBDD] text-lg mb-8">
           <MissionDescription description={mission.description} />
         </div>
-        {missionContent}
+
+        {/* TAREFA SECRETA DO TRAIDOR - badge com ícone e borda dourada */}
+        {secretMission && (
+          <div className="mt-6 p-4 border border-[#D8B66C] rounded-lg bg-[#291923]/80 shadow-inner">
+            <div className="flex items-center gap-3 text-[#E5C982]">
+              <span className="text-2xl">🔮</span>
+              <span className="font-display tracking-wider text-sm uppercase">Tarefa Secreta</span>
+            </div>
+            <p className="text-[#F3EBDD] mt-2 text-sm italic">
+              {secretMission}
+            </p>
+          </div>
+        )}
+
+        {/* Conteúdo específico da missão (botões, inputs, etc.) */}
+        <div className="mt-6">
+          {missionContent}
+        </div>
       </div>
     </div>
   );
