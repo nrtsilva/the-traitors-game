@@ -60,7 +60,6 @@ function App() {
           };
         }
         dispatch({ type: 'SET_GAME_DATA', payload: playerState });
-        dispatch({ type: 'SET_GAME_DATA', payload: playerState });
         dispatch({ type: 'SET_SCREEN', payload: 'tutorial' });
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_GAME_OVER', payload: null });

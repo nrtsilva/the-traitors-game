@@ -29,7 +29,13 @@ function gameReducer(state, action) {
     case 'SET_ROOM_DATA':
       return { ...state, roomData: action.payload };
     case 'SET_GAME_DATA':
-      return { ...state, gameData: action.payload };
+      return { 
+        ...state, 
+        gameData: { 
+          ...state.gameData,
+          ...action.payload
+        } 
+      };
     case 'SET_IS_HOST':
       return { ...state, isHost: action.payload };
     case 'SET_PHASE_INTRO':
