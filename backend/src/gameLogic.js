@@ -61,12 +61,13 @@ function startBanishmentPhase(room, io) {
     });
 }
 
-// ===== FUNÇÃO CORRIGIDA (recebe io) =====
 function loadNewMission(room, io) {
     const gameMode = room.settings.gameMode || 'in_person';
     const missoes = getMissoesPorModo(gameMode);
     let randomMissao;
     
+    console.log(`[loadNewMission] Modo: ${gameMode}, missões disponíveis: ${missoes ? missoes.length : 0}`);
+
     if (!missoes || missoes.length === 0) {
         console.error('[loadNewMission] Nenhuma missão encontrada para o modo:', gameMode);
         randomMissao = {
@@ -79,11 +80,28 @@ function loadNewMission(room, io) {
         };
     } else {
         randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
+        console.log('[loadNewMission] Missão selecionada:', randomMissao.title);
     }
 
+    // Fallback extra (caso o randomMissao seja undefined por algum motivo)
+    if (!randomMissao) {
+        console.error('[loadNewMission] randomMissao é undefined! Usando fallback de emergência.');
+        randomMissao = {
+            id: 'emergency',
+            title: 'Missão de Emergência',
+            description: 'Completem a missão.',
+            type: 'DEFAULT',
+            reward: 0,
+            traitorSecretMissions: []
+        };
+    }
+
+    // ATRIBUIÇÃO EXPLÍCITA E VERIFICAÇÃO
     room.currentMissionData = randomMissao;
+    console.log('[loadNewMission] room.currentMissionData definido:', room.currentMissionData ? room.currentMissionData.title : 'UNDEFINED!');
     room.readyCount = 0;
 
+    // ... resto da função (secret missions, drawing state, etc.)
     const secretMissionsList = randomMissao.traitorSecretMissions || [];
     const selectedSecret = secretMissionsList.length > 0
         ? [secretMissionsList[Math.floor(Math.random() * secretMissionsList.length)]]

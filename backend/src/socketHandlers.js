@@ -108,9 +108,10 @@ function registerSocketHandlers(io) {
 				
 				// Verificar se a missão foi carregada
 				if (!room.currentMissionData) {
-					console.error('[start_game] Falha ao carregar missão.');
+					console.error('[start_game] Falha ao carregar missão! room.currentMissionData é undefined.');
 					return callback({ success: false, message: "Erro ao carregar missão. Tente novamente." });
 				}
+				console.log('[start_game] Missão carregada:', room.currentMissionData.title);
 
                 room.roundNumber = 1;
                 room.totalRounds = room.settings.numPhases || 2;
