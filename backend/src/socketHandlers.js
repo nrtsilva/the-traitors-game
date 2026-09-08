@@ -104,7 +104,7 @@ function registerSocketHandlers(io) {
                 }
 
                 // Carregar primeira missão
-                loadNewMission(room);
+                loadNewMission(room, io);
 				
 				// Verificar se a missão foi carregada
 				if (!room.currentMissionData) {
