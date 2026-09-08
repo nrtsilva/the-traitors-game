@@ -14,7 +14,7 @@ export default function MissionPhase(props) {
     playerId
   } = props;
 
-  const mission = playerState?.currentMission;
+  const mission = playerState?.currentMission || playerState?.mission || null;
 
   // Se não houver missão, mostra um ecrã de carregamento/erro
   if (!mission) {

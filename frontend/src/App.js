@@ -48,6 +48,8 @@ function App() {
       },
 
       game_started: (playerState) => {
+        console.log('[FRONTEND] game_started recebido:', playerState);
+        console.log('[FRONTEND] currentMission:', playerState.currentMission);
         dispatch({ type: 'SET_GAME_DATA', payload: playerState });
         dispatch({ type: 'SET_SCREEN', payload: 'tutorial' });
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });

@@ -136,6 +136,7 @@ function registerSocketHandlers(io) {
                         players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })),
                         secretMissions: (player.role === 'traitor') ? player.secretMissions : []
                     };
+					console.log('[start_game] pState a enviar para', player.name, ':', pState);
                     io.to(player.id).emit('game_started', pState);
                 });
 
