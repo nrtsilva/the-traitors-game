@@ -53,11 +53,6 @@ export default function PhaseIntroScreen({ data, isTraitor, onReady }) {
               Iniciar Fase
             </button>
           </div>
-
-          {/* Rodapé com o modo de jogo */}
-          <div className="text-center mt-6 text-[#F3EBDD]/40 text-xs uppercase tracking-widest">
-            {gameMode === 'in_person' ? '🏠 Presencial' : '💻 Remoto'}
-          </div>
         </div>
       </div>
     </div>

@@ -2,40 +2,62 @@ const { GAME_PHASES } = require('./constants');
 const { getMissoesPorModo, getArsenalPorModo } = require('./missionLoader');
 const { rooms, convertCoinsToBars, removePlayerFromRoom } = require('./roomManager');
 
-// --- NOVA FUNÇÃO: Completar missão com outcome ---
+// Completar missão com outcome
 function completeMission(room, outcome, io) {
-	// Se a missão já teve o prémio calculado via escolhas, não adiciona novamente
+    // Para missões que já tiveram o prémio calculado (ex: CATEGORY_CHOICE),
+    // devemos passar o reward já calculado. Neste caso, chamamos finishMission com reward.
     if (room.currentMissionData.requiresPlayerChoice) {
-        // Apenas emite a avaliação, se ainda não tiver sido emitida
-        // Mas normalmente já emitimos no handler específico, por isso podemos ignorar
-        // ou emitir como fallback
-        if (!room.evaluationEmitted) {
-            room.evaluationEmitted = true;
-            io.to(room.roomCode).emit('mission_evaluation');
-        }
+        // O reward já foi adicionado e guardado em room.lastMissionReward
+        const reward = room.lastMissionReward || 0;
+        finishMission(room, outcome, reward, io);
         return;
     }
-	
-    if (outcome) {
-        // Adiciona a recompensa ao pote comum
-        const reward = parseInt(room.currentMissionData.reward) || 0;
-        room.prizeFund.coins += reward;
-        convertCoinsToBars(room);
-        console.log(`[Missão] Sucesso! Adicionado ${reward} moedas ao pote.`);
-    } else {
-        console.log('[Missão] Falha! Nenhum prémio adicionado.');
-    }
 
-    // Avança para a próxima fase (Expulsão ou Avaliação)
-    // Se a missão requer avaliação (estrelas), emitir mission_evaluation
-    // Caso contrário, ir diretamente para Expulsão
-    if (room.currentMissionData.requiresUserOutcome) {
-        // Missões que já tiveram o veredito dos jogadores: saltar avaliação
-        startBanishmentPhase(room, io);
-    } else {
-        // Missões com avaliação automática: pedir avaliação (estrelas)
-        io.to(room.roomCode).emit('mission_evaluation');
+    // Para as restantes, calculamos o reward a partir do outcome
+    const reward = outcome ? parseInt(room.currentMissionData.reward) || 0 : 0;
+    finishMission(room, outcome, reward, io);
+}
+
+// Finalizar missão e emitir resultado
+function finishMission(room, outcome, reward, io) {
+    // Se 'reward' não for passado, calcula a partir da missão (apenas se outcome for true)
+    let rewardAmount = reward;
+    if (rewardAmount === undefined) {
+        if (outcome) {
+            rewardAmount = parseInt(room.currentMissionData.reward) || 0;
+            // Adiciona ao cofre (se ainda não tiver sido adicionado)
+            if (!room.currentMissionData.requiresPlayerChoice) {
+                room.prizeFund.coins += rewardAmount;
+                convertCoinsToBars(room);
+            }
+        } else {
+            rewardAmount = 0;
+        }
     }
+	// Se reward foi passado, assume que já foi adicionado ao cofre
+	// (ex: CATEGORY_CHOICE já adicionou)
+
+    // Emitir o resultado da missão para todos
+    io.to(room.roomCode).emit('mission_outcome', {
+        success: outcome,
+        reward: rewardAmount,
+        barsAdded: room.prizeFund.bars,
+        coinsAdded: room.prizeFund.coins,
+        title: room.currentMissionData.title
+    });
+
+    console.log(`[Missão] Resultado: ${outcome ? 'Sucesso' : 'Falha'} - Adicionado ${rewardAmount} moedas.`);
+
+    // Após 3 segundos, avançar para a próxima fase
+    setTimeout(() => {
+        // Se a missão requer avaliação (estrelas), emitir mission_evaluation
+        // Caso contrário, ir diretamente para Expulsão
+        if (room.currentMissionData.requiresUserOutcome || room.currentMissionData.requiresPlayerChoice) {
+            startBanishmentPhase(room, io);
+        } else {
+            io.to(room.roomCode).emit('mission_evaluation');
+        }
+    }, 3000);
 }
 
 function startBanishmentPhase(room, io) {
@@ -123,13 +145,12 @@ function loadNewMission(room) {
     return randomMissao;
 }
 
-// --- As restantes funções (startMissionTimer, startMurderPhase, etc.) permanecem iguais ---
 function startMissionTimer(room, io) {
     if (room.phaseTimer) clearTimeout(room.phaseTimer);
     const timeLimitMs = (room.currentMissionData.timeLimit || 120) * 1000;
     room.phaseTimer = setTimeout(() => {
-        // Quando o tempo acaba, tratar como falha (outcome = false)
-        completeMission(room, false, io);
+        // Tempo esgotado = falha
+        finishMission(room, false, 0, io);
     }, timeLimitMs);
 }
 

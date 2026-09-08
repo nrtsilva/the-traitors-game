@@ -53,6 +53,7 @@ function App() {
         dispatch({ type: 'SET_SCREEN', payload: 'tutorial' });
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_GAME_OVER', payload: null });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado anterior
       },
 
       phase_intro: (data) => {
@@ -60,12 +61,20 @@ function App() {
         dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
         dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado anterior
+      },
+
+      mission_outcome: (data) => {
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
+        // O áudio pode ser reproduzido aqui, se desejar
+        // play(data.success ? 'mission_success.mp3' : 'mission_fail.mp3');
       },
 
       mission_evaluation: () => {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: true });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado
         play('evaluation.mp3');
       },
 
@@ -73,6 +82,7 @@ function App() {
         dispatch({ type: 'SET_ARSENAL_RESULT', payload: data });
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('arsenal.mp3');
       },
 
@@ -80,6 +90,7 @@ function App() {
         dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: data });
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('banishment.mp3');
       },
 
@@ -90,12 +101,14 @@ function App() {
         dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
         dispatch({ type: 'SET_MURDER_REVEAL', payload: null });
         dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('murder-blindfold.mp3');
       },
 
       traitor_choices: (data) => {
         dispatch({ type: 'SET_BLINDFOLD', payload: false });
         dispatch({ type: 'SET_TRAITOR_CHOICES', payload: data });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('murder-blindfold.mp3');
       },
 
@@ -112,6 +125,7 @@ function App() {
       recruit_result: (data) => {
         dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
         dispatch({ type: 'SET_RECRUIT_RESULT', payload: data });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('murder-reveal.mp3');
       },
 
@@ -121,6 +135,7 @@ function App() {
         dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
         dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
         dispatch({ type: 'SET_MURDER_REVEAL', payload: data });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('murder-reveal.mp3');
       },
 
@@ -130,16 +145,19 @@ function App() {
         dispatch({ type: 'SET_SHOW_PLAYER_LIST', payload: null });
         dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
         dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
       },
 
       game_over: (data) => {
         dispatch({ type: 'SET_GAME_OVER', payload: data });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('game-over.mp3');
       },
 
       phase_started: (data) => {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado
         // Usar o ref para obter o gameData mais recente e fazer merge
         const currentGame = gameDataRef.current || {};
         dispatch({
@@ -407,6 +425,7 @@ function App() {
               onMissionValueSubmit={handleMissionValueSubmit}
               onArsenalResultSubmit={handleArsenalResultSubmit}
               onMissionOutcome={handleMissionOutcome}
+              missionOutcome={state.missionOutcome} // <-- NOVO
             />
           )}
 

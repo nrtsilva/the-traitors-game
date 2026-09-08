@@ -15,6 +15,7 @@ import EvaluationScreen from './phases/EvaluationScreen';
 import ArsenalPhase from './phases/ArsenalPhase';
 import BanishmentVoteScreen from './phases/BanishmentVoteScreen';
 import MissionPhase from './phases/MissionPhase';
+import MissionOutcomeScreen from './phases/MissionOutcomeScreen'; // <-- NOVO
 
 export default function GameBoard({
   playerState,
@@ -45,39 +46,47 @@ export default function GameBoard({
   socket,
   onMissionValueSubmit,
   onArsenalResultSubmit,
-  onMissionOutcome
+  onMissionOutcome,
+  missionOutcome, // <-- NOVO prop
 }) {
-  // Fim de Jogo
+  // -------------------- ECRÃS PRIORITÁRIOS --------------------
+  
+  // 1. Missão Outcome (resultado da missão) – prioridade alta
+  if (missionOutcome) {
+    return <MissionOutcomeScreen {...missionOutcome} />;
+  }
+
+  // 2. Fim de Jogo
   if (gameOver) {
     return <GameOverScreen gameOver={gameOver} />;
   }
 
-  // Revelação da Expulsão
+  // 3. Revelação da Expulsão
   if (banishmentReveal) {
     return <BanishmentRevealScreen data={banishmentReveal} />;
   }
 
-  // Resultado do Arsenal
+  // 4. Resultado do Arsenal
   if (arsenalResult) {
     return <ArsenalResultScreen result={arsenalResult} playerId={playerId} />;
   }
 
-  // Blindfold (Noite)
+  // 5. Blindfold (Noite)
   if (blindfold) {
     return <BlindfoldScreen />;
   }
 
-  // Decoy (durante a noite, para não traidores)
+  // 6. Decoy (durante a noite, para não traidores)
   if (playerState.phase === 'PHASE_4_MURDER' && !traitorChoices && !recruitInvitation && !recruitResult && !murderReveal) {
     return <DecoyScreen onDecoyAnswer={onDecoyAnswer} />;
   }
 
-  // Escolhas do Traidor
+  // 7. Escolhas do Traidor
   if (traitorChoices) {
     return <TraitorChoicesScreen choices={traitorChoices} onChoice={onTraitorChoice} />;
   }
 
-  // Lista de jogadores para o Traidor (assassinar ou recrutar)
+  // 8. Lista de jogadores para o Traidor (assassinar ou recrutar)
   if (showPlayerList) {
     return (
       <TraitorPlayerListScreen
@@ -89,22 +98,22 @@ export default function GameBoard({
     );
   }
 
-  // Convite para recrutamento
+  // 9. Convite para recrutamento
   if (recruitInvitation) {
     return <RecruitInvitationScreen onDecision={onRecruitDecision} />;
   }
 
-  // Resultado do recrutamento
+  // 10. Resultado do recrutamento
   if (recruitResult) {
     return <RecruitResultScreen data={recruitResult} onContinue={onContinueAfterReveal} />;
   }
 
-  // Resultado do assassinato
+  // 11. Resultado do assassinato
   if (murderReveal) {
     return <MurderRevealScreen data={murderReveal} onContinue={onContinueAfterReveal} />;
   }
 
-  // Introdução de fase
+  // 12. Introdução de fase (inclui missão e arsenal)
   if (phaseIntro) {
     return (
       <PhaseIntroScreen
@@ -115,22 +124,22 @@ export default function GameBoard({
     );
   }
 
-  // Avaliação da missão
+  // 13. Avaliação da missão
   if (isEvaluation) {
     return <EvaluationScreen {...{ playerState, isTraitor: playerState.role === 'traitor', onEvaluation }} />;
   }
 
-  // Fase do Arsenal
+  // 14. Fase do Arsenal
   if (playerState.phase === 'PHASE_3_ARMOURY') {
     return <ArsenalPhase {...{ playerState, socket, roomData, onArsenalResultSubmit }} />;
   }
 
-  // Fase de Votação (Expulsão)
+  // 15. Fase de Votação (Expulsão)
   if (playerState.phase === 'PHASE_2_BANISHMENT') {
     return <BanishmentVoteScreen {...{ playerState, onVote, timer: playerState.timer }} />;
   }
 
-  // Missão (padrão) – passa todas as props necessárias
+  // 16. Missão (padrão) – passa todas as props necessárias
   return (
     <MissionPhase
       playerState={playerState}

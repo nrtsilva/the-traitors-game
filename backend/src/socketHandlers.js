@@ -430,42 +430,103 @@ function registerSocketHandlers(io) {
             }
         });
 		
+		// --- SUBMIT CATEGORY CHOICE (para missões do tipo CATEGORY_CHOICE) ---
 		socket.on('submit_category_choice', ({ roomCode, choice }, callback) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
-			if (!room.currentMissionData.requiresPlayerChoice) return;
+			try {
+				const cleanCode = (roomCode || "").trim().toUpperCase();
+				const room = rooms[cleanCode];
+				
+				// Validações básicas
+				if (!room) {
+					console.error(`[submit_category_choice] Sala ${cleanCode} não encontrada.`);
+					return callback?.({ success: false, message: "Sala não encontrada." });
+				}
+				
+				if (room.phase !== GAME_PHASES.PHASE_1_MISSION) {
+					console.error(`[submit_category_choice] Sala ${cleanCode} não está na fase de missão.`);
+					return callback?.({ success: false, message: "A missão já terminou." });
+				}
+				
+				if (!room.currentMissionData?.requiresPlayerChoice) {
+					console.error(`[submit_category_choice] Missão atual não requer escolha dos jogadores.`);
+					return callback?.({ success: false, message: "Esta missão não pede escolhas." });
+				}
 
-			let player = room.players.find(p => p.id === socket.id);
-			if (!player) player = room.players.find(p => p.alive);
-			if (!player || !player.alive) return;
+				// Encontrar o jogador
+				let player = room.players.find(p => p.id === socket.id);
+				if (!player) {
+					// Se o socket ID mudou, tenta encontrar pelo nome ou outro identificador
+					player = room.players.find(p => p.alive && p.categoryChoice === undefined);
+					if (player) {
+						player.id = socket.id;
+						console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
+					}
+				}
+				
+				if (!player || !player.alive) {
+					console.error(`[submit_category_choice] Jogador não encontrado ou já eliminado.`);
+					return callback?.({ success: false, message: "Jogador não encontrado." });
+				}
 
-			// Guardar a escolha do jogador
-			player.categoryChoice = choice;
-			room.categoryChoicesCount = (room.categoryChoicesCount || 0) + 1;
+				// Validar a escolha (deve ser um número entre 0 e options.length-1)
+				const options = room.currentMissionData.options || [];
+				if (choice === undefined || choice === null || choice < 0 || choice >= options.length) {
+					console.error(`[submit_category_choice] Escolha inválida: ${choice}`);
+					return callback?.({ success: false, message: "Escolha inválida." });
+				}
 
-			const alivePlayers = room.players.filter(p => p.alive);
+				// Guardar a escolha do jogador
+				player.categoryChoice = choice;
+				room.categoryChoicesCount = (room.categoryChoicesCount || 0) + 1;
 
-			// Quando todos submeterem
-			if (room.categoryChoicesCount >= alivePlayers.length) {
-				// Calcular recompensa: número de escolhas únicas
-				const choices = alivePlayers.map(p => p.categoryChoice);
-				const uniqueChoices = new Set(choices);
-				const reward = uniqueChoices.size; // 1 moeda por escolha única
+				const alivePlayers = room.players.filter(p => p.alive);
 
-				// Adicionar prémio ao pote comum (UMA ÚNICA VEZ)
-				room.prizeFund.coins += reward;
-				convertCoinsToBars(room);
+				// Verificar se todos os jogadores vivos já submeteram
+				if (room.categoryChoicesCount >= alivePlayers.length) {
+					console.log(`[submit_category_choice] Todos os ${alivePlayers.length} jogadores submeteram. Calculando recompensa...`);
 
-				// Limpar estados
-				room.players.forEach(p => p.categoryChoice = undefined);
-				room.categoryChoicesCount = 0;
+					// Recolher todas as escolhas
+					const choices = alivePlayers.map(p => p.categoryChoice);
+					
+					// Calcular número de escolhas únicas
+					const uniqueChoices = new Set(choices);
+					const reward = uniqueChoices.size; // 1 moeda por escolha única
 
-				// Emitir avaliação para todos (inclui o Traidor e os Fiéis)
-				io.to(cleanCode).emit('mission_evaluation');
+					// Adicionar recompensa ao cofre comum
+					room.prizeFund.coins += reward;
+					convertCoinsToBars(room);
+
+					console.log(`[submit_category_choice] Recompensa: ${reward} moedas (${uniqueChoices.size} escolhas únicas).`);
+
+					// Limpar estados para a próxima missão
+					room.players.forEach(p => p.categoryChoice = undefined);
+					room.categoryChoicesCount = 0;
+
+					// Se a função finishMission existir, podemos usá-la para emitir o resultado
+					// Caso contrário, emitir mission_evaluation diretamente
+					if (typeof finishMission === 'function') {
+						// Guardar o reward para usar no finishMission
+						room.lastMissionReward = reward;
+						// outcome = true, reward já calculado
+						finishMission(room, true, reward, io);
+					} else {
+						// Fallback: emitir avaliação diretamente
+						io.to(cleanCode).emit('mission_evaluation');
+					}
+				} else {
+					console.log(`[submit_category_choice] ${room.categoryChoicesCount}/${alivePlayers.length} jogadores submeteram.`);
+				}
+
+				// Callback de sucesso
+				if (typeof callback === 'function') {
+					callback({ success: true });
+				}
+			} catch (error) {
+				console.error("Erro no submit_category_choice:", error);
+				if (typeof callback === 'function') {
+					callback({ success: false, message: error.message || "Erro interno." });
+				}
 			}
-
-			if (typeof callback === 'function') callback({ success: true });
 		});
 
         // --- DRAWING (colaborativo) ---

@@ -18,6 +18,8 @@ const initialState = {
   gameOver: null,
   isTutorialOverlay: false,
   tutorialStep: 0,
+  missionOutcome: null,
+  readyCount: 0,
 };
 
 function gameReducer(state, action) {
@@ -56,6 +58,8 @@ function gameReducer(state, action) {
       return { ...state, ...action.payload };
     case 'RESET_GAME':
       return { ...initialState, currentScreen: 'lobby' };
+    case 'SET_MISSION_OUTCOME':
+      return { ...state, missionOutcome: action.payload };
     default:
       return state;
   }
