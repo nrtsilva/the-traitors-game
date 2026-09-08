@@ -8,6 +8,7 @@
     "description": "Sentem-se em círculo no chão. Usando **apenas os pés**, passem uma carta (ou um objeto leve) de jogador para jogador, sem a deixar cair. Se cair, recomeçam do zero. **Objetivo:** obter o maior número de passes consecutivos sem deixar cair. No final, o grupo regista o número total de passes conseguidos.",
     "reward": "Número de passes ÷ 4 (arredondado para baixo) em moedas.",
     "requiresNumberInput": true,
+    "requiresUserOutcome": false,
     "traitorSecretMissions": [
       "Dizer 'Ui, escorregou!' sempre que alguém estiver prestes a passar.",
       "Rir-se de forma exagerada sempre que a carta for passada com sucesso.",
@@ -23,6 +24,7 @@
     "timeLimit": 180,
     "description": "Um jogador (o 'Mestre') escolhe secretamente uma palavra de 5 letras (todas relacionadas com um tema: por exemplo, 'Animais', 'Comida', 'Objetos de Casa'). Os restantes jogadores têm **6 tentativas** para adivinhar a palavra. A cada tentativa, o Mestre diz se a letra existe e se está na posição correta (como no jogo Wordle). **Ganham uma moeda por cada tentativa não utilizada** (se acertarem à primeira, ganham 6 moedas; à segunda, 5; etc.). Se não acertarem em 6 tentativas, não ganham nada.",
     "reward": "6 − (número de tentativas usadas) moedas.",
+    "requiresUserOutcome": false,
     "traitorSecretMissions": [
       "Sugerir uma palavra que não esteja relacionada com o tema escolhido.",
       "Dizer 'Essa letra existe' quando na verdade não existe (mas corrigir de imediato, como se fosse engano).",
@@ -36,9 +38,10 @@
     "title": "🎨 Desenho nas Costas",
     "type": "COLLABORATIVE_DRAWING",
     "timeLimit": 180,
-    "description": "1. **Formem uma fila** e definam a ordem dos jogadores, do primeiro ao último.\n2. O **primeiro jogador** recebe secretamente uma palavra que terá de transmitir.\n3. **Sem falar**, o primeiro jogador desenha a palavra com o dedo nas costas do segundo jogador.\n4. O segundo jogador tenta perceber o que sentiu e, **sem fazer perguntas**, desenha a mesma coisa nas costas do terceiro.\n5. O processo continua até chegar ao **último jogador da fila**.\n6. O último jogador diz **em voz alta** o que acha que foi desenhado.\n7. 🎉 **Se a resposta for a palavra original, a equipa ganha 3 moedas!**",
+    "description": "1. **Formem uma fila** e definam a ordem dos jogadores, do primeiro ao último.\n2. O **primeiro jogador** recebe secretamente uma palavra (ex: 'Barco', 'Bicicleta', 'Casa') que terá de transmitir.\n3. **Sem falar**, o primeiro jogador desenha a palavra com o dedo nas costas do segundo jogador.\n4. O segundo jogador tenta perceber o que sentiu e, **sem fazer perguntas**, desenha a mesma coisa nas costas do terceiro.\n5. O processo continua até chegar ao **último jogador da fila**.\n6. O último jogador diz **em voz alta** o que acha que foi desenhado.\n7. 🎉 **Se a resposta for a palavra original, a equipa ganha 3 moedas!**",
     "reward": "3 moedas (se acertarem) ou 0 (se falharem).",
-    "secretWords": ["BARCO", "BICICLETA", "CASA", "ÁRVORE", "SOL", "FLOR", "CARRO", "AVIÃO", "PEIXE", "GATO", "ESTRELA", "CHUVA", "MONTANHA", "RELÓGIO", "CHAPÉU", "ÓCULOS"],
+    "secretWords": ["BARCO", "BICICLETA", "CASA", "ÁRVORE", "SOL", "FLOR", "CARRO", "AVIÃO", "PEIXE", "GATO", "CORAÇÃO", "ESTRELA", "BOLA", "CHUVA", "MONTANHA", "RELÓGIO", "CHAPÉU", "ÓCULOS"],
+    "requiresUserOutcome": false,
     "traitorSecretMissions": [
       "Dizer 'Estou com comichão nas costas' enquanto o desenho é feito, para desconcentrar.",
       "Fazer uma pausa exagerada antes de desenhar, como se estivesse a pensar no que desenhar.",
@@ -54,6 +57,7 @@
     "timeLimit": 120,
     "description": "O animador lê em voz alta 6 afirmações (ex: 'O meu maior medo', 'Uma coisa que nunca fiz', 'O que mais gosto de comer', etc.). **Cada jogador escolhe uma afirmação** e escreve-a num papel, sem mostrar aos outros. Depois, todos revelam ao mesmo tempo. **Ganham 1 moeda por cada afirmação que foi escolhida por apenas uma pessoa** (respostas únicas). Se duas ou mais pessoas escolherem a mesma, ninguém ganha por essa afirmação. **Objetivo:** maximizar o número de respostas únicas.",
     "reward": "1 moeda por cada resposta única.",
+    "requiresUserOutcome": true,
     "traitorSecretMissions": [
       "Escolher a mesma afirmação que o jogador à sua direita (observando-o discretamente).",
       "Dizer em voz alta 'Eu vou escolher a número 3!' para influenciar os outros.",

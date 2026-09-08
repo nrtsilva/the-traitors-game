@@ -1,8 +1,9 @@
 const { GAME_PHASES } = require('./constants');
-const { rooms, createInitialRoomState, removePlayerFromRoom } = require('./roomManager');
+const { rooms, createInitialRoomState, removePlayerFromRoom, convertCoinsToBars } = require('./roomManager');
 const { getMissoesPorModo, getArsenalPorModo } = require('./missionLoader');
 const {
     loadNewMission,
+	completeMission,
     startMissionTimer,
     startMurderPhase,
     endMurderPhase,
@@ -79,60 +80,36 @@ function registerSocketHandlers(io) {
             try {
                 const cleanCode = (roomCode || "").trim().toUpperCase();
                 const room = rooms[cleanCode];
-                if (!room || room.hostId !== socket.id) {
-                    return callback({ success: false, message: "Não autorizado." });
-                }
-
-                // Reset de estados gerais
-                room.endMissionVotes = 0;
-                room.players.forEach(p => p.hasEndMissionVote = false);
+                if (!room || room.hostId !== socket.id) return;
 
                 const minPlayers = 2;
                 if (room.players.length < minPlayers) {
                     return callback({
                         success: false,
-                        message: `É necessário ter pelo menos ${minPlayers} jogadores na sala para iniciar. Ajusta o número de jogadores nas configurações ou convida mais amigos.`
+                        message: `É necessário ter pelo menos ${minPlayers} jogadores na sala para iniciar.`
                     });
                 }
 
                 const gameMode = room.settings.gameMode || 'in_person';
                 const shuffled = [...room.players].sort(() => Math.random() - 0.5);
+                let traitorCount = 1; // Para 2-6 jogadores, é sempre 1
 
-                // Número de traidores baseado na configuração (com limite para <=6)
-                let traitorCount = room.settings.numTraitors || 1;
-                if (room.players.length <= 6) traitorCount = 1;
+                room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
 
-                // Reset completo dos jogadores
-                room.players.forEach(p => {
-                    p.role = 'faithful';
-                    p.alive = true;
-                    p.gold = 3;
-                    p.bars = 0;
-                    p.inventory = [];
-                    p.secretMissions = [];
-                    p.secretMissionsCompleted = [];
-                    p.voteCast = null;
-                    p.isReadyForPhase = false;
-                    p.evaluation = undefined;
-                    p.missionValue = undefined;
-                });
-
-                // Atribuir papéis de traidor
                 for (let i = 0; i < traitorCount; i++) {
                     const t = shuffled[i];
                     const pObj = room.players.find(p => p.id === t.id);
                     if (pObj) pObj.role = 'traitor';
                 }
 
-                // Inicializar estado do jogo
+                // Carregar primeira missão
+                loadNewMission(room);
+
                 room.roundNumber = 1;
                 room.totalRounds = room.settings.numPhases || 2;
                 room.phase = GAME_PHASES.PHASE_1_MISSION;
                 room.prizeFund = { bars: 0, coins: 0 };
                 room.readyCount = 0;
-
-                // Carregar a primeira missão usando a função auxiliar
-                loadNewMission(room, io);
 
                 // Enviar estado inicial para cada jogador
                 room.players.forEach(player => {
@@ -148,20 +125,13 @@ function registerSocketHandlers(io) {
                         roomCode: cleanCode,
                         gold: player.gold,
                         bars: player.bars,
-                        players: room.players.map(p => ({
-                            id: p.id,
-                            name: p.name,
-                            alive: p.alive,
-                            role: (p.id === player.id) ? p.role : null,
-                            gold: p.gold,
-                            bars: p.bars
-                        })),
-                        secretMissions: player.secretMissions || []
+                        players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })),
+                        secretMissions: (player.role === 'traitor') ? player.secretMissions : []
                     };
                     io.to(player.id).emit('game_started', pState);
                 });
 
-                // Enviar introdução da fase a cada jogador (com ou sem missão secreta)
+                // Enviar introdução da fase
                 room.players.forEach(player => {
                     const introData = { ...room.phaseIntroData };
                     if (player.role !== 'traitor') delete introData.secretMission;
@@ -223,6 +193,7 @@ function registerSocketHandlers(io) {
                 console.error("Erro no player_ready:", error);
             }
         });
+		
 
         // --- SUBMETER AVALIAÇÃO ---
         socket.on('submit_evaluation', ({ roomCode, data }) => {
@@ -248,16 +219,8 @@ function registerSocketHandlers(io) {
 
                 if (allEvaluated) {
                     room.players.forEach(p => p.evaluation = undefined);
-                    room.phase = GAME_PHASES.PHASE_2_BANISHMENT;
-                    room.phaseIntroData = {
-                        title: "A Expulsão",
-                        description: "Discutam em voz alta quem acham que é o Traidor. Quando todos estiverem prontos, votem para expulsar alguém.",
-                        secretMission: null
-                    };
-                    room.players.forEach(p => p.voteCast = null);
-                    room.players.forEach(player => {
-                        io.to(player.id).emit('phase_intro', { ...room.phaseIntroData });
-                    });
+                    // Após avaliação, avançar para Expulsão
+                    startBanishmentPhase(room, io); // Função importada de gameLogic
                 }
             } catch (error) {
                 console.error("Erro no submit_evaluation:", error);
@@ -427,15 +390,8 @@ function registerSocketHandlers(io) {
             const room = rooms[cleanCode];
             if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
 
-            if (outcome) {
-                const reward = parseInt(room.currentMissionData.reward) || 0;
-                room.prizeFund.coins += reward;
-                convertCoinsToBars(room);
-            }
-
-            room.players.forEach(p => p.hasEndMissionVote = false);
-            room.endMissionVotes = 0;
-            io.to(cleanCode).emit('mission_evaluation');
+            // Chamar a função centralizada que lida com o fim da missão
+            completeMission(room, outcome, io);
         });
 
         // --- SUBMIT MISSION VALUE (ex: Footsies) ---

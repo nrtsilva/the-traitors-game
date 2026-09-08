@@ -2,34 +2,74 @@ const { GAME_PHASES } = require('./constants');
 const { getMissoesPorModo, getArsenalPorModo } = require('./missionLoader');
 const { rooms, convertCoinsToBars, removePlayerFromRoom } = require('./roomManager');
 
-// Função auxiliar: carregar nova missão
-function loadNewMission(room, io) {
+// --- NOVA FUNÇÃO: Completar missão com outcome ---
+function completeMission(room, outcome, io) {
+    if (outcome) {
+        // Adiciona a recompensa ao pote comum
+        const reward = parseInt(room.currentMissionData.reward) || 0;
+        room.prizeFund.coins += reward;
+        convertCoinsToBars(room);
+        console.log(`[Missão] Sucesso! Adicionado ${reward} moedas ao pote.`);
+    } else {
+        console.log('[Missão] Falha! Nenhum prémio adicionado.');
+    }
+
+    // Avança para a próxima fase (Expulsão ou Avaliação)
+    // Se a missão requer avaliação (estrelas), emitir mission_evaluation
+    // Caso contrário, ir diretamente para Expulsão
+    if (room.currentMissionData.requiresUserOutcome) {
+        // Missões que já tiveram o veredito dos jogadores: saltar avaliação
+        startBanishmentPhase(room, io);
+    } else {
+        // Missões com avaliação automática: pedir avaliação (estrelas)
+        io.to(room.roomCode).emit('mission_evaluation');
+    }
+}
+
+function startBanishmentPhase(room, io) {
+    room.phase = GAME_PHASES.PHASE_2_BANISHMENT;
+    room.phaseIntroData = {
+        title: "A Expulsão",
+        description: "Discutam em voz alta quem acham que é o Traidor. Quando todos estiverem prontos, votem para expulsar alguém.",
+        secretMission: null
+    };
+    room.players.forEach(p => p.voteCast = null);
+    room.players.forEach(player => {
+        io.to(player.id).emit('phase_intro', { ...room.phaseIntroData });
+    });
+}
+
+// --- NOVA FUNÇÃO AUXILIAR: Carregar uma nova missão para a sala ---
+function loadNewMission(room) {
     const gameMode = room.settings.gameMode || 'in_person';
     const missoes = getMissoesPorModo(gameMode);
     const randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
 
+    // Atualiza os dados da missão na sala
     room.currentMissionData = randomMissao;
     room.readyCount = 0;
 
-    // Escolher missão secreta aleatória para o traidor
+    // Escolher uma missão secreta aleatória para o traidor (se existir)
     const secretMissionsList = randomMissao.traitorSecretMissions || [];
     const selectedSecret = secretMissionsList.length > 0
         ? [secretMissionsList[Math.floor(Math.random() * secretMissionsList.length)]]
         : [];
 
+    // Atribuir a todos os jogadores
     room.players.forEach(player => {
         if (player.role === 'traitor') {
             player.secretMissions = selectedSecret;
         } else {
             player.secretMissions = [];
         }
+        // Reset de estados específicos da missão
         player.evaluation = undefined;
         player.arsenalChoice = undefined;
         player.isReadyForPhase = false;
         player.missionValue = undefined;
     });
 
-    // Se for missão de desenho colaborativo
+    // Se for uma missão de desenho colaborativo, preparar o estado de desenho
     if (randomMissao.type === 'COLLABORATIVE_DRAWING') {
         const ids = room.players.filter(p => p.alive).map(p => p.id);
         const guesserId = ids[ids.length - 1];
@@ -57,23 +97,27 @@ function loadNewMission(room, io) {
         });
     }
 
+    // Preparar os dados de introdução da fase
     const traitor = room.players.find(p => p.role === 'traitor' && p.alive);
+    const secretMissionForIntro = traitor ? traitor.secretMissions[0] : null;
+
     room.phaseIntroData = {
         title: randomMissao.title,
         description: randomMissao.description,
-        secretMission: traitor ? traitor.secretMissions[0] : null,
+        secretMission: secretMissionForIntro,
         gameMode: gameMode
     };
 
     return randomMissao;
 }
 
-// --- Resto das funções (startMissionTimer, startMurderPhase, etc.) ---
+// --- As restantes funções (startMissionTimer, startMurderPhase, etc.) permanecem iguais ---
 function startMissionTimer(room, io) {
     if (room.phaseTimer) clearTimeout(room.phaseTimer);
     const timeLimitMs = (room.currentMissionData.timeLimit || 120) * 1000;
     room.phaseTimer = setTimeout(() => {
-        io.to(room.roomCode).emit('mission_evaluation');
+        // Quando o tempo acaba, tratar como falha (outcome = false)
+        completeMission(room, false, io);
     }, timeLimitMs);
 }
 
@@ -259,13 +303,13 @@ function proceedToNextRound(room, io) {
         return;
     }
 
+    // Avança para a próxima missão
     room.phase = GAME_PHASES.PHASE_1_MISSION;
     room.endMissionVotes = 0;
+    room.players.forEach(p => { p.hasEndMissionVote = false; p.evaluation = undefined; p.arsenalChoice = undefined; p.isReadyForPhase = false; });
 
-    // Usar a função auxiliar para carregar nova missão
-    loadNewMission(room, io);
+    loadNewMission(room);
 
-    // Enviar introdução da fase a cada jogador
     room.players.forEach(player => {
         const introData = { ...room.phaseIntroData };
         if (player.role === 'traitor') {
@@ -279,6 +323,7 @@ function proceedToNextRound(room, io) {
 
 module.exports = {
     loadNewMission,
+    completeMission,
     startMissionTimer,
     startMurderPhase,
     endMurderPhase,
