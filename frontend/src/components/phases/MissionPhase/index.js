@@ -2,17 +2,16 @@ import React from 'react';
 import MissionCollaborativeDrawing from './MissionCollaborativeDrawing';
 import MissionNumberInput from './MissionNumberInput';
 import MissionDefault from './MissionDefault';
-import MissionDescription from '../MissionDescription';
+import MissionDescription from '../../MissionDescription';
 import MissionCategoryChoice from './MissionCategoryChoice';
 
 export default function MissionPhase(props) {
   const { 
     playerState, 
     onOpenHelp, 
-    socket,      // <-- ADICIONADO
-    roomData,    // <-- ADICIONADO
-    playerId,    // <-- ADICIONADO (para passar ao CollaborativeDrawing)
-    onCategorySubmit // <-- se quiseres passar como prop, mas podes usar socket diretamente
+    socket,
+    roomData,
+    playerId
   } = props;
 
   const mission = playerState.currentMission;
@@ -25,7 +24,6 @@ export default function MissionPhase(props) {
       <MissionCategoryChoice 
         {...props} 
         onCategorySubmit={(choice) => {
-          // socket e roomData estão agora definidos
           if (socket && roomData) {
             socket.emit('submit_category_choice', { 
               roomCode: roomData.roomCode, 
