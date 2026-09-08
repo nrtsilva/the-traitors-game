@@ -22,6 +22,7 @@ export function useAudio(initialMuted = false) {
 
   const play = (filename, loop = true) => {
     if (isMuted || !filename) return;
+    // Para o áudio atual se existir
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -30,11 +31,10 @@ export function useAudio(initialMuted = false) {
       const audio = new Audio(`/audio/${filename}`);
       audio.loop = loop;
       audio.volume = 0.5;
-      // Tenta reproduzir; se falhar, pode ser devido ao autoplay
+      // Tenta reproduzir; se falhar, tenta desbloquear
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
-          // Se falhar, tenta novamente após unlock
           unlockAudio();
           audio.play().catch(() => {});
         });
@@ -54,13 +54,16 @@ export function useAudio(initialMuted = false) {
 
   const toggleMute = () => {
     setIsMuted(prev => {
-      if (!prev) {
-        // Ao desmutar, tenta desbloquear e recriar o áudio
+      const newMuted = !prev;
+      if (newMuted) {
+        // Se mutar, para o áudio
+        stop();
+      } else {
+        // Se desmutar, tenta desbloquear e recriar o áudio do ecrã atual
         unlockAudio();
-        // Se houver um áudio atual, recria-o para tocar
-        // (opcional)
+        // A recriação será feita pelo próximo play que for chamado
       }
-      return !prev;
+      return newMuted;
     });
   };
 

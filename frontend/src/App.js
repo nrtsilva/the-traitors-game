@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useAudio } from './hooks/useAudio';
@@ -48,7 +49,6 @@ function App() {
       },
 
       game_started: (playerState) => {
-        // Garantir que currentMission está definido
         if (!playerState.currentMission) {
           console.warn('[game_started] currentMission ausente! Usando fallback.');
           playerState.currentMission = {
@@ -68,7 +68,6 @@ function App() {
 
       phase_intro: (data) => {
           dispatch({ type: 'SET_PHASE_INTRO', payload: data });
-          // Atualizar gameData.phase se existir
           if (data.phase) {
               const currentGame = gameDataRef.current || {};
               dispatch({
@@ -192,7 +191,6 @@ function App() {
         else play('mission.mp3');
       },
 
-      // <--- CORREÇÃO AQUI --->
       arsenal_task: (data) => {
         const currentGame = gameDataRef.current || {};
         dispatch({
@@ -202,7 +200,6 @@ function App() {
             arsenalTask: data.task
           }
         });
-        // Limpar phaseIntro para sair do ecrã de introdução do Arsenal
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
       },
 
