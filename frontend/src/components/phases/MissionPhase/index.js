@@ -15,7 +15,6 @@ export default function MissionPhase(props) {
   } = props;
 
   const mission = playerState.currentMission;
-  const isTraitor = playerState.role === 'traitor';
 
   // Renderiza o conteúdo específico da missão
   let missionContent = null;
@@ -44,11 +43,6 @@ export default function MissionPhase(props) {
     missionContent = <div className="text-center"><p className="text-white">Tipo de missão não suportado.</p></div>;
   }
 
-  // Obtém a tarefa secreta do traidor (se houver)
-  const secretMission = isTraitor && playerState.secretMissions && playerState.secretMissions.length > 0 
-    ? playerState.secretMissions[0] 
-    : null;
-
   return (
     <div className="relative">
       {/* Botão de ajuda */}
@@ -60,7 +54,7 @@ export default function MissionPhase(props) {
         ?
       </button>
 
-      {/* TESOURO COMUM E VALOR EM JOGO - mantido igual */}
+      {/* TESOURO COMUM E VALOR EM JOGO */}
       <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-6 flex justify-center items-center gap-8 shadow-soft">
         <div className="text-center">
           <span className="text-3xl">💰</span>
@@ -81,7 +75,7 @@ export default function MissionPhase(props) {
         </div>
       </div>
 
-      {/* TIMER EM DESTAQUE - versão circular melhorada */}
+      {/* TIMER EM DESTAQUE - versão circular */}
       <div className="text-center mb-8">
         <div className="inline-block relative">
           <div className="w-24 h-24 rounded-full border-4 border-[#D8B66C] flex items-center justify-center bg-[#291923] shadow-lg">
@@ -95,7 +89,7 @@ export default function MissionPhase(props) {
         </div>
       </div>
 
-      {/* CARD DA MISSÃO - com efeito de pergaminho e borda decorativa */}
+      {/* CARD DA MISSÃO */}
       <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-8 shadow-2xl relative overflow-hidden">
         {/* Linha decorativa superior */}
         <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent opacity-70"></div>
@@ -110,19 +104,6 @@ export default function MissionPhase(props) {
         <div className="text-[#F3EBDD] text-lg mb-8">
           <MissionDescription description={mission.description} />
         </div>
-
-        {/* TAREFA SECRETA DO TRAIDOR - badge com ícone e borda dourada */}
-        {secretMission && (
-          <div className="mt-6 p-4 border border-[#D8B66C] rounded-lg bg-[#291923]/80 shadow-inner">
-            <div className="flex items-center gap-3 text-[#E5C982]">
-              <span className="text-2xl">🔮</span>
-              <span className="font-display tracking-wider text-sm uppercase">Tarefa Secreta</span>
-            </div>
-            <p className="text-[#F3EBDD] mt-2 text-sm italic">
-              {secretMission}
-            </p>
-          </div>
-        )}
 
         {/* Conteúdo específico da missão (botões, inputs, etc.) */}
         <div className="mt-6">
