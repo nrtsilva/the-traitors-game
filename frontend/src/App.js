@@ -22,7 +22,6 @@ function App() {
   const roomDataRef = useRef(state.roomData);
   const gameDataRef = useRef(state.gameData);
 
-  // Atualizar refs sempre que os estados mudarem
   useEffect(() => {
     roomDataRef.current = state.roomData;
   }, [state.roomData]);
@@ -31,7 +30,7 @@ function App() {
     gameDataRef.current = state.gameData;
   }, [state.gameData]);
 
-  // --- HANDLERS DO SOCKET (com dependências estáveis) ---
+  // --- HANDLERS DO SOCKET ---
   useEffect(() => {
     if (!socket) return;
 
@@ -53,7 +52,7 @@ function App() {
         dispatch({ type: 'SET_SCREEN', payload: 'tutorial' });
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_GAME_OVER', payload: null });
-        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado anterior
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
       },
 
       phase_intro: (data) => {
@@ -61,20 +60,18 @@ function App() {
         dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
         dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado anterior
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
       },
 
       mission_outcome: (data) => {
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
-        // O áudio pode ser reproduzido aqui, se desejar
-        // play(data.success ? 'mission_success.mp3' : 'mission_fail.mp3');
       },
 
       mission_evaluation: () => {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: true });
-        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         play('evaluation.mp3');
       },
 
@@ -157,8 +154,7 @@ function App() {
       phase_started: (data) => {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null }); // Limpar resultado
-        // Usar o ref para obter o gameData mais recente e fazer merge
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         const currentGame = gameDataRef.current || {};
         dispatch({
           type: 'SET_GAME_DATA',
@@ -174,8 +170,8 @@ function App() {
         else play('mission.mp3');
       },
 
+      // <--- CORREÇÃO AQUI --->
       arsenal_task: (data) => {
-        // Usar o ref para obter o gameData mais recente e fazer merge
         const currentGame = gameDataRef.current || {};
         dispatch({
           type: 'SET_GAME_DATA',
@@ -184,6 +180,8 @@ function App() {
             arsenalTask: data.task
           }
         });
+        // Limpar phaseIntro para sair do ecrã de introdução do Arsenal
+        dispatch({ type: 'SET_PHASE_INTRO', payload: null });
       },
 
       player_status_update: (data) => {
@@ -191,20 +189,18 @@ function App() {
       }
     };
 
-    // Registar todos os handlers
     Object.keys(handlers).forEach(event => {
       socket.on(event, handlers[event]);
     });
 
-    // Limpeza
     return () => {
       Object.keys(handlers).forEach(event => {
         socket.off(event, handlers[event]);
       });
     };
-  }, [socket, play, dispatch]); // <-- Dependências estáveis (sem state.roomData/gameData)
+  }, [socket, play, dispatch]);
 
-  // --- HANDLERS DE NAVEGAÇÃO ---
+  // --- HANDLERS DE NAVEGAÇÃO (mantidos) ---
   const handleRoomCreated = useCallback((data) => {
     dispatch({ type: 'SET_ROOM_DATA', payload: data });
     dispatch({ type: 'SET_IS_HOST', payload: true });
@@ -229,7 +225,7 @@ function App() {
     dispatch({ type: 'SET_SCREEN', payload: 'game' });
   }, [dispatch]);
 
-  // --- HANDLERS PARA AÇÕES DO JOGO ---
+  // --- HANDLERS PARA AÇÕES DO JOGO (mantidos) ---
   const handleTraitorChoice = useCallback((action) => {
     socket.emit('traitor_choice', { roomCode: state.roomData?.roomCode, action });
   }, [socket, state.roomData]);
@@ -425,7 +421,7 @@ function App() {
               onMissionValueSubmit={handleMissionValueSubmit}
               onArsenalResultSubmit={handleArsenalResultSubmit}
               onMissionOutcome={handleMissionOutcome}
-              missionOutcome={state.missionOutcome} // <-- NOVO
+              missionOutcome={state.missionOutcome}
             />
           )}
 
