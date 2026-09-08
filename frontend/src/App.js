@@ -48,8 +48,18 @@ function App() {
       },
 
       game_started: (playerState) => {
-        console.log('[FRONTEND] game_started recebido:', playerState);
-        console.log('[FRONTEND] currentMission:', playerState.currentMission);
+        // Garantir que currentMission está definido
+        if (!playerState.currentMission) {
+          console.warn('[game_started] currentMission ausente! Usando fallback.');
+          playerState.currentMission = {
+            id: 'fallback',
+            title: 'Missão Padrão',
+            description: 'Completem a missão.',
+            type: 'DEFAULT',
+            reward: 0
+          };
+        }
+        dispatch({ type: 'SET_GAME_DATA', payload: playerState });
         dispatch({ type: 'SET_GAME_DATA', payload: playerState });
         dispatch({ type: 'SET_SCREEN', payload: 'tutorial' });
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });

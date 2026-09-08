@@ -11,10 +11,13 @@ export default function MissionPhase(props) {
     onOpenHelp, 
     socket,
     roomData,
-    playerId
+    playerId,
+    currentMission: missionFromProp
   } = props;
 
-  const mission = playerState?.currentMission || playerState?.mission || null;
+  const mission = missionFromProp || playerState?.currentMission;
+
+  console.log('[MissionPhase] mission:', mission);
 
   // Se não houver missão, mostra um ecrã de carregamento/erro
   if (!mission) {

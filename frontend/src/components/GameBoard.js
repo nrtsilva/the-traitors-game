@@ -143,6 +143,7 @@ export default function GameBoard({
   return (
     <MissionPhase
       playerState={playerState}
+      currentMission={playerState.currentMission}
       onOpenHelp={onOpenHelp}
       onEndMission={onEndMission}
       onMissionValueSubmit={onMissionValueSubmit}
