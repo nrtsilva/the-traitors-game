@@ -65,7 +65,8 @@ function startBanishmentPhase(room, io) {
     room.phaseIntroData = {
         title: "A Expulsão",
         description: "Discutam em voz alta quem acham que é o Traidor. Quando todos estiverem prontos, votem para expulsar alguém.",
-        secretMission: null
+        secretMission: null,
+		phase: room.phase
     };
     room.players.forEach(p => p.voteCast = null);
     room.players.forEach(player => {
@@ -73,7 +74,7 @@ function startBanishmentPhase(room, io) {
     });
 }
 
-// --- NOVA FUNÇÃO AUXILIAR: Carregar uma nova missão para a sala ---
+// Carregar uma nova missão para a sala
 function loadNewMission(room) {
     const gameMode = room.settings.gameMode || 'in_person';
     const missoes = getMissoesPorModo(gameMode);
@@ -139,7 +140,8 @@ function loadNewMission(room) {
         title: randomMissao.title,
         description: randomMissao.description,
         secretMission: secretMissionForIntro,
-        gameMode: gameMode
+        gameMode: gameMode,
+		phase: room.phase
     };
 
     return randomMissao;
@@ -316,7 +318,8 @@ function processBanishment(room, io) {
         room.phaseIntroData = {
             title: "O Arsenal",
             description: "Competição individual! O vencedor recebe uma carta de recompensa.",
-            secretMission: null
+            secretMission: null,
+			phase: room.phase
         };
         room.players.forEach(player => {
             io.to(player.id).emit('phase_intro', { ...room.phaseIntroData });

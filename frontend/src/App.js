@@ -56,11 +56,22 @@ function App() {
       },
 
       phase_intro: (data) => {
-        dispatch({ type: 'SET_PHASE_INTRO', payload: data });
-        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
-        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
+          dispatch({ type: 'SET_PHASE_INTRO', payload: data });
+          // Atualizar gameData.phase se existir
+          if (data.phase) {
+              const currentGame = gameDataRef.current || {};
+              dispatch({
+                  type: 'SET_GAME_DATA',
+                  payload: {
+                      ...currentGame,
+                      phase: data.phase
+                  }
+              });
+          }
+          dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+          dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+          dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+          dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
       },
 
       mission_outcome: (data) => {
