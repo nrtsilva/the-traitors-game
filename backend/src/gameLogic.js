@@ -4,6 +4,18 @@ const { rooms, convertCoinsToBars, removePlayerFromRoom } = require('./roomManag
 
 // --- NOVA FUNÇÃO: Completar missão com outcome ---
 function completeMission(room, outcome, io) {
+	// Se a missão já teve o prémio calculado via escolhas, não adiciona novamente
+    if (room.currentMissionData.requiresPlayerChoice) {
+        // Apenas emite a avaliação, se ainda não tiver sido emitida
+        // Mas normalmente já emitimos no handler específico, por isso podemos ignorar
+        // ou emitir como fallback
+        if (!room.evaluationEmitted) {
+            room.evaluationEmitted = true;
+            io.to(room.roomCode).emit('mission_evaluation');
+        }
+        return;
+    }
+	
     if (outcome) {
         // Adiciona a recompensa ao pote comum
         const reward = parseInt(room.currentMissionData.reward) || 0;
@@ -324,6 +336,7 @@ function proceedToNextRound(room, io) {
 module.exports = {
     loadNewMission,
     completeMission,
+	startBanishmentPhase,
     startMissionTimer,
     startMurderPhase,
     endMurderPhase,

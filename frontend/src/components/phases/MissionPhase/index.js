@@ -2,15 +2,41 @@ import React from 'react';
 import MissionCollaborativeDrawing from './MissionCollaborativeDrawing';
 import MissionNumberInput from './MissionNumberInput';
 import MissionDefault from './MissionDefault';
+import MissionDescription from '../MissionDescription';
+import MissionCategoryChoice from './MissionCategoryChoice';
 
 export default function MissionPhase(props) {
-  const { playerState, onOpenHelp } = props;
+  const { 
+    playerState, 
+    onOpenHelp, 
+    socket,      // <-- ADICIONADO
+    roomData,    // <-- ADICIONADO
+    playerId,    // <-- ADICIONADO (para passar ao CollaborativeDrawing)
+    onCategorySubmit // <-- se quiseres passar como prop, mas podes usar socket diretamente
+  } = props;
+
   const mission = playerState.currentMission;
 
   // Renderiza o conteúdo específico da missão
   let missionContent = null;
-  if (mission.type === 'COLLABORATIVE_DRAWING') {
-    missionContent = <MissionCollaborativeDrawing {...props} playerId={props.playerId} />
+  
+  if (mission.type === 'CATEGORY_CHOICE') {
+    missionContent = (
+      <MissionCategoryChoice 
+        {...props} 
+        onCategorySubmit={(choice) => {
+          // socket e roomData estão agora definidos
+          if (socket && roomData) {
+            socket.emit('submit_category_choice', { 
+              roomCode: roomData.roomCode, 
+              choice 
+            });
+          }
+        }} 
+      />
+    );
+  } else if (mission.type === 'COLLABORATIVE_DRAWING') {
+    missionContent = <MissionCollaborativeDrawing {...props} playerId={playerId} />;
   } else if (mission.requiresNumberInput) {
     missionContent = <MissionNumberInput {...props} />;
   } else if (['WORD_GUESSER', 'PHYSICAL_OBJECT_HUNT', 'TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(mission.type)) {
@@ -55,7 +81,9 @@ export default function MissionPhase(props) {
       {/* Missão */}
       <div className="bg-[#291923] border border-[#D8B66C] p-8 rounded-md">
         <h2 className="font-display text-3xl font-bold text-[#E5C982] mb-4 text-center">{mission.title}</h2>
-        <p className="text-[#F3EBDD] text-lg mb-8 text-center">{mission.description}</p>
+        <div className="text-[#F3EBDD] text-lg mb-8 text-left">
+          <MissionDescription description={mission.description} />
+        </div>
         {missionContent}
       </div>
     </div>

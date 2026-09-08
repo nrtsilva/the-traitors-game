@@ -4,6 +4,7 @@ const { getMissoesPorModo, getArsenalPorModo } = require('./missionLoader');
 const {
     loadNewMission,
 	completeMission,
+	startBanishmentPhase,
     startMissionTimer,
     startMurderPhase,
     endMurderPhase,
@@ -178,11 +179,13 @@ function registerSocketHandlers(io) {
                             clearTimeout(room.phaseTimer);
                             room.phaseTimer = setTimeout(() => processBanishment(room, io), debateTime * 1000);
                         } else if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
-                            io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: null });
-                            const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
-                            const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
-                            room.currentArsenalTask = tarefaAleatoria;
-                            io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
+							if (!room.currentArsenalTask) {
+								const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
+								const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
+								room.currentArsenalTask = tarefaAleatoria;
+								io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
+							}
+							return;
                         } else {
                             io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
                             startMissionTimer(room, io);
@@ -426,6 +429,44 @@ function registerSocketHandlers(io) {
                 console.error("Erro no submit_mission_value:", error);
             }
         });
+		
+		socket.on('submit_category_choice', ({ roomCode, choice }, callback) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
+			if (!room.currentMissionData.requiresPlayerChoice) return;
+
+			let player = room.players.find(p => p.id === socket.id);
+			if (!player) player = room.players.find(p => p.alive);
+			if (!player || !player.alive) return;
+
+			// Guardar a escolha do jogador
+			player.categoryChoice = choice;
+			room.categoryChoicesCount = (room.categoryChoicesCount || 0) + 1;
+
+			const alivePlayers = room.players.filter(p => p.alive);
+
+			// Quando todos submeterem
+			if (room.categoryChoicesCount >= alivePlayers.length) {
+				// Calcular recompensa: número de escolhas únicas
+				const choices = alivePlayers.map(p => p.categoryChoice);
+				const uniqueChoices = new Set(choices);
+				const reward = uniqueChoices.size; // 1 moeda por escolha única
+
+				// Adicionar prémio ao pote comum (UMA ÚNICA VEZ)
+				room.prizeFund.coins += reward;
+				convertCoinsToBars(room);
+
+				// Limpar estados
+				room.players.forEach(p => p.categoryChoice = undefined);
+				room.categoryChoicesCount = 0;
+
+				// Emitir avaliação para todos (inclui o Traidor e os Fiéis)
+				io.to(cleanCode).emit('mission_evaluation');
+			}
+
+			if (typeof callback === 'function') callback({ success: true });
+		});
 
         // --- DRAWING (colaborativo) ---
         socket.on('drawing_update', ({ roomCode, drawing }) => {
