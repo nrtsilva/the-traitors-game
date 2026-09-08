@@ -105,6 +105,12 @@ function registerSocketHandlers(io) {
 
                 // Carregar primeira missão
                 loadNewMission(room);
+				
+				// Verificar se a missão foi carregada
+				if (!room.currentMissionData) {
+					console.error('[start_game] Falha ao carregar missão.');
+					return callback({ success: false, message: "Erro ao carregar missão. Tente novamente." });
+				}
 
                 room.roundNumber = 1;
                 room.totalRounds = room.settings.numPhases || 2;

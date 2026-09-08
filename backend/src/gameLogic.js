@@ -78,20 +78,23 @@ function startBanishmentPhase(room, io) {
 function loadNewMission(room) {
     const gameMode = room.settings.gameMode || 'in_person';
     const missoes = getMissoesPorModo(gameMode);
+    let randomMissao;
+    
     if (!missoes || missoes.length === 0) {
         console.error('[loadNewMission] Nenhuma missão encontrada para o modo:', gameMode);
         // Fallback para evitar crash
-        room.currentMissionData = {
+        randomMissao = {
+            id: 'fallback',
             title: 'Missão Padrão',
             description: 'Completem a missão.',
             type: 'DEFAULT',
-            reward: 0
+            reward: 0,
+            traitorSecretMissions: []
         };
     } else {
-        const randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
-        room.currentMissionData = randomMissao;
+        randomMissao = missoes[Math.floor(Math.random() * missoes.length)];
     }
-	
+
     // Atualiza os dados da missão na sala
     room.currentMissionData = randomMissao;
     room.readyCount = 0;
@@ -153,7 +156,7 @@ function loadNewMission(room) {
         description: randomMissao.description,
         secretMission: secretMissionForIntro,
         gameMode: gameMode,
-		phase: room.phase
+        phase: room.phase
     };
 
     return randomMissao;
