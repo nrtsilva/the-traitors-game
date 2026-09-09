@@ -46,14 +46,11 @@ function App() {
       if (!state.phaseIntro && !state.gameData?.phase) {
         filename = 'mission.mp3';
       } else {
-        // Áudio específico da fase é tratado pelos handlers do socket
         return;
       }
     }
 
     if (filename) {
-      // Para o áudio anterior antes de tocar o novo
-      stop();
       play(filename);
     }
   }, [
@@ -61,7 +58,6 @@ function App() {
     state.phaseIntro,
     state.gameData?.phase,
     play,
-    stop,
   ]);
 
   // --- HANDLERS DO SOCKET ---

@@ -148,69 +148,35 @@ export function useAudio(initialMuted = false) {
     [unlockAudio]
   );
 
-  /**
-   * Mute / Unmute.
-   *
-   * NÃO usamos stop() aqui.
-   * Mute = pausa.
-   * Stop = destrói o áudio.
-   */
   const toggleMute = useCallback(() => {
     setIsMuted((previousMuted) => {
       const nextMuted = !previousMuted;
-
-      // Atualizar imediatamente a ref evita stale closures.
       isMutedRef.current = nextMuted;
-
-      console.log(
-        `[Áudio] ${nextMuted ? 'Mutar' : 'Desmutar'}`
-      );
-
-      if (nextMuted) {
-        // MUTE:
-        // pausa mas mantém a referência e o filename.
-        if (audioRef.current) {
-          try {
-            audioRef.current.pause();
-          } catch (error) {
-            console.warn(
-              '[Áudio] Erro ao fazer mute:',
-              error
-            );
-          }
-        }
-      } else {
-        // UNMUTE:
-        unlockAudio();
-
-        if (audioRef.current) {
-          // Temos o objeto original.
-          audioRef.current.play().catch((error) => {
-            console.warn(
-              '[Áudio] Não foi possível retomar áudio:',
-              error
-            );
-          });
-        } else if (lastPlayedRef.current) {
-          // Caso a instância tenha desaparecido,
-          // reconstruímos o último áudio.
-          const filename = lastPlayedRef.current;
-
-          // play() vai verificar isMutedRef.current.
-          play(filename);
-        }
-      }
-
       return nextMuted;
     });
-  }, [play, unlockAudio]);
+  }, []);
 
-  /**
-   * Mantém a ref sincronizada com o estado React.
-   */
   useEffect(() => {
     isMutedRef.current = isMuted;
-  }, [isMuted]);
+
+    if (isMuted) {
+      // MUTE = pausa, mas mantém o áudio atual
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+
+      return;
+    }
+
+    // UNMUTE
+    if (audioRef.current) {
+      audioRef.current.play().catch((error) => {
+        console.warn('[Áudio] Não foi possível retomar:', error);
+      });
+    } else if (lastPlayedRef.current) {
+      play(lastPlayedRef.current);
+    }
+  }, [isMuted, play]);
 
   /**
    * Desbloqueia o áudio na primeira interação do utilizador.
