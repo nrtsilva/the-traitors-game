@@ -15,8 +15,8 @@ export default function MissionOutcomeScreen({
   const [showFortune, setShowFortune] = useState(false);
 
   useEffect(() => {
-    // Mostra a mensagem principal durante 2 segundos, depois mostra a fortuna
-    const timer1 = setTimeout(() => setShowFortune(true), 2000);
+    // Mostra a mensagem principal durante 5 segundos, depois mostra a fortuna
+    const timer1 = setTimeout(() => setShowFortune(true), 5000);
     return () => clearTimeout(timer1);
   }, []);
 
@@ -57,12 +57,12 @@ export default function MissionOutcomeScreen({
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent opacity-70"></div>
               <div className="flex justify-center gap-8">
                 <div>
-                  <span className="block text-4xl mb-1 animate-float">💰</span>
+                  <span className="block text-4xl mb-1 animate-float">🪙</span>
                   <span className="text-xl font-bold text-[#D8B66C]">{gold}</span>
                   <span className="block text-xs text-[#F3EBDD]/60">Moedas</span>
                 </div>
                 <div>
-                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.2s' }}>🏆</span>
+                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.2s' }}>💰</span>
                   <span className="text-xl font-bold text-[#D8B66C]">{bars}</span>
                   <span className="block text-xs text-[#F3EBDD]/60">Barras</span>
                 </div>
@@ -70,17 +70,17 @@ export default function MissionOutcomeScreen({
             </div>
 
             {/* Baú Comunitário */}
-            <h4 className="font-display text-sm text-[#E5C982] mb-2">⚜️ Baú Comunitário</h4>
+            <h4 className="font-display text-sm text-[#E5C982] mb-2">🏴‍☠️ Baú Comunitário</h4>
             <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent opacity-70"></div>
               <div className="flex justify-center gap-8">
                 <div>
-                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.4s' }}>💰</span>
+                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.4s' }}>🪙</span>
                   <span className="text-xl font-bold text-[#D8B66C]">{commonCoins}</span>
                   <span className="block text-xs text-[#F3EBDD]/60">Moedas</span>
                 </div>
                 <div>
-                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.6s' }}>🏆</span>
+                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.6s' }}>💰</span>
                   <span className="text-xl font-bold text-[#D8B66C]">{commonBars}</span>
                   <span className="block text-xs text-[#F3EBDD]/60">Barras</span>
                 </div>

@@ -1,3 +1,4 @@
+// src/components/phases/MissionPhase/index.js
 import React, { useState } from 'react';
 import MissionCollaborativeDrawing from './MissionCollaborativeDrawing';
 import MissionNumberInput from './MissionNumberInput';
@@ -60,17 +61,8 @@ export default function MissionPhase(props) {
         ?
       </button>
 
-      {/* VALOR EM JOGO – sempre visível */}
-      <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-4 flex justify-center items-center shadow-soft">
-        <div className="text-center">
-          <span className="text-3xl">⚔️</span>
-          <div className="text-2xl font-bold text-[#D8B66C]">{playerState.reward || "Variável"}</div>
-          <div className="text-xs text-[#F3EBDD]/60">Valor em Jogo</div>
-        </div>
-      </div>
-
-      {/* TESOURO COMUM – colapsável */}
-      <div className="mb-6">
+      {/* TESOURO COMUM – colapsável no topo */}
+      <div className="mb-4">
         <button
           onClick={() => setIsTreasureOpen(!isTreasureOpen)}
           className="w-full bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-3 flex justify-between items-center hover:border-[#E5C982] transition"
@@ -86,17 +78,26 @@ export default function MissionPhase(props) {
         {isTreasureOpen && (
           <div className="bg-[#291923] border-2 border-t-0 border-[#D8B66C] rounded-b-lg p-4 flex justify-center items-center gap-8 shadow-soft">
             <div className="text-center">
-              <span className="text-3xl">💰</span>
+              <span className="text-3xl">🪙</span>
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.coins || 0} Moedas</div>
             </div>
             <div className="w-px h-10 bg-[#D8B66C]/30"></div>
             <div className="text-center">
-              <span className="text-3xl">🏆</span>
+              <span className="text-3xl">💰</span>
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.bars || 0} Barras</div>
               <div className="text-xs text-[#F3EBDD]/60">(1 Barra = 5 Moedas)</div>
             </div>
           </div>
         )}
+      </div>
+
+      {/* VALOR EM JOGO – sempre visível */}
+      <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-4 flex justify-center items-center shadow-soft">
+        <div className="text-center">
+          <span className="text-3xl">🥇</span>
+          <div className="text-2xl font-bold text-[#D8B66C]">{playerState.reward || "Variável"}</div>
+          <div className="text-xs text-[#F3EBDD]/60">Prémio em Jogo</div>
+        </div>
       </div>
 
       {/* TIMER EM DESTAQUE */}

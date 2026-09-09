@@ -57,8 +57,10 @@ export default function GameBoard({
   const [displayTimer, setDisplayTimer] = useState(playerState.timer || 0);
 
   useEffect(() => {
+    // Se fase for missão e timer for 0, usar timeLimit da missão
     if (playerState.phase === 'PHASE_1_MISSION') {
       let initialTimer = playerState.timer || 0;
+      // Se o timer for 0, tentar usar o timeLimit da missão
       if (initialTimer === 0 && playerState.currentMission?.timeLimit) {
         initialTimer = playerState.currentMission.timeLimit;
       }
@@ -76,6 +78,7 @@ export default function GameBoard({
         return () => clearInterval(interval);
       }
     } else {
+      // Para outras fases, usar o timer recebido
       setDisplayTimer(playerState.timer || 0);
     }
   }, [playerState.phase, playerState.timer, playerState.currentMission]);
@@ -89,16 +92,16 @@ export default function GameBoard({
   
   // 1. Missão Outcome (resultado da missão)
   if (missionOutcome) {
-    const currentGame = playerState;
-    const player = currentGame?.players?.find(p => p.id === playerId) || {};
+    // Preparar dados da fortuna para o ecrã de resultado
+    const currentPlayer = playerState?.players?.find(p => p.id === playerId) || {};
     return (
       <MissionOutcomeScreen
         {...missionOutcome}
-        playerName={player.name || 'Jogador'}
-        gold={player.gold ?? 0}
-        bars={player.bars ?? 0}
-        commonCoins={currentGame?.prizeFund?.coins ?? 0}
-        commonBars={currentGame?.prizeFund?.bars ?? 0}
+        playerName={currentPlayer.name || 'Jogador'}
+        gold={currentPlayer.gold ?? 0}
+        bars={currentPlayer.bars ?? 0}
+        commonCoins={playerState?.prizeFund?.coins ?? 0}
+        commonBars={playerState?.prizeFund?.bars ?? 0}
       />
     );
   }

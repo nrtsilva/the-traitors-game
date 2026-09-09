@@ -44,7 +44,7 @@ function registerSocketHandlers(io) {
                     return callback({ success: false, message: "Já existe um jogador com esse nome na sala. Escolhe outro nome." });
                 }
 
-                const newPlayer = { id: socket.id, name: cleanName, role: 'unassigned', alive: true, gold: 3, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false };
+                const newPlayer = { id: socket.id, name: cleanName, role: 'unassigned', alive: true, gold: 3, bars: 2, inventory: [], secretMissions: [], secretMissionsCompleted: [], voteCast: null, isReadyForPhase: false };
                 room.players.push(newPlayer);
                 socket.join(cleanCode);
                 io.to(cleanCode).emit('room_update', { players: room.players, settings: room.settings });
@@ -95,7 +95,7 @@ function registerSocketHandlers(io) {
                 const shuffled = [...room.players].sort(() => Math.random() - 0.5);
                 let traitorCount = 1; // Para 2-6 jogadores, é sempre 1
 
-                room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
+                room.players.forEach(p => { p.role = 'faithful'; p.alive = true; p.gold = 3; p.bars = 2; p.inventory = []; p.secretMissions = []; p.voteCast = null; p.isReadyForPhase = false; });
 
                 for (let i = 0; i < traitorCount; i++) {
                     const t = shuffled[i];
