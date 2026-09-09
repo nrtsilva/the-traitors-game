@@ -18,7 +18,6 @@ function App() {
   const { isMuted, toggleMute, play, stop } = useAudio();
   const [state, dispatch] = useGameState();
   const [playerName, setPlayerName] = useState('');
-  const lastPlayedRef = useRef(null); // controla o último áudio tocado pelo ecrã
 
   // --- REFS para manter dados atualizados nos handlers do socket ---
   const roomDataRef = useRef(state.roomData);
@@ -52,11 +51,10 @@ function App() {
       }
     }
 
-    if (filename && lastPlayedRef.current !== filename) {
+    if (filename) {
       // Para o áudio anterior antes de tocar o novo
       stop();
       play(filename);
-      lastPlayedRef.current = filename;
     }
   }, [
     state.currentScreen,
@@ -84,6 +82,7 @@ function App() {
       },
 
       game_started: (playerState) => {
+        console.log('[App] game_started recebido');
         if (!playerState.currentMission) {
           console.warn('[game_started] currentMission ausente! Usando fallback.');
           playerState.currentMission = {
@@ -105,78 +104,31 @@ function App() {
         dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
         // Parar áudio e limpar referência
         stop();
-        lastPlayedRef.current = null;
       },
-      
+
       phase_intro: (data) => {
         console.log('[App] phase_intro recebido:', data);
 
         // Só mostra a fortuna se for realmente uma missão (PHASE_1_MISSION)
         if (data.phase === 'PHASE_1_MISSION') {
-          console.log('[App] É uma missão! A preparar fortuna...');
+          console.log('[App] phase_intro PHASE_1_MISSION recebido');
 
-          const currentGame = gameDataRef.current || {};
-          const player = currentGame?.players?.find((p) => p.id === socket.id) || {};
-
-          const fortuneData = {
-            playerName: player.name || 'Jogador',
-            gold: player.gold ?? 0,
-            bars: player.bars ?? 0,
-            commonCoins: currentGame?.prizeFund?.coins ?? 0,
-            commonBars: currentGame?.prizeFund?.bars ?? 0,
-          };
-
-          console.log('[App] fortuneData:', fortuneData);
-
-          // Garantir que estamos no GameBoard
-          dispatch({
-            type: 'SET_SCREEN',
-            payload: 'game',
-          });
-
-          // Não mostrar a PhaseIntro ainda
-          dispatch({
-            type: 'SET_PHASE_INTRO',
-            payload: null,
-          });
-
-          // Limpar outros ecrãs prioritários
-          dispatch({
-            type: 'SET_MISSION_OUTCOME',
-            payload: null,
-          });
-
-          dispatch({
-            type: 'SET_BANISHMENT_REVEAL',
-            payload: null,
-          });
-
-          dispatch({
-            type: 'SET_ARSENAL_RESULT',
-            payload: null,
-          });
-
-          dispatch({
-            type: 'SET_IS_EVALUATION',
-            payload: false,
-          });
-
-          // Guardar os dados que a Fortuna vai apresentar
-          dispatch({
-            type: 'SET_FORTUNE_DATA',
-            payload: fortuneData,
-          });
-
-          // Guardar a PhaseIntro para mostrar depois da Fortuna
+          // Guardamos a informação para ser mostrada
+          // depois da FortuneRevealScreen.
           dispatch({
             type: 'SET_PENDING_PHASE_INTRO',
             payload: data,
           });
 
-          // Mostrar Fortuna
+          // Atualizamos a fase do jogo
+          const currentGame = gameDataRef.current || {};
+
           dispatch({
-            type: 'SET_SHOW_FORTUNE',
-            payload: true,
+            type: 'SET_GAME_DATA',
+            payload: {
+              ...currentGame,
+              phase: data.phase,
+            },
           });
 
           return;
@@ -200,7 +152,6 @@ function App() {
       mission_outcome: (data) => {
         console.log('[App] mission_outcome:', data);
         stop();
-        lastPlayedRef.current = null;
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
       },
 
@@ -212,7 +163,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('evaluation.mp3');
-          lastPlayedRef.current = 'evaluation.mp3';
         }
       },
 
@@ -224,7 +174,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('arsenal.mp3');
-          lastPlayedRef.current = 'arsenal.mp3';
         }
       },
 
@@ -236,7 +185,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('banishment.mp3');
-          lastPlayedRef.current = 'banishment.mp3';
         }
       },
 
@@ -251,7 +199,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('murder-blindfold.mp3');
-          lastPlayedRef.current = 'murder-blindfold.mp3';
         }
       },
 
@@ -262,7 +209,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('murder-blindfold.mp3');
-          lastPlayedRef.current = 'murder-blindfold.mp3';
         }
       },
 
@@ -283,7 +229,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('murder-reveal.mp3');
-          lastPlayedRef.current = 'murder-reveal.mp3';
         }
       },
 
@@ -297,7 +242,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('murder-reveal.mp3');
-          lastPlayedRef.current = 'murder-reveal.mp3';
         }
       },
 
@@ -316,7 +260,6 @@ function App() {
         if (!isMuted) {
           stop();
           play('game-over.mp3');
-          lastPlayedRef.current = 'game-over.mp3';
         }
       },
 
@@ -338,13 +281,10 @@ function App() {
           stop();
           if (data.phase === 'PHASE_2_BANISHMENT') {
             play('banishment.mp3');
-            lastPlayedRef.current = 'banishment.mp3';
           } else if (data.phase === 'PHASE_3_ARMOURY') {
             play('arsenal.mp3');
-            lastPlayedRef.current = 'arsenal.mp3';
           } else {
             play('mission.mp3');
-            lastPlayedRef.current = 'mission.mp3';
           }
         }
       },
@@ -399,8 +339,66 @@ function App() {
   }, [state.currentScreen, dispatch]);
 
   const handleRoleRevealContinue = useCallback(() => {
-    dispatch({ type: 'SET_SCREEN', payload: 'game' });
-  }, [dispatch]);
+    console.log('[App] RoleReveal terminado');
+
+    const currentGame = gameDataRef.current || {};
+
+    const player =
+      currentGame?.players?.find((p) => p.id === socket.id) || {};
+
+    const fortuneData = {
+      playerName: player.name || playerName || 'Jogador',
+      gold: player.gold ?? 0,
+      bars: player.bars ?? 0,
+      commonCoins: currentGame?.prizeFund?.coins ?? 0,
+      commonBars: currentGame?.prizeFund?.bars ?? 0,
+    };
+
+    console.log('[App] A mostrar Fortuna depois do RoleReveal:', fortuneData);
+
+    // Passamos para o GameBoard
+    dispatch({
+      type: 'SET_SCREEN',
+      payload: 'game',
+    });
+
+    // Garantir que nenhum ecrã anterior fica por cima
+    dispatch({
+      type: 'SET_PHASE_INTRO',
+      payload: null,
+    });
+
+    dispatch({
+      type: 'SET_MISSION_OUTCOME',
+      payload: null,
+    });
+
+    dispatch({
+      type: 'SET_BANISHMENT_REVEAL',
+      payload: null,
+    });
+
+    dispatch({
+      type: 'SET_ARSENAL_RESULT',
+      payload: null,
+    });
+
+    dispatch({
+      type: 'SET_IS_EVALUATION',
+      payload: false,
+    });
+
+    // Preparar Fortuna
+    dispatch({
+      type: 'SET_FORTUNE_DATA',
+      payload: fortuneData,
+    });
+
+    dispatch({
+      type: 'SET_SHOW_FORTUNE',
+      payload: true,
+    });
+  }, [dispatch, socket, playerName]);
 
   // --- HANDLERS PARA AÇÕES DO JOGO ---
   const handleTraitorChoice = useCallback((action) => {
@@ -479,23 +477,52 @@ function App() {
   }, [dispatch]);
 
   const handleFortuneContinue = useCallback(() => {
-    console.log('[App] handleFortuneContinue chamado');
-    dispatch({ type: 'SET_SHOW_FORTUNE', payload: false });
+    console.log('[App] FortuneReveal terminado');
+
     const pendingData = state.pendingPhaseIntro;
+
+    // Primeiro escondemos a Fortuna
+    dispatch({
+      type: 'SET_SHOW_FORTUNE',
+      payload: false,
+    });
+
+    dispatch({
+      type: 'SET_FORTUNE_DATA',
+      payload: null,
+    });
+
     if (pendingData) {
-      console.log('[App] pendingData:', pendingData);
-      dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
-      dispatch({ type: 'SET_PHASE_INTRO', payload: pendingData });
+      console.log('[App] A mostrar PhaseIntro:', pendingData);
+
+      dispatch({
+        type: 'SET_PENDING_PHASE_INTRO',
+        payload: null,
+      });
+
+      dispatch({
+        type: 'SET_PHASE_INTRO',
+        payload: pendingData,
+      });
+
       if (pendingData.phase) {
         const currentGame = gameDataRef.current || {};
+
         dispatch({
           type: 'SET_GAME_DATA',
-          payload: { ...currentGame, phase: pendingData.phase }
+          payload: {
+            ...currentGame,
+            phase: pendingData.phase,
+          },
         });
       }
-    } else {
-      console.warn('[App] handleFortuneContinue chamado sem pendingData!');
+
+      return;
     }
+
+    console.warn(
+      '[App] Fortune terminou mas ainda não existe pendingPhaseIntro'
+    );
   }, [dispatch, state.pendingPhaseIntro]);
 
   // --- CONTEXT VALUE ---
