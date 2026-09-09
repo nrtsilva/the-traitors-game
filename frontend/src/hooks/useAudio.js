@@ -3,60 +3,45 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 export function useAudio(initialMuted = false) {
   const [isMuted, setIsMuted] = useState(initialMuted);
 
-  // Única instância de áudio ativa
+  // Única instância de Audio ativa
   const audioRef = useRef(null);
 
-  // Nome do último áudio que deve ser retomado
-  const lastPlayedRef = useRef(null);
+  // Ficheiro atualmente associado ao Audio
+  const currentFilenameRef = useRef(null);
 
   // Evita problemas com closures antigas
   const isMutedRef = useRef(initialMuted);
-
-  // Browser autoplay unlock
-  const isUnlockedRef = useRef(false);
-
-  /**
-   * Desbloqueia o áudio no browser.
-   */
-  const unlockAudio = useCallback(() => {
-    if (isUnlockedRef.current) return;
-
-    const silentAudio = new Audio();
-    silentAudio.volume = 0;
-
-    silentAudio
-      .play()
-      .then(() => {
-        isUnlockedRef.current = true;
-
-        silentAudio.pause();
-        silentAudio.src = '';
-      })
-      .catch(() => {
-        // O browser pode bloquear o autoplay.
-        // Tentaremos novamente através de uma interação do utilizador.
-      });
-  }, []);
 
   /**
    * Para completamente o áudio atual.
    *
    * IMPORTANTE:
-   * Ao contrário do mute, stop() esquece qual era o áudio.
+   * stop() é diferente de mute.
+   *
+   * mute:
+   *   - pausa
+   *   - mantém a instância
+   *   - permite retomar no unmute
+   *
+   * stop:
+   *   - pausa
+   *   - volta para o início
+   *   - elimina a referência
    */
   const stop = useCallback(() => {
-    if (audioRef.current) {
+    const audio = audioRef.current;
+
+    if (audio) {
       try {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+        audio.pause();
+        audio.currentTime = 0;
       } catch (error) {
         console.warn('[Áudio] Erro ao parar áudio:', error);
       }
-
-      audioRef.current = null;
     }
 
-    lastPlayedRef.current = null;
+    audioRef.current = null;
+    currentFilenameRef.current = null;
 
     console.log('[Áudio] Parado completamente');
   }, []);
@@ -66,150 +51,175 @@ export function useAudio(initialMuted = false) {
    *
    * Existe sempre apenas uma instância de Audio.
    */
-  const play = useCallback(
-    (filename, loop = true) => {
-      if (!filename) return;
+  const play = useCallback((filename, loop = true) => {
+    if (!filename) {
+      return;
+    }
 
-      // Se estiver mutado, não inicia nada.
-      if (isMutedRef.current) {
-        console.log(`[Áudio] Bloqueado por mute: ${filename}`);
+    // Nunca iniciar áudio se estiver mutado.
+    if (isMutedRef.current) {
+      console.log(`[Áudio] Bloqueado por mute: ${filename}`);
+      return;
+    }
 
-        // Guardamos o ficheiro para poder retomá-lo no unmute.
-        lastPlayedRef.current = filename;
+    // Se já é exatamente o mesmo áudio, não criar outra instância.
+    if (
+      audioRef.current &&
+      currentFilenameRef.current === filename
+    ) {
+      console.log(`[Áudio] Já está a tocar: ${filename}`);
+      return;
+    }
 
-        return;
-      }
-
-      // Se já é exatamente o mesmo áudio e ainda existe uma instância,
-      // não criamos outra.
-      if (
-        lastPlayedRef.current === filename &&
-        audioRef.current
-      ) {
-        console.log(`[Áudio] Já está a tocar: ${filename}`);
-        return;
-      }
-
-      // Mata SEMPRE a instância anterior antes de criar outra.
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-        } catch (error) {
-          console.warn('[Áudio] Erro ao parar áudio anterior:', error);
-        }
-
-        audioRef.current = null;
-      }
-
+    // Parar completamente o áudio anterior.
+    if (audioRef.current) {
       try {
-        const audio = new Audio(`/audio/${filename}`);
-
-        audio.loop = loop;
-        audio.volume = 0.5;
-        audio.preload = 'auto';
-
-        // Guardamos as refs ANTES de chamar play().
-        // Isto evita condições de corrida.
-        audioRef.current = audio;
-        lastPlayedRef.current = filename;
-
-        const playPromise = audio.play();
-
-        if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Se o browser bloqueou o autoplay, tentamos desbloquear.
-            unlockAudio();
-
-            // Nunca voltar a tocar se o utilizador já tiver feito mute.
-            if (isMutedRef.current) {
-              console.log(
-                `[Áudio] Reprodução cancelada por mute: ${filename}`
-              );
-              return;
-            }
-
-            audio.play().catch((error) => {
-              console.warn(
-                `[Áudio] Não foi possível reproduzir ${filename}:`,
-                error
-              );
-            });
-          });
-        }
-
-        console.log(`[Áudio] A tocar: ${filename}`);
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       } catch (error) {
-        console.error('[Áudio] Erro ao criar áudio:', error);
-
-        audioRef.current = null;
+        console.warn(
+          '[Áudio] Erro ao parar áudio anterior:',
+          error
+        );
       }
-    },
-    [unlockAudio]
-  );
 
+      audioRef.current = null;
+    }
+
+    try {
+      const audio = new Audio(`/audio/${filename}`);
+
+      audio.loop = loop;
+      audio.volume = 0.5;
+      audio.preload = 'auto';
+
+      // Guardar as refs ANTES do play().
+      audioRef.current = audio;
+      currentFilenameRef.current = filename;
+
+      const playPromise = audio.play();
+
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          /*
+           * É normal o browser bloquear autoplay.
+           *
+           * NÃO fazemos retry automático aqui.
+           * Um retry automático pode causar condições de corrida
+           * com mute/unmute.
+           */
+          console.warn(
+            `[Áudio] Não foi possível reproduzir ${filename}:`,
+            error
+          );
+        });
+      }
+
+      console.log(`[Áudio] A tocar: ${filename}`);
+    } catch (error) {
+      console.error(
+        '[Áudio] Erro ao criar áudio:',
+        error
+      );
+
+      audioRef.current = null;
+      currentFilenameRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Mute / Unmute.
+   *
+   * Mute:
+   *   pause(), mas NÃO destrói o Audio.
+   *
+   * Unmute:
+   *   play() na mesma instância.
+   */
   const toggleMute = useCallback(() => {
     setIsMuted((previousMuted) => {
       const nextMuted = !previousMuted;
+
+      // Atualizar imediatamente a ref.
+      // Isto é importante para play() não usar
+      // um valor antigo de isMuted.
       isMutedRef.current = nextMuted;
+
+      const audio = audioRef.current;
+
+      if (!audio) {
+        console.log(
+          nextMuted
+            ? '[Áudio] Mutado - nenhum áudio ativo'
+            : '[Áudio] Som ativado - nenhum áudio para retomar'
+        );
+
+        return nextMuted;
+      }
+
+      if (nextMuted) {
+        // =========================
+        // MUTE
+        // =========================
+
+        try {
+          audio.pause();
+
+          console.log(
+            `[Áudio] Mutado: ${currentFilenameRef.current}`
+          );
+        } catch (error) {
+          console.warn(
+            '[Áudio] Erro ao fazer mute:',
+            error
+          );
+        }
+      } else {
+        // =========================
+        // UNMUTE
+        // =========================
+
+        console.log(
+          `[Áudio] Unmute: ${currentFilenameRef.current}`
+        );
+
+        audio.play().catch((error) => {
+          console.warn(
+            '[Áudio] Não foi possível retomar:',
+            error
+          );
+        });
+      }
+
       return nextMuted;
     });
   }, []);
 
-  useEffect(() => {
-    isMutedRef.current = isMuted;
-
-    if (isMuted) {
-      // MUTE = pausa, mas mantém o áudio atual
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-
-      return;
-    }
-
-    // UNMUTE
-    if (audioRef.current) {
-      audioRef.current.play().catch((error) => {
-        console.warn('[Áudio] Não foi possível retomar:', error);
-      });
-    } else if (lastPlayedRef.current) {
-      play(lastPlayedRef.current);
-    }
-  }, [isMuted, play]);
-
   /**
-   * Desbloqueia o áudio na primeira interação do utilizador.
+   * Mantém a ref sincronizada com o state.
    */
   useEffect(() => {
-    const handleClick = () => {
-      unlockAudio();
-    };
-
-    document.addEventListener('click', handleClick);
-
-    return () => {
-      document.removeEventListener('click', handleClick);
-    };
-  }, [unlockAudio]);
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   /**
    * Cleanup completo.
    */
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
+      const audio = audioRef.current;
+
+      if (audio) {
         try {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
+          audio.pause();
+          audio.currentTime = 0;
         } catch (error) {
           // Ignorar erros durante unmount
         }
-
-        audioRef.current = null;
       }
 
-      lastPlayedRef.current = null;
+      audioRef.current = null;
+      currentFilenameRef.current = null;
     };
   }, []);
 
