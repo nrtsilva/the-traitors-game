@@ -107,7 +107,7 @@ function App() {
         stop();
         lastPlayedRef.current = null;
       },
-
+      
       phase_intro: (data) => {
         console.log('[App] phase_intro recebido:', data);
 
@@ -116,9 +116,7 @@ function App() {
           console.log('[App] É uma missão! A preparar fortuna...');
 
           const currentGame = gameDataRef.current || {};
-
-          const player =
-            currentGame?.players?.find(p => p.id === socket.id) || {};
+          const player = currentGame?.players?.find((p) => p.id === socket.id) || {};
 
           const fortuneData = {
             playerName: player.name || 'Jogador',
@@ -133,56 +131,71 @@ function App() {
           // Garantir que estamos no GameBoard
           dispatch({
             type: 'SET_SCREEN',
-            payload: 'game'
+            payload: 'game',
           });
 
           // Não mostrar a PhaseIntro ainda
           dispatch({
             type: 'SET_PHASE_INTRO',
-            payload: null
+            payload: null,
           });
 
           // Limpar outros ecrãs prioritários
           dispatch({
             type: 'SET_MISSION_OUTCOME',
-            payload: null
+            payload: null,
           });
 
           dispatch({
             type: 'SET_BANISHMENT_REVEAL',
-            payload: null
+            payload: null,
           });
 
           dispatch({
             type: 'SET_ARSENAL_RESULT',
-            payload: null
+            payload: null,
           });
 
           dispatch({
             type: 'SET_IS_EVALUATION',
-            payload: false
+            payload: false,
           });
 
           // Guardar os dados que a Fortuna vai apresentar
           dispatch({
             type: 'SET_FORTUNE_DATA',
-            payload: fortuneData
+            payload: fortuneData,
           });
 
           // Guardar a PhaseIntro para mostrar depois da Fortuna
           dispatch({
             type: 'SET_PENDING_PHASE_INTRO',
-            payload: data
+            payload: data,
           });
 
           // Mostrar Fortuna
           dispatch({
             type: 'SET_SHOW_FORTUNE',
-            payload: true
+            payload: true,
           });
 
           return;
         }
+
+        // Outras fases (arsenal, expulsão, etc.) ou WAITING_LOBBY
+        dispatch({ type: 'SET_PHASE_INTRO', payload: data });
+        if (data.phase) {
+          const currentGame = gameDataRef.current || {};
+          dispatch({
+            type: 'SET_GAME_DATA',
+            payload: { ...currentGame, phase: data.phase },
+          });
+        }
+        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
+      },
 
       mission_outcome: (data) => {
         console.log('[App] mission_outcome:', data);
