@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useAudio } from './hooks/useAudio';
@@ -17,7 +18,7 @@ function App() {
   const { isMuted, toggleMute, play, stop } = useAudio();
   const [state, dispatch] = useGameState();
   const [playerName, setPlayerName] = useState('');
-  const lastPlayedRef = useRef(null); // controla o último áudio tocado pelo ecrã
+  const lastPlayedRef = useRef(null); // controla o último áudio tocado
 
   // --- REFS para manter dados atualizados nos handlers do socket ---
   const roomDataRef = useRef(state.roomData);
@@ -45,21 +46,27 @@ function App() {
       } else if (state.currentScreen === 'roleReveal') {
         filename = 'role-reveal.mp3';
       } else if (state.currentScreen === 'game') {
+        // Se não há fase definida, toca mission.mp3
         if (!state.phaseIntro && !state.gameData?.phase) {
           filename = 'mission.mp3';
         } else {
+          // Áudio específico da fase é tratado nos handlers do socket
           return;
         }
       }
 
       if (filename && lastPlayedRef.current !== filename) {
+        // Para o áudio anterior antes de tocar o novo
+        if (lastPlayedRef.current) {
+          stop();
+        }
         play(filename);
         lastPlayedRef.current = filename;
       }
     };
 
     playAudioForScreen();
-  }, [state.currentScreen, state.phaseIntro, state.gameData?.phase, isMuted, play]);
+  }, [state.currentScreen, state.phaseIntro, state.gameData?.phase, isMuted, play, stop]);
 
   // --- HANDLERS DO SOCKET ---
   useEffect(() => {
@@ -79,6 +86,7 @@ function App() {
       },
 
       game_started: (playerState) => {
+        // Garantir que currentMission existe
         if (!playerState.currentMission) {
           console.warn('[game_started] currentMission ausente! Usando fallback.');
           playerState.currentMission = {
@@ -94,16 +102,19 @@ function App() {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_GAME_OVER', payload: null });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        // Limpar estados da fortuna ao iniciar um novo jogo
+        // Limpar estados da fortuna
         dispatch({ type: 'SET_SHOW_FORTUNE', payload: false });
         dispatch({ type: 'SET_FORTUNE_DATA', payload: null });
         dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
+        // Para o áudio do ecrã atual
+        stop();
+        lastPlayedRef.current = null;
       },
 
       phase_intro: (data) => {
         console.log('[App] phase_intro recebido:', data);
 
-        // Mostra a fortuna sempre que for uma missão (PHASE_1_MISSION)
+        // Só mostra a fortuna se for realmente uma missão (PHASE_1_MISSION)
         if (data.phase === 'PHASE_1_MISSION') {
           console.log('[App] É uma missão! A preparar fortuna...');
           const currentGame = gameDataRef.current || {};
@@ -122,7 +133,10 @@ function App() {
           dispatch({ type: 'SET_FORTUNE_DATA', payload: fortuneData });
           dispatch({ type: 'SET_SHOW_FORTUNE', payload: true });
           dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: data });
-          // Não definir phaseIntro ainda (será definido após a fortuna)
+          // Não definir phaseIntro ainda
+        } else if (data.phase === 'WAITING_LOBBY') {
+          // Ignorar WAITING_LOBBY - não faz nada
+          console.log('[App] WAITING_LOBBY ignorado.');
         } else {
           // Outras fases (arsenal, expulsão, etc.)
           dispatch({ type: 'SET_PHASE_INTRO', payload: data });
@@ -142,6 +156,9 @@ function App() {
 
       mission_outcome: (data) => {
         console.log('[App] mission_outcome:', data);
+        // Para o áudio atual antes de mostrar o resultado
+        stop();
+        lastPlayedRef.current = null;
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
       },
 
@@ -151,6 +168,8 @@ function App() {
         dispatch({ type: 'SET_IS_EVALUATION', payload: true });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          // Para o áudio anterior antes de tocar avaliação
+          stop();
           play('evaluation.mp3');
           lastPlayedRef.current = 'evaluation.mp3';
         }
@@ -162,6 +181,7 @@ function App() {
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          stop();
           play('arsenal.mp3');
           lastPlayedRef.current = 'arsenal.mp3';
         }
@@ -173,6 +193,7 @@ function App() {
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          stop();
           play('banishment.mp3');
           lastPlayedRef.current = 'banishment.mp3';
         }
@@ -187,6 +208,7 @@ function App() {
         dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          stop();
           play('murder-blindfold.mp3');
           lastPlayedRef.current = 'murder-blindfold.mp3';
         }
@@ -197,6 +219,7 @@ function App() {
         dispatch({ type: 'SET_TRAITOR_CHOICES', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          stop();
           play('murder-blindfold.mp3');
           lastPlayedRef.current = 'murder-blindfold.mp3';
         }
@@ -217,6 +240,7 @@ function App() {
         dispatch({ type: 'SET_RECRUIT_RESULT', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          stop();
           play('murder-reveal.mp3');
           lastPlayedRef.current = 'murder-reveal.mp3';
         }
@@ -230,6 +254,7 @@ function App() {
         dispatch({ type: 'SET_MURDER_REVEAL', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          stop();
           play('murder-reveal.mp3');
           lastPlayedRef.current = 'murder-reveal.mp3';
         }
@@ -248,6 +273,7 @@ function App() {
         dispatch({ type: 'SET_GAME_OVER', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
+          stop();
           play('game-over.mp3');
           lastPlayedRef.current = 'game-over.mp3';
         }
@@ -268,6 +294,8 @@ function App() {
           }
         });
         if (!isMuted) {
+          // Para o áudio anterior antes de tocar o da nova fase
+          stop();
           if (data.phase === 'PHASE_2_BANISHMENT') {
             play('banishment.mp3');
             lastPlayedRef.current = 'banishment.mp3';
@@ -307,7 +335,7 @@ function App() {
         socket.off(event, handlers[event]);
       });
     };
-  }, [socket, play, dispatch, isMuted]);
+  }, [socket, play, stop, dispatch, isMuted]);
 
   // --- HANDLERS DE NAVEGAÇÃO ---
   const handleRoomCreated = useCallback((data) => {

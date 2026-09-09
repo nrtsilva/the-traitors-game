@@ -5,6 +5,7 @@ export function useAudio(initialMuted = false) {
   const audioRef = useRef(null);
   const isUnlocked = useRef(false);
   const lastPlayedRef = useRef(null);
+  const toggleTimeoutRef = useRef(null);
 
   const unlockAudio = useCallback(() => {
     if (isUnlocked.current) return;
@@ -22,6 +23,11 @@ export function useAudio(initialMuted = false) {
   const play = useCallback((filename, loop = true) => {
     if (isMuted || !filename) {
       console.log(`[Áudio] Bloqueado (mutado ou sem ficheiro): ${filename}`);
+      return;
+    }
+    // Se o mesmo ficheiro já estiver a tocar, não recriar
+    if (lastPlayedRef.current === filename && audioRef.current) {
+      console.log(`[Áudio] Já está a tocar: ${filename}`);
       return;
     }
     if (audioRef.current) {
@@ -65,21 +71,29 @@ export function useAudio(initialMuted = false) {
   }, [isMuted, play]);
 
   const toggleMute = useCallback(() => {
-    setIsMuted(prev => {
-      const newMuted = !prev;
-      console.log(`[Áudio] toggleMute: ${newMuted ? 'Mutar' : 'Desmutar'}`);
-      if (newMuted) {
-        stop();
-      } else {
-        unlockAudio();
-        setTimeout(() => resume(), 50);
-      }
-      return newMuted;
-    });
+    if (toggleTimeoutRef.current) {
+      clearTimeout(toggleTimeoutRef.current);
+      toggleTimeoutRef.current = null;
+    }
+    toggleTimeoutRef.current = setTimeout(() => {
+      setIsMuted(prev => {
+        const newMuted = !prev;
+        console.log(`[Áudio] toggleMute: ${newMuted ? 'Mutar' : 'Desmutar'}`);
+        if (newMuted) {
+          stop();
+        } else {
+          unlockAudio();
+          setTimeout(() => resume(), 50);
+        }
+        return newMuted;
+      });
+      toggleTimeoutRef.current = null;
+    }, 200);
   }, [stop, unlockAudio, resume]);
 
   useEffect(() => {
     return () => {
+      if (toggleTimeoutRef.current) clearTimeout(toggleTimeoutRef.current);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
