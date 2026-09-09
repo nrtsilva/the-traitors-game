@@ -1,4 +1,3 @@
-// src/components/phases/MissionPhase/index.js
 import React, { useState } from 'react';
 import MissionCollaborativeDrawing from './MissionCollaborativeDrawing';
 import MissionNumberInput from './MissionNumberInput';
@@ -9,7 +8,6 @@ import MissionCategoryChoice from './MissionCategoryChoice';
 export default function MissionPhase(props) {
   const { 
     playerState, 
-    onOpenHelp,      // ainda pode ser passado, mas já não usamos
     socket,
     roomData,
     playerId,
