@@ -55,7 +55,7 @@ export default function MissionCollaborativeDrawing({
         {/* Exibir a palavra secreta APENAS ao primeiro jogador */}
         {isFirstPlayer && secretWord && (
           <div className="mb-6 p-4 bg-[#D8B66C]/20 border-2 border-[#D8B66C] rounded-lg text-center">
-            <p className="text-white text-sm uppercase tracking-wider">🔒 Palavra secreta (mostra apenas ao 1º jogador)</p>
+            <p className="text-white text-sm uppercase tracking-wider">🔒 Palavra secreta (Tu és o 1º jogador)</p>
             <p className="text-4xl font-bold text-[#D8B66C] mt-2">{secretWord}</p>
           </div>
         )}

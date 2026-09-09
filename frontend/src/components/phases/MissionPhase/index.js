@@ -9,7 +9,7 @@ import MissionCategoryChoice from './MissionCategoryChoice';
 export default function MissionPhase(props) {
   const { 
     playerState, 
-    onOpenHelp, 
+    onOpenHelp,      // ainda pode ser passado, mas já não usamos
     socket,
     roomData,
     playerId,
@@ -19,14 +19,11 @@ export default function MissionPhase(props) {
   const mission = missionFromProp || playerState?.currentMission;
   const [isTreasureOpen, setIsTreasureOpen] = useState(false);
 
-  console.log('[MissionPhase] mission:', mission);
-
   if (!mission) {
     return <div className="text-center"><p className="text-[#F3EBDD]">A carregar missão...</p></div>;
   }
 
   let missionContent = null;
-  
   if (mission.type === 'CATEGORY_CHOICE') {
     missionContent = (
       <MissionCategoryChoice 
@@ -53,22 +50,14 @@ export default function MissionPhase(props) {
 
   return (
     <div className="relative">
-      <button 
-        onClick={() => onOpenHelp(0)} 
-        className="absolute top-0 right-4 text-3xl text-[#E5C982] hover:text-[#D8B66C] transition-colors z-10"
-        title="Ajuda"
-      >
-        ?
-      </button>
-
-      {/* TESOURO COMUM – colapsável no topo */}
-      <div className="mb-4">
+      {/* TESOURO COMUM NO TOPO – colapsável */}
+      <div className="mb-6">
         <button
           onClick={() => setIsTreasureOpen(!isTreasureOpen)}
           className="w-full bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-3 flex justify-between items-center hover:border-[#E5C982] transition"
         >
           <span className="text-[#F3EBDD] font-display text-sm uppercase tracking-widest">
-            💰 Acumulado no Tesouro
+            🪙 Acumulado no Tesouro
           </span>
           <span className="text-[#D8B66C] text-xl">
             {isTreasureOpen ? '▲' : '▼'}
@@ -78,12 +67,12 @@ export default function MissionPhase(props) {
         {isTreasureOpen && (
           <div className="bg-[#291923] border-2 border-t-0 border-[#D8B66C] rounded-b-lg p-4 flex justify-center items-center gap-8 shadow-soft">
             <div className="text-center">
-              <span className="text-3xl">🪙</span>
+              <span className="text-3xl">💰</span>
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.coins || 0} Moedas</div>
             </div>
             <div className="w-px h-10 bg-[#D8B66C]/30"></div>
             <div className="text-center">
-              <span className="text-3xl">💰</span>
+              <span className="text-3xl">🪙</span>
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.bars || 0} Barras</div>
               <div className="text-xs text-[#F3EBDD]/60">(1 Barra = 5 Moedas)</div>
             </div>
@@ -94,9 +83,9 @@ export default function MissionPhase(props) {
       {/* VALOR EM JOGO – sempre visível */}
       <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-4 flex justify-center items-center shadow-soft">
         <div className="text-center">
-          <span className="text-3xl">🥇</span>
+          <span className="text-3xl">⚔️</span>
           <div className="text-2xl font-bold text-[#D8B66C]">{playerState.reward || "Variável"}</div>
-          <div className="text-xs text-[#F3EBDD]/60">Prémio em Jogo</div>
+          <div className="text-xs text-[#F3EBDD]/60">Valor em Jogo</div>
         </div>
       </div>
 
