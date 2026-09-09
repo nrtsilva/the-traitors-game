@@ -18,7 +18,7 @@ function App() {
   const { isMuted, toggleMute, play, stop } = useAudio();
   const [state, dispatch] = useGameState();
   const [playerName, setPlayerName] = useState('');
-  const lastPlayedRef = useRef(null); // controla o último áudio tocado
+  const lastPlayedRef = useRef(null); // controla o último áudio tocado pelo ecrã
 
   // --- REFS para manter dados atualizados nos handlers do socket ---
   const roomDataRef = useRef(state.roomData);
@@ -34,39 +34,37 @@ function App() {
 
   // --- GERENCIAMENTO DE ÁUDIO POR ECRÃ ---
   useEffect(() => {
-    const playAudioForScreen = () => {
-      if (isMuted) return;
+    let filename = null;
 
-      let filename = null;
-
-      if (state.currentScreen === 'lobby') {
-        filename = 'lobby.mp3';
-      } else if (state.currentScreen === 'tutorial') {
-        filename = 'tutorial.mp3';
-      } else if (state.currentScreen === 'roleReveal') {
-        filename = 'role-reveal.mp3';
-      } else if (state.currentScreen === 'game') {
-        // Se não há fase definida, toca mission.mp3
-        if (!state.phaseIntro && !state.gameData?.phase) {
-          filename = 'mission.mp3';
-        } else {
-          // Áudio específico da fase é tratado nos handlers do socket
-          return;
-        }
+    if (state.currentScreen === 'lobby') {
+      filename = 'lobby.mp3';
+    } else if (state.currentScreen === 'tutorial') {
+      filename = 'tutorial.mp3';
+    } else if (state.currentScreen === 'roleReveal') {
+      filename = 'role-reveal.mp3';
+    } else if (state.currentScreen === 'game') {
+      // Se não há fase definida, toca mission.mp3
+      if (!state.phaseIntro && !state.gameData?.phase) {
+        filename = 'mission.mp3';
+      } else {
+        // Áudio específico da fase é tratado pelos handlers do socket
+        return;
       }
+    }
 
-      if (filename && lastPlayedRef.current !== filename) {
-        // Para o áudio anterior antes de tocar o novo
-        if (lastPlayedRef.current) {
-          stop();
-        }
-        play(filename);
-        lastPlayedRef.current = filename;
-      }
-    };
-
-    playAudioForScreen();
-  }, [state.currentScreen, state.phaseIntro, state.gameData?.phase, isMuted, play, stop]);
+    if (filename && lastPlayedRef.current !== filename) {
+      // Para o áudio anterior antes de tocar o novo
+      stop();
+      play(filename);
+      lastPlayedRef.current = filename;
+    }
+  }, [
+    state.currentScreen,
+    state.phaseIntro,
+    state.gameData?.phase,
+    play,
+    stop,
+  ]);
 
   // --- HANDLERS DO SOCKET ---
   useEffect(() => {
@@ -86,7 +84,6 @@ function App() {
       },
 
       game_started: (playerState) => {
-        // Garantir que currentMission existe
         if (!playerState.currentMission) {
           console.warn('[game_started] currentMission ausente! Usando fallback.');
           playerState.currentMission = {
@@ -106,7 +103,7 @@ function App() {
         dispatch({ type: 'SET_SHOW_FORTUNE', payload: false });
         dispatch({ type: 'SET_FORTUNE_DATA', payload: null });
         dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
-        // Para o áudio do ecrã atual
+        // Parar áudio e limpar referência
         stop();
         lastPlayedRef.current = null;
       },
@@ -135,10 +132,8 @@ function App() {
           dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: data });
           // Não definir phaseIntro ainda
         } else if (data.phase === 'WAITING_LOBBY') {
-          // Ignorar WAITING_LOBBY - não faz nada
           console.log('[App] WAITING_LOBBY ignorado.');
         } else {
-          // Outras fases (arsenal, expulsão, etc.)
           dispatch({ type: 'SET_PHASE_INTRO', payload: data });
           if (data.phase) {
             const currentGame = gameDataRef.current || {};
@@ -156,7 +151,6 @@ function App() {
 
       mission_outcome: (data) => {
         console.log('[App] mission_outcome:', data);
-        // Para o áudio atual antes de mostrar o resultado
         stop();
         lastPlayedRef.current = null;
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
@@ -168,7 +162,6 @@ function App() {
         dispatch({ type: 'SET_IS_EVALUATION', payload: true });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         if (!isMuted) {
-          // Para o áudio anterior antes de tocar avaliação
           stop();
           play('evaluation.mp3');
           lastPlayedRef.current = 'evaluation.mp3';
@@ -294,7 +287,6 @@ function App() {
           }
         });
         if (!isMuted) {
-          // Para o áudio anterior antes de tocar o da nova fase
           stop();
           if (data.phase === 'PHASE_2_BANISHMENT') {
             play('banishment.mp3');
@@ -444,9 +436,7 @@ function App() {
     const pendingData = state.pendingPhaseIntro;
     if (pendingData) {
       console.log('[App] pendingData:', pendingData);
-      // Limpa o pending
       dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
-      // Define a introdução da fase
       dispatch({ type: 'SET_PHASE_INTRO', payload: pendingData });
       if (pendingData.phase) {
         const currentGame = gameDataRef.current || {};
