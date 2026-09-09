@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useAudio } from './hooks/useAudio';
@@ -23,15 +22,10 @@ function App() {
   // --- REFS para manter dados atualizados nos handlers do socket ---
   const roomDataRef = useRef(state.roomData);
   const gameDataRef = useRef(state.gameData);
-  const currentScreenRef = useRef(state.currentScreen);
 
   useEffect(() => {
     roomDataRef.current = state.roomData;
   }, [state.roomData]);
-
-  useEffect(() => {
-    currentScreenRef.current = state.currentScreen;
-  }, [state.currentScreen]);
 
   useEffect(() => {
     gameDataRef.current = state.gameData;
@@ -40,7 +34,7 @@ function App() {
   // --- GERENCIAMENTO DE ÁUDIO POR ECRÃ ---
   useEffect(() => {
     const playAudioForScreen = () => {
-      if (isMuted) return; // se mutado, não toca
+      if (isMuted) return;
 
       let filename = null;
 
@@ -51,12 +45,9 @@ function App() {
       } else if (state.currentScreen === 'roleReveal') {
         filename = 'role-reveal.mp3';
       } else if (state.currentScreen === 'game') {
-        // Durante o jogo, o áudio é controlado pelos handlers de socket
-        // Mas se não houver fase definida, toca mission.mp3
         if (!state.phaseIntro && !state.gameData?.phase) {
           filename = 'mission.mp3';
         } else {
-          // Se há phaseIntro, o áudio será tratado pelo handler phase_intro/phase_started
           return;
         }
       }
@@ -103,13 +94,22 @@ function App() {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_GAME_OVER', payload: null });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
+        // Limpar estados da fortuna ao iniciar um novo jogo
+        dispatch({ type: 'SET_SHOW_FORTUNE', payload: false });
+        dispatch({ type: 'SET_FORTUNE_DATA', payload: null });
+        dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
       },
 
       phase_intro: (data) => {
+        console.log('[App] phase_intro recebido:', data);
+
         // Mostra a fortuna sempre que for uma missão (PHASE_1_MISSION)
         if (data.phase === 'PHASE_1_MISSION') {
+          console.log('[App] É uma missão! A preparar fortuna...');
           const currentGame = gameDataRef.current || {};
           const player = currentGame?.players?.find(p => p.id === socket.id) || {};
+          console.log('[App] player encontrado:', player);
+
           const fortuneData = {
             playerName: player.name || 'Jogador',
             gold: player.gold ?? 0,
@@ -117,9 +117,12 @@ function App() {
             commonCoins: currentGame?.prizeFund?.coins ?? 0,
             commonBars: currentGame?.prizeFund?.bars ?? 0,
           };
+          console.log('[App] fortuneData:', fortuneData);
+
           dispatch({ type: 'SET_FORTUNE_DATA', payload: fortuneData });
           dispatch({ type: 'SET_SHOW_FORTUNE', payload: true });
           dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: data });
+          // Não definir phaseIntro ainda (será definido após a fortuna)
         } else {
           // Outras fases (arsenal, expulsão, etc.)
           dispatch({ type: 'SET_PHASE_INTRO', payload: data });
@@ -138,6 +141,7 @@ function App() {
       },
 
       mission_outcome: (data) => {
+        console.log('[App] mission_outcome:', data);
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
       },
 
@@ -303,7 +307,7 @@ function App() {
         socket.off(event, handlers[event]);
       });
     };
-  }, [socket, play, dispatch, isMuted]); // <-- dependências estáveis
+  }, [socket, play, dispatch, isMuted]);
 
   // --- HANDLERS DE NAVEGAÇÃO ---
   const handleRoomCreated = useCallback((data) => {
@@ -407,9 +411,11 @@ function App() {
   }, [dispatch]);
 
   const handleFortuneContinue = useCallback(() => {
+    console.log('[App] handleFortuneContinue chamado');
     dispatch({ type: 'SET_SHOW_FORTUNE', payload: false });
     const pendingData = state.pendingPhaseIntro;
     if (pendingData) {
+      console.log('[App] pendingData:', pendingData);
       // Limpa o pending
       dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
       // Define a introdução da fase
@@ -421,6 +427,8 @@ function App() {
           payload: { ...currentGame, phase: pendingData.phase }
         });
       }
+    } else {
+      console.warn('[App] handleFortuneContinue chamado sem pendingData!');
     }
   }, [dispatch, state.pendingPhaseIntro]);
 
