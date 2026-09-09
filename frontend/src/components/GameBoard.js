@@ -49,58 +49,30 @@ export default function GameBoard({
   onMissionOutcome,
   missionOutcome,
 }) {
+  // --- TIMER LOCAL PARA EXIBIÇÃO (apenas visual) ---
+  const [displayTimer, setDisplayTimer] = useState(playerState.timer || 0);
 
-  // Estado local para o timer (apenas UI)
-  const [localTimer, setLocalTimer] = useState(playerState.timer || 0);
-  const [intervalId, setIntervalId] = useState(null);
-
-  // Sincronizar com o timer do servidor quando ele mudar
   useEffect(() => {
-    if (playerState.timer !== undefined && playerState.timer !== null) {
-      setLocalTimer(playerState.timer);
-    }
-  }, [playerState.timer]);
-
-  // Decrementar o timer local a cada segundo
-  useEffect(() => {
-    // Só executa se estivermos na fase de missão e o timer for > 0
-    if (playerState.phase === 'PHASE_1_MISSION' && localTimer > 0) {
-      // Limpa intervalo anterior se existir
-      if (intervalId) {
-        clearInterval(intervalId);
-        setIntervalId(null);
-      }
-      const id = setInterval(() => {
-        setLocalTimer(prev => {
+    if (playerState.phase === 'PHASE_1_MISSION' && playerState.timer > 0) {
+      setDisplayTimer(playerState.timer);
+      const interval = setInterval(() => {
+        setDisplayTimer(prev => {
           if (prev <= 1) {
-            clearInterval(id);
-            setIntervalId(null);
+            clearInterval(interval);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-      setIntervalId(id);
+      return () => clearInterval(interval);
     } else {
-      // Limpa o intervalo se não estiver na missão ou timer <= 0
-      if (intervalId) {
-        clearInterval(intervalId);
-        setIntervalId(null);
-      }
+      setDisplayTimer(playerState.timer || 0);
     }
-
-    // Cleanup ao desmontar
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-        setIntervalId(null);
-      }
-    };
-  }, [playerState.phase, localTimer]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playerState.phase, playerState.timer]);
 
   // -------------------- ECRÃS PRIORITÁRIOS --------------------
-
-  // 1. Missão Outcome (resultado da missão) – prioridade alta
+  
+  // 1. Missão Outcome (resultado da missão)
   if (missionOutcome) {
     return <MissionOutcomeScreen {...missionOutcome} />;
   }
@@ -135,7 +107,7 @@ export default function GameBoard({
     return <TraitorChoicesScreen choices={traitorChoices} onChoice={onTraitorChoice} />;
   }
 
-  // 8. Lista de jogadores para o Traidor (assassinar ou recrutar)
+  // 8. Lista de jogadores para o Traidor
   if (showPlayerList) {
     return (
       <TraitorPlayerListScreen
@@ -162,7 +134,7 @@ export default function GameBoard({
     return <MurderRevealScreen data={murderReveal} onContinue={onContinueAfterReveal} />;
   }
 
-  // 12. Introdução de fase (inclui missão e arsenal)
+  // 12. Introdução de fase
   if (phaseIntro) {
     return (
       <PhaseIntroScreen
@@ -185,19 +157,18 @@ export default function GameBoard({
 
   // 15. Fase de Votação (Expulsão)
   if (playerState.phase === 'PHASE_2_BANISHMENT') {
-    return <BanishmentVoteScreen {...{ playerState, onVote, timer: playerState.timer }} />;
+    // Usar displayTimer para mostrar o tempo restante
+    const voteTimer = displayTimer > 0 ? displayTimer : (playerState.timer || 0);
+    return <BanishmentVoteScreen {...{ playerState, onVote, timer: voteTimer }} />;
   }
 
-  // 16. Missão (padrão) – passa todas as props necessárias
-  // Aqui passamos o localTimer em vez do playerState.timer para o MissionPhase exibir
-  const missionPlayerState = {
-    ...playerState,
-    timer: localTimer,
-  };
-
+  // 16. Missão (padrão) – passa o timer visual
   return (
     <MissionPhase
-      playerState={missionPlayerState}
+      playerState={{
+        ...playerState,
+        timer: displayTimer, // Sobrescreve o timer com o visual
+      }}
       currentMission={playerState.currentMission}
       onOpenHelp={onOpenHelp}
       onEndMission={onEndMission}
