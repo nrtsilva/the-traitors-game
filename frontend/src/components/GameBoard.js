@@ -1,4 +1,3 @@
-// src/components/GameBoard.js
 import React, { useState, useEffect } from 'react';
 
 import GameOverScreen from './phases/GameOverScreen';
@@ -17,6 +16,7 @@ import ArsenalPhase from './phases/ArsenalPhase';
 import BanishmentVoteScreen from './phases/BanishmentVoteScreen';
 import MissionPhase from './phases/MissionPhase';
 import MissionOutcomeScreen from './phases/MissionOutcomeScreen';
+import FortuneRevealScreen from './phases/FortuneRevealScreen';
 
 export default function GameBoard({
   playerState,
@@ -49,6 +49,9 @@ export default function GameBoard({
   onArsenalResultSubmit,
   onMissionOutcome,
   missionOutcome,
+  showFortune,
+  fortuneData,
+  onFortuneContinue,
 }) {
   // --- TIMER LOCAL PARA EXIBIÇÃO (apenas visual) ---
   const [displayTimer, setDisplayTimer] = useState(playerState.timer || 0);
@@ -72,6 +75,11 @@ export default function GameBoard({
   }, [playerState.phase, playerState.timer]);
 
   // -------------------- ECRÃS PRIORITÁRIOS --------------------
+
+  // 0. Mostrar fortuna (prioridade máxima)
+  if (showFortune && fortuneData) {
+    return <FortuneRevealScreen {...fortuneData} onContinue={onFortuneContinue} />;
+  }
   
   // 1. Missão Outcome (resultado da missão)
   if (missionOutcome) {

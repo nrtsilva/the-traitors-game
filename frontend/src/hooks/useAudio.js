@@ -86,12 +86,8 @@ export function useAudio(initialMuted = false) {
     return () => document.removeEventListener('click', handleClick);
   }, [unlockAudio]);
 
-  useEffect(() => {
-    if (!isMuted) {
-      unlockAudio();
-      resume();
-    }
-  }, [isMuted, unlockAudio, resume]);
+  // REMOVIDO o useEffect que chamava resume automaticamente
+  // (anteriormente estava a causar reprodução indesejada)
 
   return { isMuted, toggleMute, play, stop, resume };
 }

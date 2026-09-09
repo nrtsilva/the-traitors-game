@@ -23,10 +23,15 @@ function App() {
   // --- REFS para manter dados atualizados nos handlers do socket ---
   const roomDataRef = useRef(state.roomData);
   const gameDataRef = useRef(state.gameData);
+  const currentScreenRef = useRef(state.currentScreen);
 
   useEffect(() => {
     roomDataRef.current = state.roomData;
   }, [state.roomData]);
+
+  useEffect(() => {
+    currentScreenRef.current = state.currentScreen;
+  }, [state.currentScreen]);
 
   useEffect(() => {
     gameDataRef.current = state.gameData;
@@ -102,21 +107,34 @@ function App() {
       },
 
       phase_intro: (data) => {
-        dispatch({ type: 'SET_PHASE_INTRO', payload: data });
-        if (data.phase) {
+        // Se for uma missão (PHASE_1_MISSION) e ainda não tiver mostrado a fortuna
+        if (data.phase === 'PHASE_1_MISSION' && currentScreenRef.current === 'game') {
           const currentGame = gameDataRef.current || {};
-          dispatch({
-            type: 'SET_GAME_DATA',
-            payload: {
-              ...currentGame,
-              phase: data.phase
-            }
-          });
+          const player = currentGame?.players?.find(p => p.id === socket.id) || {};
+          const fortuneData = {
+            playerName: player.name || 'Jogador',
+            gold: player.gold ?? 0,
+            bars: player.bars ?? 0,
+            commonCoins: currentGame?.prizeFund?.coins ?? 0,
+            commonBars: currentGame?.prizeFund?.bars ?? 0,
+          };
+          dispatch({ type: 'SET_FORTUNE_DATA', payload: fortuneData });
+          dispatch({ type: 'SET_SHOW_FORTUNE', payload: true });
+          dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: data });
+        } else {
+          dispatch({ type: 'SET_PHASE_INTRO', payload: data });
+          if (data.phase) {
+            const currentGame = gameDataRef.current || {};
+            dispatch({
+              type: 'SET_GAME_DATA',
+              payload: { ...currentGame, phase: data.phase }
+            });
+          }
+          dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+          dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+          dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+          dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
         }
-        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
-        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
       },
 
       mission_outcome: (data) => {
@@ -285,10 +303,7 @@ function App() {
         socket.off(event, handlers[event]);
       });
     };
-  }, [socket, play, dispatch, isMuted]); // isMuted adicionado para respeitar o estado
-
-  // ... (resto do código: handlers de navegação, contexto, renderização) igual ao que já tens
-  // Nota: os handlers de navegação e ações do jogo são os mesmos, não os alterei.
+  }, [socket, play, dispatch, isMuted]);
 
   // --- HANDLERS DE NAVEGAÇÃO (mantidos) ---
   const handleRoomCreated = useCallback((data) => {
@@ -390,6 +405,22 @@ function App() {
   const handleOpenHelp = useCallback((step) => {
     dispatch({ type: 'SET_TUTORIAL', payload: { tutorialStep: step || 0, isTutorialOverlay: true } });
   }, [dispatch]);
+
+  const handleFortuneContinue = useCallback(() => {
+    dispatch({ type: 'SET_SHOW_FORTUNE', payload: false });
+    const pendingData = state.pendingPhaseIntro;
+    if (pendingData) {
+      dispatch({ type: 'SET_PHASE_INTRO', payload: pendingData });
+      if (pendingData.phase) {
+        const currentGame = gameDataRef.current || {};
+        dispatch({
+          type: 'SET_GAME_DATA',
+          payload: { ...currentGame, phase: pendingData.phase }
+        });
+      }
+      dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
+    }
+  }, [dispatch, state.pendingPhaseIntro]);
 
   // --- CONTEXT VALUE ---
   const contextValue = {
@@ -512,6 +543,9 @@ function App() {
               onArsenalResultSubmit={handleArsenalResultSubmit}
               onMissionOutcome={handleMissionOutcome}
               missionOutcome={state.missionOutcome}
+              showFortune={state.showFortune}
+              fortuneData={state.fortuneData}
+              onFortuneContinue={handleFortuneContinue}
             />
           )}
 

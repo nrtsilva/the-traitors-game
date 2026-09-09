@@ -20,6 +20,9 @@ const initialState = {
   tutorialStep: 0,
   missionOutcome: null,
   readyCount: 0,
+  showFortune: false,
+  fortuneData: null,
+  pendingPhaseIntro: null,
 };
 
 function gameReducer(state, action) {
@@ -66,9 +69,15 @@ function gameReducer(state, action) {
       return { ...initialState, currentScreen: 'lobby' };
     case 'SET_MISSION_OUTCOME':
       return { ...state, missionOutcome: action.payload };
+    case 'SET_SHOW_FORTUNE':
+      return { ...state, showFortune: action.payload };
+    case 'SET_FORTUNE_DATA':
+      return { ...state, fortuneData: action.payload };
+    case 'SET_PENDING_PHASE_INTRO':
+      return { ...state, pendingPhaseIntro: action.payload };
     default:
       return state;
-  }
+    }
 }
 
 export function useGameState() {
