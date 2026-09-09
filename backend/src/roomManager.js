@@ -76,6 +76,22 @@ function convertCoinsToBars(room) {
     }
 }
 
+// Converter barras em moedas (1 barra = 5 moedas)
+function convertBarsToCoins(room) {
+    while (room.prizeFund.bars > 0 && room.prizeFund.coins < 5) {
+        room.prizeFund.bars -= 1;
+        room.prizeFund.coins += 5;
+    }
+}
+
+// Antes de subtrair moedas do cofre ou de um jogador
+function ensureCoins(player, amount) {
+    while (player.gold < amount && player.bars > 0) {
+        player.bars -= 1;
+        player.gold += 5;
+    }
+}
+
 module.exports = {
     rooms,
     generateRoomCode,

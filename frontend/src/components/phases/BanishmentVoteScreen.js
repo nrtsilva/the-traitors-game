@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Chalkboard from '../Chalkboard';
 
 export default function BanishmentVoteScreen({ playerState, onVote }) {
   const [selectedVote, setSelectedVote] = useState(null);
@@ -12,7 +13,7 @@ export default function BanishmentVoteScreen({ playerState, onVote }) {
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#D8B66C]/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="relative z-10 text-center">
-        <h1 className="font-display text-5xl font-bold text-[#E5C982] mb-4 tracking-widest">A EXPULSÃO</h1>
+        <h1 className="font-display text-5xl font-bold text-[#E5C982] mb-4 tracking-widest">MESA REDONDA</h1>
         <p className="text-[#F3EBDD] text-xl mb-8">Quem será o traidor? A decisão está nas tuas mãos.</p>
 
         <div className="mb-8">
@@ -35,6 +36,13 @@ export default function BanishmentVoteScreen({ playerState, onVote }) {
             </div>
           ))}
         </div>
+        
+        {selectedVote && (
+          <Chalkboard 
+            name={votablePlayers.find(p => p.id === selectedVote)?.name || ''} 
+            isVisible={true} 
+          />
+        )}
 
         {hasDagger && (
           <div className="mb-6 flex items-center justify-center gap-3 text-[#E5C982]">

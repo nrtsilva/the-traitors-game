@@ -98,7 +98,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
             onChange={(e) => updateSetting('numPhases', parseInt(e.target.value))}
             className="w-full accent-[#D8B66C]" 
           />
-          <p className="text-xs text-[#F3EBDD]/50 mt-2">Missão → Expulsão → Arsenal → Assassinato</p>
+          <p className="text-xs text-[#F3EBDD]/50 mt-2">Missão → Mesa Redonda → Arsenal → Assassinato</p>
         </div>
 
         {/* Opções Toggle */}
@@ -123,7 +123,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
 
         {/* Tempo de Debate (Expulsão) */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
-          <label className="block mb-3 text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Tempo de Debate (Expulsão)</label>
+          <label className="block mb-3 text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Tempo de Debate</label>
           <select value={settings.debateTime} onChange={(e) => updateSetting('debateTime', e.target.value)} className="w-full p-3 bg-[#291923] border border-[#D8B66C]/50 text-[#F3EBDD] rounded-sm focus:outline-none focus:border-[#E5C982]">
             <option value="0">Ilimitado</option>
             <option value="60">60 Segundos</option>

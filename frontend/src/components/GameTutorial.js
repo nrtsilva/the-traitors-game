@@ -4,7 +4,7 @@ const steps = [
   {
     title: "Bem-vindo à Mansão",
     /*description: "Bem-vindo ao The Traitors! Um jogo de dedução social, traição e estratégia. O objetivo é simples: acumular ouro para o cofre comunitário e desvendar (ou esconder) a identidade do Traidor. Vamos descobrir como se joga?",*/
-    description: "Bem-vindo ao The Traitors! Uma Aventura é composta por 1 a 4 fases. Cada fase inclui 4 etapas: Missão (equipa), Expulsão (votação), Arsenal (individual) e Assassinato (noite). O objetivo é acumular ouro e desvendar (ou esconder) a identidade do Traidor. Vamos descobrir como se joga?",
+    description: "Bem-vindo ao The Traitors! Uma Aventura é composta por 1 a 4 fases. Cada fase inclui 4 etapas: Missão, Mesa Redonda, Arsenal e Assassinato. O objetivo é acumular ouro e desvendar (ou esconder) a identidade do Traidor. Vamos descobrir como se joga?",
     icon: "🏰"
   },
   {
@@ -18,7 +18,7 @@ const steps = [
     icon: "⚔️"
   },
   {
-    title: "A Expulsão",
+    title: "Mesa Redonda",
     description: "Após a missão, o grupo reúne-se para discutir. Quem será o Traidor? Chega a altura de votar. A pessoa com mais votos é Expulsa da mansão e perde 2 peças de ouro (se as tiver). Mas atenção: se expulsarem um Fiel inocente, estão a ajudar o Traidor!",
     icon: "🗳️"
   },

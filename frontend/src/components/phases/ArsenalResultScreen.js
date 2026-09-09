@@ -17,7 +17,7 @@ export default function ArsenalResultScreen({ result, playerId }) {
     } else if (reward === 'dagger') {
       icon = <div className="text-9xl drop-shadow-lg">🗡️</div>;
       title = 'Ganhaste um Punhal!';
-      description = 'Este punhal dá-te direito a 2 votos em QUALQUER votação para expulsão. Usa-o quando quiseres!';
+      description = 'Este punhal dá-te direito a 2 votos em QUALQUER votação para expulsão na mesa redonda. Usa-o quando quiseres!';
     } else {
       icon = <div className="text-9xl text-[#D8B66C]">✖</div>;
       title = 'Ninguém venceu!';

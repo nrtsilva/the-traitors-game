@@ -195,7 +195,7 @@ export default function GameBoard({
     <MissionPhase
       playerState={{
         ...playerState,
-        timer: displayTimer, // Sobrescreve o timer com o visual
+        timer: displayTimer,
       }}
       currentMission={playerState.currentMission}
       onOpenHelp={onOpenHelp}

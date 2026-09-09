@@ -430,6 +430,7 @@ function registerSocketHandlers(io) {
                     const reward = Math.floor(average / 4);
                     room.prizeFund.coins += reward;
                     convertCoinsToBars(room);
+                    convertBarsToCoins(room);
                     room.players.forEach(p => p.missionValue = undefined);
                     io.to(cleanCode).emit('mission_evaluation');
                 }
@@ -503,6 +504,7 @@ function registerSocketHandlers(io) {
 					// Adicionar recompensa ao cofre comum
 					room.prizeFund.coins += reward;
 					convertCoinsToBars(room);
+					convertBarsToCoins(room);
 
 					console.log(`[submit_category_choice] Recompensa: ${reward} moedas (${uniqueChoices.size} escolhas únicas).`);
 

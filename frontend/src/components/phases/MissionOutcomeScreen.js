@@ -40,7 +40,7 @@ export default function MissionOutcomeScreen({
               {success ? (
                 <>
                   <span className="block text-3xl font-bold text-[#D8B66C]">+{reward} Moedas</span>
-                  <span className="text-xs text-[#F3EBDD]/60">para o Baú Comunitário</span>
+                  <span className="text-xs text-[#F3EBDD]/60">para o Prémio Total</span>
                 </>
               ) : (
                 <span className="text-[#F3EBDD]/70">Nenhum prémio foi adicionado.</span>
@@ -50,7 +50,7 @@ export default function MissionOutcomeScreen({
         ) : (
           // Fortuna atualizada
           <>
-            <h3 className="font-display text-xl text-[#E5C982] mb-4">🏰 A tua Fortuna, {playerName}</h3>
+            <h3 className="font-display text-xl text-[#E5C982] mb-4">💵 A tua Fortuna, {playerName}</h3>
 
             {/* Baú Individual */}
             <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-4 relative overflow-hidden">
@@ -90,7 +90,7 @@ export default function MissionOutcomeScreen({
         )}
 
         <div className="mt-6 text-[#F3EBDD]/40 text-xs animate-pulse">
-          {!showFortune ? 'A preparar o próximo desafio...' : 'A avançar para a Expulsão...'}
+          {!showFortune ? 'A preparar o próximo desafio...' : 'A avançar para a Mesa Redonda...'}
         </div>
       </div>
     </div>
