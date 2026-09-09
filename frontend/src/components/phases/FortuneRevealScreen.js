@@ -11,7 +11,7 @@ export default function FortuneRevealScreen({
   useEffect(() => {
     const timer = setTimeout(() => {
       onContinue();
-    }, 4000);
+    }, 10000);
     return () => clearTimeout(timer);
   }, [onContinue]);
 
