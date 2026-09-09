@@ -42,7 +42,6 @@ function App() {
     } else if (state.currentScreen === 'roleReveal') {
       filename = 'role-reveal.mp3';
     } else if (state.currentScreen === 'game') {
-      // Se não há fase definida, toca mission.mp3
       if (!state.phaseIntro && !state.gameData?.phase) {
         filename = 'mission.mp3';
       } else {
