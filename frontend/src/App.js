@@ -75,7 +75,6 @@ function App() {
     if (!socket) return;
 
     const handlers = {
-      // ... (todos os handlers mantidos, com a chamada a play e lastPlayedRef)
       room_update: (data) => {
         const currentRoom = roomDataRef.current || {};
         dispatch({
@@ -107,8 +106,8 @@ function App() {
       },
 
       phase_intro: (data) => {
-        // Se for uma missão (PHASE_1_MISSION) e ainda não tiver mostrado a fortuna
-        if (data.phase === 'PHASE_1_MISSION' && currentScreenRef.current === 'game') {
+        // Mostra a fortuna sempre que for uma missão (PHASE_1_MISSION)
+        if (data.phase === 'PHASE_1_MISSION') {
           const currentGame = gameDataRef.current || {};
           const player = currentGame?.players?.find(p => p.id === socket.id) || {};
           const fortuneData = {
@@ -122,6 +121,7 @@ function App() {
           dispatch({ type: 'SET_SHOW_FORTUNE', payload: true });
           dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: data });
         } else {
+          // Outras fases (arsenal, expulsão, etc.)
           dispatch({ type: 'SET_PHASE_INTRO', payload: data });
           if (data.phase) {
             const currentGame = gameDataRef.current || {};
@@ -303,9 +303,9 @@ function App() {
         socket.off(event, handlers[event]);
       });
     };
-  }, [socket, play, dispatch, isMuted]);
+  }, [socket, play, dispatch, isMuted]); // <-- dependências estáveis
 
-  // --- HANDLERS DE NAVEGAÇÃO (mantidos) ---
+  // --- HANDLERS DE NAVEGAÇÃO ---
   const handleRoomCreated = useCallback((data) => {
     dispatch({ type: 'SET_ROOM_DATA', payload: data });
     dispatch({ type: 'SET_IS_HOST', payload: true });
@@ -330,7 +330,7 @@ function App() {
     dispatch({ type: 'SET_SCREEN', payload: 'game' });
   }, [dispatch]);
 
-  // --- HANDLERS PARA AÇÕES DO JOGO (mantidos) ---
+  // --- HANDLERS PARA AÇÕES DO JOGO ---
   const handleTraitorChoice = useCallback((action) => {
     socket.emit('traitor_choice', { roomCode: state.roomData?.roomCode, action });
   }, [socket, state.roomData]);
@@ -410,6 +410,9 @@ function App() {
     dispatch({ type: 'SET_SHOW_FORTUNE', payload: false });
     const pendingData = state.pendingPhaseIntro;
     if (pendingData) {
+      // Limpa o pending
+      dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
+      // Define a introdução da fase
       dispatch({ type: 'SET_PHASE_INTRO', payload: pendingData });
       if (pendingData.phase) {
         const currentGame = gameDataRef.current || {};
@@ -418,7 +421,6 @@ function App() {
           payload: { ...currentGame, phase: pendingData.phase }
         });
       }
-      dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: null });
     }
   }, [dispatch, state.pendingPhaseIntro]);
 
@@ -454,7 +456,7 @@ function App() {
     handleOpenHelp,
   };
 
-  // --- RENDERIZAÇÃO --- (inalterada)
+  // --- RENDERIZAÇÃO ---
   return (
     <GameProvider value={contextValue}>
       <div className="min-h-screen">

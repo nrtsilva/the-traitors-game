@@ -20,7 +20,10 @@ export function useAudio(initialMuted = false) {
   }, []);
 
   const play = useCallback((filename, loop = true) => {
-    if (isMuted || !filename) return;
+    if (isMuted || !filename) {
+      console.log(`[Áudio] Bloqueado (mutado ou sem ficheiro): ${filename}`);
+      return;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -38,6 +41,7 @@ export function useAudio(initialMuted = false) {
       }
       audioRef.current = audio;
       lastPlayedRef.current = filename;
+      console.log(`[Áudio] A tocar: ${filename}`);
     } catch (e) {
       console.error('Erro ao carregar áudio:', e);
     }
@@ -47,11 +51,13 @@ export function useAudio(initialMuted = false) {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
+      console.log('[Áudio] Parado');
     }
   }, []);
 
   const resume = useCallback(() => {
     if (!isMuted && lastPlayedRef.current) {
+      console.log('[Áudio] A retomar:', lastPlayedRef.current);
       play(lastPlayedRef.current);
       return true;
     }
@@ -61,6 +67,7 @@ export function useAudio(initialMuted = false) {
   const toggleMute = useCallback(() => {
     setIsMuted(prev => {
       const newMuted = !prev;
+      console.log(`[Áudio] toggleMute: ${newMuted ? 'Mutar' : 'Desmutar'}`);
       if (newMuted) {
         stop();
       } else {
@@ -85,9 +92,6 @@ export function useAudio(initialMuted = false) {
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, [unlockAudio]);
-
-  // REMOVIDO o useEffect que chamava resume automaticamente
-  // (anteriormente estava a causar reprodução indesejada)
 
   return { isMuted, toggleMute, play, stop, resume };
 }
