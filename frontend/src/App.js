@@ -114,9 +114,11 @@ function App() {
         // Só mostra a fortuna se for realmente uma missão (PHASE_1_MISSION)
         if (data.phase === 'PHASE_1_MISSION') {
           console.log('[App] É uma missão! A preparar fortuna...');
+
           const currentGame = gameDataRef.current || {};
-          const player = currentGame?.players?.find(p => p.id === socket.id) || {};
-          console.log('[App] player encontrado:', player);
+
+          const player =
+            currentGame?.players?.find(p => p.id === socket.id) || {};
 
           const fortuneData = {
             playerName: player.name || 'Jogador',
@@ -125,29 +127,62 @@ function App() {
             commonCoins: currentGame?.prizeFund?.coins ?? 0,
             commonBars: currentGame?.prizeFund?.bars ?? 0,
           };
+
           console.log('[App] fortuneData:', fortuneData);
 
-          dispatch({ type: 'SET_FORTUNE_DATA', payload: fortuneData });
-          dispatch({ type: 'SET_SHOW_FORTUNE', payload: true });
-          dispatch({ type: 'SET_PENDING_PHASE_INTRO', payload: data });
-          // Não definir phaseIntro ainda
-        } else if (data.phase === 'WAITING_LOBBY') {
-          console.log('[App] WAITING_LOBBY ignorado.');
-        } else {
-          dispatch({ type: 'SET_PHASE_INTRO', payload: data });
-          if (data.phase) {
-            const currentGame = gameDataRef.current || {};
-            dispatch({
-              type: 'SET_GAME_DATA',
-              payload: { ...currentGame, phase: data.phase }
-            });
-          }
-          dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
-          dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-          dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-          dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
+          // Garantir que estamos no GameBoard
+          dispatch({
+            type: 'SET_SCREEN',
+            payload: 'game'
+          });
+
+          // Não mostrar a PhaseIntro ainda
+          dispatch({
+            type: 'SET_PHASE_INTRO',
+            payload: null
+          });
+
+          // Limpar outros ecrãs prioritários
+          dispatch({
+            type: 'SET_MISSION_OUTCOME',
+            payload: null
+          });
+
+          dispatch({
+            type: 'SET_BANISHMENT_REVEAL',
+            payload: null
+          });
+
+          dispatch({
+            type: 'SET_ARSENAL_RESULT',
+            payload: null
+          });
+
+          dispatch({
+            type: 'SET_IS_EVALUATION',
+            payload: false
+          });
+
+          // Guardar os dados que a Fortuna vai apresentar
+          dispatch({
+            type: 'SET_FORTUNE_DATA',
+            payload: fortuneData
+          });
+
+          // Guardar a PhaseIntro para mostrar depois da Fortuna
+          dispatch({
+            type: 'SET_PENDING_PHASE_INTRO',
+            payload: data
+          });
+
+          // Mostrar Fortuna
+          dispatch({
+            type: 'SET_SHOW_FORTUNE',
+            payload: true
+          });
+
+          return;
         }
-      },
 
       mission_outcome: (data) => {
         console.log('[App] mission_outcome:', data);
