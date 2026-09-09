@@ -1,55 +1,39 @@
 import React from 'react';
-import RevealShell from '../RevealShell';
-
-const VARIANTS = {
-  murder: (data) => ({
-    tone: 'danger',
-    icon: '🗡️',
-    title: 'Assassinato!',
-    body: (
-      <>
-        <span className="block text-lg font-semibold">{data.playerName} foi assassinado</span>
-        <span className="mt-1 block text-sm text-[#F3EBDD]/60">Perdeu {data.lostGold} moedas.</span>
-      </>
-    ),
-  }),
-  shield: () => ({
-    tone: 'gold',
-    icon: '🛡️',
-    title: 'O Escudo Protegeu!',
-    body: (
-      <span className="block text-sm text-[#F3EBDD]/80">
-        Ninguém foi assassinado esta noite. O alvo tinha um Escudo.
-      </span>
-    ),
-  }),
-  default: () => ({
-    tone: 'calm',
-    icon: '🌙',
-    title: 'Ninguém Morreu',
-    body: <span className="block text-sm text-[#F3EBDD]/80">Esta noite foi tranquila para todos.</span>,
-  }),
-};
 
 export default function MurderRevealScreen({ data, onContinue }) {
-  const build = VARIANTS[data.type] || VARIANTS.default;
-  const { tone, icon, title, body } = build(data);
+  const { type, playerName, lostGold } = data;
 
   return (
-    <RevealShell
-      tone={tone}
-      icon={icon}
-      title={title}
-      footer={
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+      <div className="text-center">
+        {type === 'murder' ? (
+          <>
+            <div className="text-8xl mb-6">🗡️</div>
+            <h1 className="text-5xl font-display font-bold text-red-500 mb-6">Assassinato!</h1>
+            <p className="text-3xl text-white mb-4">{playerName} foi assassinado!</p>
+            <p className="text-xl text-white/70">Perdeu {lostGold} moedas.</p>
+          </>
+        ) : type === 'shield' ? (
+          <>
+            <div className="text-8xl mb-6">🛡️</div>
+            <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-6">O Escudo Protegeu!</h1>
+            <p className="text-2xl text-white mb-4">Ninguém foi assassinado. O alvo tinha um Escudo.</p>
+          </>
+        ) : (
+          <>
+            <div className="text-8xl mb-6">🌙</div>
+            <h1 className="text-5xl font-display font-bold text-[#E5C982] mb-6">Ninguém Morreu</h1>
+            <p className="text-2xl text-white mb-4">Esta noite foi tranquila.</p>
+          </>
+        )}
+        
         <button
           onClick={onContinue}
-          className="min-h-[48px] w-full rounded-lg bg-[#D8B66C] px-8 py-3.5 text-base font-bold tracking-wide text-[#291923] transition hover:bg-[#E5C982] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E5C982] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291923] sm:w-auto"
+          className="mt-8 px-10 py-4 bg-[#D8B66C] text-[#291923] font-bold text-xl rounded-lg hover:bg-[#E5C982] transition"
         >
           Continuar
         </button>
-      }
-    >
-      {body}
-    </RevealShell>
+      </div>
+    </div>
   );
 }
