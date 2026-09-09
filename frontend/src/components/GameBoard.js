@@ -57,22 +57,28 @@ export default function GameBoard({
   const [displayTimer, setDisplayTimer] = useState(playerState.timer || 0);
 
   useEffect(() => {
-    if (playerState.phase === 'PHASE_1_MISSION' && playerState.timer > 0) {
-      setDisplayTimer(playerState.timer);
-      const interval = setInterval(() => {
-        setDisplayTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(interval);
+    if (playerState.phase === 'PHASE_1_MISSION') {
+      let initialTimer = playerState.timer || 0;
+      if (initialTimer === 0 && playerState.currentMission?.timeLimit) {
+        initialTimer = playerState.currentMission.timeLimit;
+      }
+      setDisplayTimer(initialTimer);
+      if (initialTimer > 0) {
+        const interval = setInterval(() => {
+          setDisplayTimer(prev => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        return () => clearInterval(interval);
+      }
     } else {
       setDisplayTimer(playerState.timer || 0);
     }
-  }, [playerState.phase, playerState.timer]);
+  }, [playerState.phase, playerState.timer, playerState.currentMission]);
 
   // -------------------- ECRÃS PRIORITÁRIOS --------------------
 
@@ -83,7 +89,18 @@ export default function GameBoard({
   
   // 1. Missão Outcome (resultado da missão)
   if (missionOutcome) {
-    return <MissionOutcomeScreen {...missionOutcome} />;
+    const currentGame = playerState;
+    const player = currentGame?.players?.find(p => p.id === playerId) || {};
+    return (
+      <MissionOutcomeScreen
+        {...missionOutcome}
+        playerName={player.name || 'Jogador'}
+        gold={player.gold ?? 0}
+        bars={player.bars ?? 0}
+        commonCoins={currentGame?.prizeFund?.coins ?? 0}
+        commonBars={currentGame?.prizeFund?.bars ?? 0}
+      />
+    );
   }
 
   // 2. Fim de Jogo
