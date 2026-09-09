@@ -1,14 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 export function useAudio(initialMuted = false) {
   const [isMuted, setIsMuted] = useState(initialMuted);
   const audioRef = useRef(null);
   const isUnlocked = useRef(false);
+  const lastPlayedRef = useRef(null);
 
-  // Função para desbloquear o áudio (chamada no primeiro clique)
-  const unlockAudio = () => {
+  const unlockAudio = useCallback(() => {
     if (isUnlocked.current) return;
-    // Cria um áudio silencioso e toca para desbloquear
     const silentAudio = new Audio();
     silentAudio.volume = 0;
     silentAudio.play()
@@ -18,11 +17,10 @@ export function useAudio(initialMuted = false) {
         silentAudio.src = '';
       })
       .catch(() => {});
-  };
+  }, []);
 
-  const play = (filename, loop = true) => {
+  const play = useCallback((filename, loop = true) => {
     if (isMuted || !filename) return;
-    // Para o áudio atual se existir
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -31,7 +29,6 @@ export function useAudio(initialMuted = false) {
       const audio = new Audio(`/audio/${filename}`);
       audio.loop = loop;
       audio.volume = 0.5;
-      // Tenta reproduzir; se falhar, tenta desbloquear
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
@@ -40,34 +37,40 @@ export function useAudio(initialMuted = false) {
         });
       }
       audioRef.current = audio;
+      lastPlayedRef.current = filename;
     } catch (e) {
       console.error('Erro ao carregar áudio:', e);
     }
-  };
+  }, [isMuted, unlockAudio]);
 
-  const stop = () => {
+  const stop = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
-  };
+  }, []);
 
-  const toggleMute = () => {
+  const resume = useCallback(() => {
+    if (!isMuted && lastPlayedRef.current) {
+      play(lastPlayedRef.current);
+      return true;
+    }
+    return false;
+  }, [isMuted, play]);
+
+  const toggleMute = useCallback(() => {
     setIsMuted(prev => {
       const newMuted = !prev;
       if (newMuted) {
-        // Se mutar, para o áudio
         stop();
       } else {
-        // Se desmutar, tenta desbloquear e recriar o áudio do ecrã atual
         unlockAudio();
-        // A recriação será feita pelo próximo play que for chamado
+        setTimeout(() => resume(), 50);
       }
       return newMuted;
     });
-  };
+  }, [stop, unlockAudio, resume]);
 
-  // Limpeza ao desmontar
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -77,12 +80,18 @@ export function useAudio(initialMuted = false) {
     };
   }, []);
 
-  // Tentar desbloquear no primeiro clique global
   useEffect(() => {
     const handleClick = () => unlockAudio();
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, []);
+  }, [unlockAudio]);
 
-  return { isMuted, toggleMute, play, stop };
+  useEffect(() => {
+    if (!isMuted) {
+      unlockAudio();
+      resume();
+    }
+  }, [isMuted, unlockAudio, resume]);
+
+  return { isMuted, toggleMute, play, stop, resume };
 }

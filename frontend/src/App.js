@@ -18,6 +18,7 @@ function App() {
   const { isMuted, toggleMute, play, stop } = useAudio();
   const [state, dispatch] = useGameState();
   const [playerName, setPlayerName] = useState('');
+  const lastPlayedRef = useRef(null); // controla o último áudio tocado pelo ecrã
 
   // --- REFS para manter dados atualizados nos handlers do socket ---
   const roomDataRef = useRef(state.roomData);
@@ -31,11 +32,45 @@ function App() {
     gameDataRef.current = state.gameData;
   }, [state.gameData]);
 
+  // --- GERENCIAMENTO DE ÁUDIO POR ECRÃ ---
+  useEffect(() => {
+    const playAudioForScreen = () => {
+      if (isMuted) return; // se mutado, não toca
+
+      let filename = null;
+
+      if (state.currentScreen === 'lobby') {
+        filename = 'lobby.mp3';
+      } else if (state.currentScreen === 'tutorial') {
+        filename = 'tutorial.mp3';
+      } else if (state.currentScreen === 'roleReveal') {
+        filename = 'role-reveal.mp3';
+      } else if (state.currentScreen === 'game') {
+        // Durante o jogo, o áudio é controlado pelos handlers de socket
+        // Mas se não houver fase definida, toca mission.mp3
+        if (!state.phaseIntro && !state.gameData?.phase) {
+          filename = 'mission.mp3';
+        } else {
+          // Se há phaseIntro, o áudio será tratado pelo handler phase_intro/phase_started
+          return;
+        }
+      }
+
+      if (filename && lastPlayedRef.current !== filename) {
+        play(filename);
+        lastPlayedRef.current = filename;
+      }
+    };
+
+    playAudioForScreen();
+  }, [state.currentScreen, state.phaseIntro, state.gameData?.phase, isMuted, play]);
+
   // --- HANDLERS DO SOCKET ---
   useEffect(() => {
     if (!socket) return;
 
     const handlers = {
+      // ... (todos os handlers mantidos, com a chamada a play e lastPlayedRef)
       room_update: (data) => {
         const currentRoom = roomDataRef.current || {};
         dispatch({
@@ -67,21 +102,21 @@ function App() {
       },
 
       phase_intro: (data) => {
-          dispatch({ type: 'SET_PHASE_INTRO', payload: data });
-          if (data.phase) {
-              const currentGame = gameDataRef.current || {};
-              dispatch({
-                  type: 'SET_GAME_DATA',
-                  payload: {
-                      ...currentGame,
-                      phase: data.phase
-                  }
-              });
-          }
-          dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
-          dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
-          dispatch({ type: 'SET_IS_EVALUATION', payload: false });
-          dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
+        dispatch({ type: 'SET_PHASE_INTRO', payload: data });
+        if (data.phase) {
+          const currentGame = gameDataRef.current || {};
+          dispatch({
+            type: 'SET_GAME_DATA',
+            payload: {
+              ...currentGame,
+              phase: data.phase
+            }
+          });
+        }
+        dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
+        dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
+        dispatch({ type: 'SET_IS_EVALUATION', payload: false });
+        dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
       },
 
       mission_outcome: (data) => {
@@ -93,7 +128,10 @@ function App() {
         dispatch({ type: 'SET_BANISHMENT_REVEAL', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: true });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('evaluation.mp3');
+        if (!isMuted) {
+          play('evaluation.mp3');
+          lastPlayedRef.current = 'evaluation.mp3';
+        }
       },
 
       arsenal_result: (data) => {
@@ -101,7 +139,10 @@ function App() {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('arsenal.mp3');
+        if (!isMuted) {
+          play('arsenal.mp3');
+          lastPlayedRef.current = 'arsenal.mp3';
+        }
       },
 
       banishment_reveal: (data) => {
@@ -109,7 +150,10 @@ function App() {
         dispatch({ type: 'SET_PHASE_INTRO', payload: null });
         dispatch({ type: 'SET_IS_EVALUATION', payload: false });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('banishment.mp3');
+        if (!isMuted) {
+          play('banishment.mp3');
+          lastPlayedRef.current = 'banishment.mp3';
+        }
       },
 
       blindfold_begin: () => {
@@ -120,14 +164,20 @@ function App() {
         dispatch({ type: 'SET_MURDER_REVEAL', payload: null });
         dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('murder-blindfold.mp3');
+        if (!isMuted) {
+          play('murder-blindfold.mp3');
+          lastPlayedRef.current = 'murder-blindfold.mp3';
+        }
       },
 
       traitor_choices: (data) => {
         dispatch({ type: 'SET_BLINDFOLD', payload: false });
         dispatch({ type: 'SET_TRAITOR_CHOICES', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('murder-blindfold.mp3');
+        if (!isMuted) {
+          play('murder-blindfold.mp3');
+          lastPlayedRef.current = 'murder-blindfold.mp3';
+        }
       },
 
       show_player_list: (data) => {
@@ -144,7 +194,10 @@ function App() {
         dispatch({ type: 'SET_RECRUIT_INVITATION', payload: false });
         dispatch({ type: 'SET_RECRUIT_RESULT', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('murder-reveal.mp3');
+        if (!isMuted) {
+          play('murder-reveal.mp3');
+          lastPlayedRef.current = 'murder-reveal.mp3';
+        }
       },
 
       murder_reveal: (data) => {
@@ -154,7 +207,10 @@ function App() {
         dispatch({ type: 'SET_ARSENAL_RESULT', payload: null });
         dispatch({ type: 'SET_MURDER_REVEAL', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('murder-reveal.mp3');
+        if (!isMuted) {
+          play('murder-reveal.mp3');
+          lastPlayedRef.current = 'murder-reveal.mp3';
+        }
       },
 
       decoy_question: () => {
@@ -169,7 +225,10 @@ function App() {
       game_over: (data) => {
         dispatch({ type: 'SET_GAME_OVER', payload: data });
         dispatch({ type: 'SET_MISSION_OUTCOME', payload: null });
-        play('game-over.mp3');
+        if (!isMuted) {
+          play('game-over.mp3');
+          lastPlayedRef.current = 'game-over.mp3';
+        }
       },
 
       phase_started: (data) => {
@@ -186,9 +245,18 @@ function App() {
             roundNumber: data.roundNumber
           }
         });
-        if (data.phase === 'PHASE_2_BANISHMENT') play('banishment.mp3');
-        else if (data.phase === 'PHASE_3_ARMOURY') play('arsenal.mp3');
-        else play('mission.mp3');
+        if (!isMuted) {
+          if (data.phase === 'PHASE_2_BANISHMENT') {
+            play('banishment.mp3');
+            lastPlayedRef.current = 'banishment.mp3';
+          } else if (data.phase === 'PHASE_3_ARMOURY') {
+            play('arsenal.mp3');
+            lastPlayedRef.current = 'arsenal.mp3';
+          } else {
+            play('mission.mp3');
+            lastPlayedRef.current = 'mission.mp3';
+          }
+        }
       },
 
       arsenal_task: (data) => {
@@ -217,7 +285,10 @@ function App() {
         socket.off(event, handlers[event]);
       });
     };
-  }, [socket, play, dispatch]);
+  }, [socket, play, dispatch, isMuted]); // isMuted adicionado para respeitar o estado
+
+  // ... (resto do código: handlers de navegação, contexto, renderização) igual ao que já tens
+  // Nota: os handlers de navegação e ações do jogo são os mesmos, não os alterei.
 
   // --- HANDLERS DE NAVEGAÇÃO (mantidos) ---
   const handleRoomCreated = useCallback((data) => {
@@ -352,7 +423,7 @@ function App() {
     handleOpenHelp,
   };
 
-  // --- RENDERIZAÇÃO ---
+  // --- RENDERIZAÇÃO --- (inalterada)
   return (
     <GameProvider value={contextValue}>
       <div className="min-h-screen">
