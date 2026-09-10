@@ -2,7 +2,7 @@
   {
     "id": "remota_treasure_hunt",
     "mode": "remote",
-    "title": "🔎 Caça aos Objetos (Fotos)",
+    "title": "Caça aos Objetos",
     "type": "PHYSICAL_OBJECT_HUNT",
     "timeLimit": 300,
     "description": "Cada jogador, na sua casa, tem **5 minutos** para encontrar e fotografar **6 objetos** que correspondam a estas pistas:\n1. Contém letras (ex: livro, caixa de cereais)\n2. É redondo (ex: relógio, prato)\n3. É azul (ex: caneta, roupa)\n4. É mais pequeno que um rato (ex: chave, moeda)\n5. É feito de papel (ex: bilhete, jornal)\n6. É maior que uma bola de futebol (ex: almofada, mochila)\n\n**Objetivo:** cada jogador partilha as suas fotos no chat do jogo. A equipa ganha 4 moedas se **todos** os jogadores encontrarem pelo menos 5 dos 6 objetos. Se alguém falhar, ganham apenas 1 moeda.",
@@ -17,7 +17,7 @@
   {
     "id": "remota_ranking",
     "mode": "remote",
-    "title": "📊 Ranking de Países",
+    "title": "Ranking de Países",
     "type": "RANKING",
     "timeLimit": 120,
     "description": "No chat, é apresentada uma lista de **8 países** (ex: Brasil, Alemanha, Índia, Nigéria, México, Reino Unido, França, Japão). A equipa tem **2 minutos** para ordená-los por **população** (do maior para o menor). Cada jogador escreve a sua ordem num papel ou no chat privado. Depois, comparam as respostas. **Ganham 2 moedas por cada 2 países que estiverem na posição correta** (ex: se acertarem 4 posições, ganham 4 moedas).",
@@ -32,7 +32,7 @@
   {
     "id": "remota_drawing",
     "mode": "remote",
-    "title": "🎨 Desenho Coletivo (Online)",
+    "title": "Desenho Coletivo (Online)",
     "type": "COLLABORATIVE_DRAWING",
     "timeLimit": 180,
     "description": "1. Todos os jogadores, **exceto o último da lista**, recebem secretamente uma palavra (ex: 'Casa', 'Sol', 'Árvore').\n2. Por ordem, cada jogador desenha **apenas uma forma geométrica** no quadro digital (partilhado no ecrã).\n3. O desenho vai-se construindo aos poucos, sem ninguém saber o resultado final.\n4. O **último jogador** observa o desenho completo e tenta adivinhar a palavra.\n5. 🎉 **Se acertar, a equipa ganha 3 moedas!**",

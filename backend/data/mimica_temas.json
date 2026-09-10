@@ -1,0 +1,95 @@
+{
+  "themes": [
+    {
+      "id": "animais",
+      "label": "🐾 ANIMAIS",
+      "words": [
+        { "word": "CÃO",         "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "GATO",        "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "LEÃO",        "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "MACACO",      "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "ELEFANTE",    "difficulty": "medium", "mimeFriendly": true },
+        { "word": "GIRAFA",      "difficulty": "medium", "mimeFriendly": true },
+        { "word": "PINGUIM",     "difficulty": "medium", "mimeFriendly": true },
+        { "word": "CANGURU",     "difficulty": "medium", "mimeFriendly": true },
+        { "word": "CROCODILO",   "difficulty": "hard",   "mimeFriendly": true },
+        { "word": "TUBARÃO",     "difficulty": "hard",   "mimeFriendly": true },
+        { "word": "ORNITORRINCO","difficulty": "hard",   "mimeFriendly": true },
+        { "word": "COELHO",      "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "GORILA",      "difficulty": "medium", "mimeFriendly": true },
+        { "word": "ÁGUIA",       "difficulty": "medium", "mimeFriendly": true }
+      ]
+    },
+    {
+      "id": "profissoes",
+      "label": "👷 PROFISSÕES",
+      "words": [
+        { "word": "MÉDICO",       "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "PROFESSOR",    "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "COZINHEIRO",   "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "POLÍCIA",      "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "BOMBEIRO",     "difficulty": "medium", "mimeFriendly": true },
+        { "word": "PILOTO",       "difficulty": "medium", "mimeFriendly": true },
+        { "word": "PINTOR",       "difficulty": "medium", "mimeFriendly": true },
+        { "word": "PADEIRO",      "difficulty": "medium", "mimeFriendly": true },
+        { "word": "ASTRONAUTA",   "difficulty": "hard",   "mimeFriendly": true },
+        { "word": "DENTISTA",     "difficulty": "medium", "mimeFriendly": true },
+        { "word": "MÚSICO",       "difficulty": "medium", "mimeFriendly": true },
+        { "word": "JUIZ",         "difficulty": "hard",   "mimeFriendly": true }
+      ]
+    },
+    {
+      "id": "esportes",
+      "label": "⚽ DESPORTOS",
+      "words": [
+        { "word": "FUTEBOL",      "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "NATAÇÃO",      "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "BASQUETEBOL",  "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "TÉNIS",        "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "VOLEIBOL",     "difficulty": "medium", "mimeFriendly": true },
+        { "word": "BOXING",       "difficulty": "medium", "mimeFriendly": true },
+        { "word": "CICLISMO",     "difficulty": "medium", "mimeFriendly": true },
+        { "word": "SKATE",        "difficulty": "medium", "mimeFriendly": true },
+        { "word": "SURF",         "difficulty": "medium", "mimeFriendly": true },
+        { "word": "GOLFE",        "difficulty": "hard",   "mimeFriendly": true },
+        { "word": "ESGRIMA",      "difficulty": "hard",   "mimeFriendly": true },
+        { "word": "EQUITAÇÃO",    "difficulty": "hard",   "mimeFriendly": true }
+      ]
+    },
+    {
+      "id": "objetos",
+      "label": "📦 OBJETOS",
+      "words": [
+        { "word": "TELEMÓVEL",    "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "CHAVE",        "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "ÓCULOS",       "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "GUARDA-CHUVA", "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "CADEIRA",      "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "TESOURA",      "difficulty": "medium", "mimeFriendly": true },
+        { "word": "MARTELO",      "difficulty": "medium", "mimeFriendly": true },
+        { "word": "RELOGIO",      "difficulty": "medium", "mimeFriendly": true },
+        { "word": "ESCADA",       "difficulty": "medium", "mimeFriendly": true },
+        { "word": "BÚSSOLA",      "difficulty": "hard",   "mimeFriendly": true },
+        { "word": "MICROSCÓPIO",  "difficulty": "hard",   "mimeFriendly": true }
+      ]
+    },
+    {
+      "id": "acoes",
+      "label": "🏃 AÇÕES",
+      "words": [
+        { "word": "CORRER",       "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "DORMIR",       "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "COMER",        "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "BEBER",        "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "ESCREVER",     "difficulty": "easy",   "mimeFriendly": true },
+        { "word": "NADAR",        "difficulty": "medium", "mimeFriendly": true },
+        { "word": "PINTAR",       "difficulty": "medium", "mimeFriendly": true },
+        { "word": "COZINHAR",     "difficulty": "medium", "mimeFriendly": true },
+        { "word": "CANTAR",       "difficulty": "medium", "mimeFriendly": true },
+        { "word": "MERGULHAR",    "difficulty": "medium", "mimeFriendly": true },
+        { "word": "ESCALAR",      "difficulty": "hard",   "mimeFriendly": true },
+        { "word": "MALABARISMO",  "difficulty": "hard",   "mimeFriendly": true }
+      ]
+    }
+  ]
+}

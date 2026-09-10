@@ -4,6 +4,9 @@ import MissionNumberInput from './MissionNumberInput';
 import MissionDefault from './MissionDefault';
 import MissionDescription from '../../MissionDescription';
 import MissionCategoryChoice from './MissionCategoryChoice';
+import MissionEmojiCount from './MissionEmojiCount';
+import MissionSilentMime from './MissionSilentMime';
+import MissionTicoTecoTaco from './MissionTicoTecoTaco';
 
 export default function MissionPhase(props) {
   const { 
@@ -42,6 +45,12 @@ export default function MissionPhase(props) {
     missionContent = <MissionNumberInput {...props} />;
   } else if (['WORD_GUESSER', 'PHYSICAL_OBJECT_HUNT', 'TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(mission.type)) {
     missionContent = <MissionDefault {...props} />;
+  } else if (mission.type === 'EMOJI_COUNT') {
+    missionContent = <MissionEmojiCount {...props} />;
+  } else if (mission.type === 'SILENT_MIME') {
+    missionContent = <MissionSilentMime {...props} playerId={playerId} />;
+  } else if (mission.type === 'TICO_TECO_TACO') {
+    missionContent = <MissionTicoTecoTaco {...props} playerId={playerId} />;
   } else {
     missionContent = <div className="text-center"><p className="text-white">Tipo de missão não suportado.</p></div>;
   }

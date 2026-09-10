@@ -10,7 +10,42 @@ const {
     endMurderPhase,
     processArsenal,
     processBanishment,
-    proceedToNextRound
+    proceedToNextRound,
+    startWordGuesserGame,
+    submitWordGuess,
+    startColorReflexGame,
+    handleColorReflexClick,
+    startTimeStopGame,
+    handleTimeStopAttempt,
+	startWordBuilderGame,
+    validateAndPlaceWord,
+    removeLastWord,
+    finishWordBuilderPlayer,
+	startWordRouletteGame,
+    submitWordRouletteGuess,
+    startEmojiGuessGame,
+    submitEmojiGuess,
+    startEmojiCountMission,
+    handleEmojiCountNext,
+    handleEmojiCountError,
+    handleEmojiCountComplete,
+    startSilentMimeMission,
+    handleSilentMimeCorrect,
+    handleSilentMimePass,
+    startTicoTecoTacoMission,
+    handleTicoTecoTacoCorrect,
+    handleTicoTecoTacoError,
+    startBlowSurviveGame,
+    handleBlowSurviveDecision,
+    confirmBlowSurviveWinner,
+    startFindOrangesGame,
+    handleFindOrangesFlip,
+    startSoundsCodeGame,
+    handleSoundsCodeDecision,
+    confirmSoundsCodeWinner,
+    startEightLettersGame,
+    handleEightLettersSubmit,
+    handleEightLettersVote,
 } = require('./gameLogic');
 
 function registerSocketHandlers(io) {
@@ -111,6 +146,20 @@ function registerSocketHandlers(io) {
 					console.error('[start_game] Falha ao carregar missão! room.currentMissionData é undefined.');
 					return callback({ success: false, message: "Erro ao carregar missão. Tente novamente." });
 				}
+				
+				if (room.currentMissionData.type === 'SILENT_MIME') {
+					setTimeout(() => startSilentMimeMission(room, io), 2000);
+				}
+				
+				// Se a missão for EMOJI_COUNT, iniciar automaticamente
+				if (room.currentMissionData.type === 'EMOJI_COUNT') {
+					setTimeout(() => startEmojiCountMission(room, io), 2000);
+				}
+				
+				if (room.currentMissionData.type === 'TICO_TECO_TACO') {
+					setTimeout(() => startTicoTecoTacoMission(room, io), 2000);
+				}
+
 				console.log('[start_game] Missão carregada:', room.currentMissionData.title);
 
                 room.roundNumber = 1;
@@ -192,9 +241,45 @@ function registerSocketHandlers(io) {
 								const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
 								room.currentArsenalTask = tarefaAleatoria;
 								io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
+        
+								if (tarefaAleatoria.type === 'WORD_COMBINATION') {
+									setTimeout(() => startWordGuesserGame(room, io), 1500);
+								}
+								if (tarefaAleatoria.type === 'COLOR_REFLEX') {
+									setTimeout(() => startColorReflexGame(room, io), 1500);
+								}
+								if (tarefaAleatoria.type === 'PRECISION_TIMER') {
+									setTimeout(() => startTimeStopGame(room, io), 1500);
+								}
+								if (tarefaAleatoria.type === 'WORD_BUILDER') {
+									setTimeout(() => startWordBuilderGame(room, io), 1500);
+								}
+								if (tarefaAleatoria.type === 'WORD_ROULETTE') {
+									setTimeout(() => startWordRouletteGame(room, io), 1500);
+								}								
+								if (tarefaAleatoria.type === 'EMOJI_GUESS') {
+									setTimeout(() => startEmojiGuessGame(room, io), 1500);
+								}
+								if (tarefaAleatoria.type === 'BLOW_SURVIVE') {
+									setTimeout(() => startBlowSurviveGame(room, io), 2000);
+								}
+								if (tarefaAleatoria.type === 'FIND_ORANGES') {
+									setTimeout(() => startFindOrangesGame(room, io), 2000);
+								}
+								if (tarefaAleatoria.type === 'SOUNDS_CODE') {
+									setTimeout(() => startSoundsCodeGame(room, io), 2000);
+								}
+								if (tarefaAleatoria.type === 'EIGHT_LETTERS') {
+									setTimeout(() => startEightLettersGame(room, io), 2000);
+								}
+								
+								// Se a tarefa é do tipo WORD_COMBINATION, iniciar o jogo especial
+								if (tarefaAleatoria.type === 'WORD_COMBINATION') {
+									startWordGuesserGame(room, io);
+								}
 							}
 							return;
-                        } else {
+						} else {
                             io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
                             startMissionTimer(room, io);
                         }
@@ -205,7 +290,50 @@ function registerSocketHandlers(io) {
             }
         });
 		
+		// --- 8 LETRAS: submeter respostas ---
+		socket.on('eight_letters_submit', ({ roomCode, answers }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.eightLetters) return;
+			handleEightLettersSubmit(room, io, socket.id, answers);
+		});
 
+		// --- 8 LETRAS: validar (aceitar/rejeitar) ---
+		socket.on('eight_letters_vote', ({ roomCode, vote }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.eightLetters) return;
+			handleEightLettersVote(room, io, vote);
+		});
+		
+		// --- SOUNDS CODE: supervisores registam resultado ---
+		socket.on('sounds_code_decision', ({ roomCode, result }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.soundsCode) return;
+			handleSoundsCodeDecision(room, io, result);
+		});
+
+		// --- SOUNDS CODE: confirmar vencedor ---
+		socket.on('sounds_code_confirm_winner', ({ roomCode, winnerId }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.soundsCode) return;
+			confirmSoundsCodeWinner(room, io, winnerId);
+		});		
+		
+		// --- TIME STOP: TENTATIVA DE PARAGEM ---
+		socket.on('time_stop_attempt', ({ roomCode, elapsedSeconds }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.timeStop) return;
+			
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			
+			handleTimeStopAttempt(room, io, socket.id, { elapsedSeconds });
+		});
+		
         // --- SUBMETER AVALIAÇÃO ---
         socket.on('submit_evaluation', ({ roomCode, data }) => {
             try {
@@ -296,6 +424,16 @@ function registerSocketHandlers(io) {
                 return;
             }
         });
+
+		// --- FIND ORANGES: virar carta ---
+		socket.on('find_oranges_flip', ({ roomCode, cardId }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.findOranges) return;
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			handleFindOrangesFlip(room, io, socket.id, cardId);
+		});
 
         // --- MURDER CHOICE ---
         socket.on('traitor_murder_choice', ({ roomCode, targetPlayerId }, callback) => {
@@ -538,6 +676,104 @@ function registerSocketHandlers(io) {
 				}
 			}
 		});
+		
+		// --- EMOJI GUESS: submeter palavra ---
+		socket.on('emoji_guess_submit', ({ roomCode, word }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.emojiGuess) return;
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			submitEmojiGuess(room, io, socket.id, word);
+		});
+		
+		// --- WORD ROULETTE: submeter palavra ---
+		socket.on('word_roulette_submit', ({ roomCode, word }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.wordRoulette) return;
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			submitWordRouletteGuess(room, io, socket.id, word);
+		});
+		
+		// --- TICO TECO TACO: ACERTOU ---
+		socket.on('ttt_correct', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.ticoTecoTaco) return;
+			handleTicoTecoTacoCorrect(room, io);
+		});
+
+		// --- TICO TECO TACO: ERROU ---
+		socket.on('ttt_error', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.ticoTecoTaco) return;
+			handleTicoTecoTacoError(room, io);
+		});
+		
+		// --- SILENT MIME: acertou ---
+		socket.on('silent_mime_correct', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.silentMime) return;
+			handleSilentMimeCorrect(room, io, socket.id);
+		});
+
+		// --- SILENT MIME: passar palavra ---
+		socket.on('silent_mime_pass', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.silentMime) return;
+			handleSilentMimePass(room, io);
+		});
+		
+		// --- JOGO WORD BUILDER: adicionar palavra ---
+		socket.on('word_builder_add', ({ roomCode, word, row, col, orientation }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.wordBuilder) return;
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			
+			const result = validateAndPlaceWord(room, io, socket.id, word, row, col, orientation);
+			if (!result.success) {
+				io.to(socket.id).emit('word_builder_error', { message: result.message });
+			}
+		});
+
+		// --- JOGO WORD BUILDER: remover última palavra ---
+		socket.on('word_builder_remove_last', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.wordBuilder) return;
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			removeLastWord(room, io, socket.id);
+		});
+
+		// --- JOGO WORD BUILDER: terminar ---
+		socket.on('word_builder_finish', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.wordBuilder) return;
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			finishWordBuilderPlayer(room, io, socket.id);
+		});
+		
+		// --- JOGO "O QUE VEM A SEGUIR?" — SUBMETER RESPOSTA ---
+		socket.on('submit_word_guess', ({ roomCode, guess }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.wordGuesser) return;
+			
+			const player = room.players.find(p => p.id === socket.id);
+			if (!player || !player.alive) return;
+			
+			submitWordGuess(room, io, socket.id, guess);
+		});
 
         // --- DRAWING (colaborativo) ---
         socket.on('drawing_update', ({ roomCode, drawing }) => {
@@ -585,6 +821,30 @@ function registerSocketHandlers(io) {
                 io.to(socket.id).emit('drawing_status', { type: 'guessing', isYourTurn: true, error: "Não foi dessa vez. Tenta novamente." });
             }
         });
+		
+		// --- EMOJI COUNT: PRÓXIMO NÍVEL ---
+		socket.on('emoji_count_next', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.emojiCount) return;
+			handleEmojiCountNext(room, io);
+		});
+
+		// --- EMOJI COUNT: REGISTAR ERRO ---
+		socket.on('emoji_count_error', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.emojiCount) return;
+			handleEmojiCountError(room, io);
+		});
+
+		// --- EMOJI COUNT: CONCLUIR MISSÃO ---
+		socket.on('emoji_count_complete', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.emojiCount) return;
+			handleEmojiCountComplete(room, io);
+		});
 
         // --- ARSENAL: STOP PLANK ---
         socket.on('stop_plank', ({ roomCode, elapsedTime }) => {
@@ -648,6 +908,22 @@ function registerSocketHandlers(io) {
                 console.error("Erro no submit_arsenal_task_result:", error);
             }
         });
+		
+		// --- BLOW SURVIVE: supervisores registam resultado ---
+		socket.on('blow_survive_decision', ({ roomCode, result }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.blowSurvive) return;
+			handleBlowSurviveDecision(room, io, result);
+		});
+
+		// --- BLOW SURVIVE: confirmar vencedor final ---
+		socket.on('blow_survive_confirm_winner', ({ roomCode, winnerId }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room || !room.blowSurvive) return;
+			confirmBlowSurviveWinner(room, io, winnerId);
+		});
 
         // --- DISCONNECT ---
         socket.on('disconnect', () => {

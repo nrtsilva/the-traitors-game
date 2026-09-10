@@ -1,0 +1,68 @@
+{
+  "categories": [
+    {
+      "category": "🎭 Coisas encontradas no Carnaval",
+      "letters": ["A", "B", "C", "F", "M", "P", "S", "T"]
+    },
+    {
+      "category": "♻️ Coisas que se podem reciclar",
+      "letters": ["P", "C", "V", "L", "M", "E", "O", "R"]
+    },
+    {
+      "category": "🏖️ Coisas que encontramos na praia",
+      "letters": ["A", "B", "C", "E", "G", "P", "S", "T"]
+    },
+    {
+      "category": "🏫 Coisas que encontramos numa escola",
+      "letters": ["A", "B", "C", "L", "M", "P", "Q", "R"]
+    },
+    {
+      "category": "🎄 Coisas relacionadas com o Natal",
+      "letters": ["A", "B", "C", "E", "M", "P", "S", "T"]
+    },
+    {
+      "category": "🏠 Coisas que existem numa casa",
+      "letters": ["C", "E", "J", "M", "P", "R", "S", "T"]
+    },
+    {
+      "category": "🍳 Coisas que se podem cozinhar",
+      "letters": ["A", "B", "C", "F", "L", "M", "P", "S"]
+    },
+    {
+      "category": "✈️ Coisas que encontramos num aeroporto",
+      "letters": ["A", "B", "C", "M", "P", "R", "T", "V"]
+    },
+    {
+      "category": "🏥 Coisas que encontramos num hospital",
+      "letters": ["A", "B", "C", "E", "M", "P", "S", "T"]
+    },
+    {
+      "category": "⚽ Coisas relacionadas com futebol",
+      "letters": ["A", "B", "C", "G", "M", "P", "T", "V"]
+    },
+    {
+      "category": "🍽️ Coisas que existem numa cozinha",
+      "letters": ["C", "F", "G", "L", "M", "P", "T", "V"]
+    },
+    {
+      "category": "🎉 Coisas que existem numa festa",
+      "letters": ["B", "C", "D", "F", "M", "P", "S", "T"]
+    },
+    {
+      "category": "🐾 Coisas relacionadas com animais",
+      "letters": ["A", "C", "G", "L", "M", "P", "R", "T"]
+    },
+    {
+      "category": "🚗 Coisas que existem num carro",
+      "letters": ["A", "B", "C", "E", "M", "P", "R", "V"]
+    },
+    {
+      "category": "🌳 Coisas que encontramos num jardim",
+      "letters": ["A", "B", "C", "F", "G", "P", "R", "T"]
+    },
+    {
+      "category": "📚 Coisas que existem numa biblioteca",
+      "letters": ["A", "B", "C", "E", "L", "M", "P", "R"]
+    }
+  ]
+}

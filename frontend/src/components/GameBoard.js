@@ -181,7 +181,7 @@ export default function GameBoard({
 
   // 14. Fase do Arsenal
   if (playerState.phase === 'PHASE_3_ARMOURY') {
-    return <ArsenalPhase {...{ playerState, socket, roomData, onArsenalResultSubmit }} />;
+    return <ArsenalPhase {...{ playerState, socket, roomData, onArsenalResultSubmit, playerId }} />;
   }
 
   // 15. Fase de Votação (Expulsão)

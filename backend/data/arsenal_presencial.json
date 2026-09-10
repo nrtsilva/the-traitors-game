@@ -24,5 +24,56 @@
     "type": "TEXT_FLOOD",
     "timeLimit": 60,
     "description": "Escrevam o máximo de países começados por 'S'. Quem escrever mais ganha!"
+  },
+  {
+    "id": "arsenal_pres_sobremesa",
+    "mode": "in_person",
+    "title": "Sopra e Sobrevive",
+    "type": "BLOW_SURVIVE",
+    "timeLimit": null,
+    "description": "Usem apenas o sopro para afastar pequenos pedaços de papel do centro da mesa.\n\n🎯 **Objetivo:** afastar alguns pedaços, mas **NÃO todos**.\n\n⚠️ **Regras:**\n1. Se não moveres nenhum pedaço → ❌ eliminado.\n2. Se moveres alguns (mas não todos) → ✅ sobrevives.\n3. Se moveres **todos** os pedaços → ❌ eliminado (sopraste demasiado forte).\n4. Se afastares **só o último pedaço** → ❌ também és eliminado.\n\n🏆 **Vence o último jogador que ficar em jogo.**\n\n💡 O sistema escolhe aleatoriamente quem sopra. Após cada sopro, os supervisores decidem e clicam no resultado. Reorganizem os papéis no centro antes de cada ronda.",
+    "requiresUserOutcome": false,
+    "hasSupervisorDecision": true,
+    "traitorSecretMissions": [
+      "Soprar muito suavemente de propósito quando for a tua vez, para parecer que não moveste nada.",
+      "Fingir que alguém 'soprou demasiado forte' mesmo quando o resultado é ambíguo.",
+      "Assoprar ao lado para criar correntes de ar e confundir os supervisores.",
+      "Reorganizar os papéis com demasiada força, espalhando-os e causando confusão.",
+      "Distrair os supervisores para não verem bem o resultado do sopro."
+    ]
+  },
+  {
+    "id": "arsenal_pres_sons_codigo",
+    "mode": "in_person",
+    "title": "🔊 Sons em Código",
+    "type": "SOUNDS_CODE",
+    "timeLimit": null,
+    "description": "Memoriza a correspondência entre números e sons:\n\n1 → 🐷 Grunhido\n2 → 😛 Som de língua\n3 → 🎵 Assobio\n\nO sistema escolhe um jogador e apresenta uma sequência de números. O jogador deve produzir os sons correspondentes **pela ordem correta**, em voz alta.\n\n🎯 **Objetivo:** sobreviver ao maior número de sequências corretas.\n\n🏆 **Vence o último jogador que ficar em jogo.**\n\n⚠️ **Regras:**\n1. A sequência começa curta e aumenta a cada ronda.\n2. Os supervisores validam com ✅ CORRETO ou ❌ ERRO.\n3. Ao primeiro erro, o jogador é **eliminado**.\n4. A prova só termina quando resta apenas um jogador.",
+    "requiresUserOutcome": false,
+    "hasSupervisorDecision": true,
+    "traitorSecretMissions": [
+      "Fazer um som parecido com o pedido mas ligeiramente errado (ex: assobiar quando é grunhido), fingindo distração.",
+      "Convencer os supervisores de que a sequência estava errada, mesmo quando estava correta.",
+      "Repetir a sequência em voz alta antes do jogador ativo, para o confundir.",
+      "Fazer sons fora de tempo enquanto outros jogadores estão a executar, criando distração.",
+      "Pedir sempre para 'repetir a sequência' antes de responder, para atrasar o jogo."
+    ]
+  },
+  {
+    "id": "arsenal_pres_8letras",
+    "mode": "in_person",
+    "title": "8 Letras",
+    "type": "EIGHT_LETTERS",
+    "timeLimit": 180,
+    "description": "Todos recebem a MESMA categoria e as MESMAS 8 letras.\n\nPara cada letra, escreve uma palavra/expressão que pertença à categoria e comece por essa letra.\n\n⚡ Quando terminares, carrega em **TERMINAR**. O tempo é registado!\n\n⚠️ Ser o mais rápido NÃO garante a vitória. Depois de um jogador terminar, os restantes validam as respostas.\n\n✅ Se todas as 8 respostas forem aceites → o jogador **vence**.\n❌ Se houver uma resposta inválida → passa-se ao próximo mais rápido.\n\n🏆 **Prémio:** 2 moedas de ouro.\n\n💡 **Dica:** respostas simples e claras são mais fáceis de validar pelos colegas.",
+    "reward": "2_coins",
+    "hasSupervisorDecision": true,
+    "traitorSecretMissions": [
+      "Escreve uma resposta para uma letra que já esteja preenchida com uma palavra da letra errada, mas parece convincente.",
+      "Quando estiveres a validar respostas, sê o primeiro a rejeitar por 'parecer estranho', mesmo que esteja correto.",
+      "Convence os outros de que uma resposta válida é inválida, criando dúvida.",
+      "Termina rapidamente com respostas duvidosas e reza para que os outros aceitem por pressa.",
+      "Enquanto os outros validam, distrai-os dizendo 'Acho que o tempo ainda está a contar!'"
+    ]
   }
 ]
