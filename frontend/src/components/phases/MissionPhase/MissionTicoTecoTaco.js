@@ -17,7 +17,7 @@ export default function MissionTicoTecoTaco({ playerState, socket, roomData, pla
 
   // Socket listeners
   useEffect(() => {
-    if (!socket) return;
+  if (!socket) return;
 
     const onStart = (data) => {
       setGameStarted(true);
@@ -59,13 +59,15 @@ export default function MissionTicoTecoTaco({ playerState, socket, roomData, pla
     socket.on('ttt_correct', onCorrect);
     socket.on('ttt_error', onError);
 
+    socket.emit('mission_client_ready', { roomCode: roomData.roomCode });
+
     return () => {
       socket.off('ttt_start', onStart);
       socket.off('ttt_word', onWord);
       socket.off('ttt_correct', onCorrect);
       socket.off('ttt_error', onError);
     };
-  }, [socket]);
+  }, [socket, roomData?.roomCode]);
 
   // Countdown global
   useEffect(() => {

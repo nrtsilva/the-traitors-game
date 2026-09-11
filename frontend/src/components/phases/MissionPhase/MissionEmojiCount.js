@@ -13,7 +13,7 @@ export default function MissionEmojiCount({ playerState, socket, roomData }) {
 
   // Socket listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket ) return;
 
     const onStart = (data) => {
       setGameStarted(true);
@@ -43,12 +43,14 @@ export default function MissionEmojiCount({ playerState, socket, roomData }) {
     socket.on('emoji_count_new_substitution', onNewSub);
     socket.on('emoji_count_error', onError);
 
+    socket.emit('mission_client_ready', { roomCode: roomData.roomCode });
+
     return () => {
       socket.off('emoji_count_start', onStart);
       socket.off('emoji_count_new_substitution', onNewSub);
       socket.off('emoji_count_error', onError);
     };
-  }, [socket]);
+  }, [socket, roomData?.roomCode]);
 
   // Countdown
   useEffect(() => {

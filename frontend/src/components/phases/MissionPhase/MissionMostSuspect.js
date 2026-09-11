@@ -19,7 +19,7 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
   // Socket listeners
   useEffect(() => {
     if (!socket) return;
-
+    
     const onStart = (data) => {
       setGameStarted(true);
       setTimer(data.timeLimit);
@@ -74,7 +74,10 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
     socket.on('most_suspect_vote_confirmed', onVoteConfirmed);
     socket.on('most_suspect_vote_progress', onVoteProgress);
     socket.on('most_suspect_dilemma', onDilemma);
-    socket.on('most_suspect_reveal', onReveal);
+    socket.on('most_suspect_reveal', onReveal);    
+    
+    // Pedir o estado atual da missão ao servidor
+    socket.emit('mission_client_ready', { roomCode: roomData.roomCode });
 
     return () => {
       socket.off('most_suspect_start', onStart);
@@ -84,7 +87,7 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
       socket.off('most_suspect_dilemma', onDilemma);
       socket.off('most_suspect_reveal', onReveal);
     };
-  }, [socket]);
+  }, [socket, roomData?.roomCode]);
 
   // Countdown
   useEffect(() => {

@@ -213,7 +213,72 @@ function registerSocketHandlers(io) {
             }
         });
 		
-        // --- PLAYER READY ---
+		// --- CLIENTE PRONTO PARA MISSÃO (re-emite o estado da missão em curso) ---
+		socket.on('mission_client_ready', ({ roomCode }) => {
+			const cleanCode = (roomCode || "").trim().toUpperCase();
+			const room = rooms[cleanCode];
+			if (!room) return;
+
+			const missionType = room.currentMissionData?.type;
+			if (!missionType) return;
+
+			console.log(`[mission_client_ready] Reenviar estado de ${missionType} para ${socket.id}`);
+
+			// ===== MOST_SUSPECT =====
+			if (missionType === 'MOST_SUSPECT' && room.mostSuspect) {
+				io.to(socket.id).emit('most_suspect_start', {
+					timeLimit: room.mostSuspect.timeLimit,
+					totalQuestions: room.mostSuspect.questions.length,
+				});
+
+				// Se já houver pergunta em curso, reenviar também
+				if (room.mostSuspect.phase === 'voting' && room.mostSuspect.currentIndex < room.mostSuspect.questions.length) {
+					const q = room.mostSuspect.questions[room.mostSuspect.currentIndex];
+					if (q) {
+						const alivePlayers = room.players.filter(p => p.alive);
+						io.to(socket.id).emit('most_suspect_question', {
+							questionNumber: room.mostSuspect.currentIndex + 1,
+							totalQuestions: room.mostSuspect.questions.length,
+							questionId: q.id,
+							questionText: q.text,
+							players: alivePlayers.map(p => ({ id: p.id, name: p.name })),
+							correctCount: room.mostSuspect.correctCount,
+							elapsed: (Date.now() - room.mostSuspect.startTime) / 1000,
+						});
+					}
+				}
+			}
+
+			// ===== SILENT_MIME =====
+			if (missionType === 'SILENT_MIME' && room.silentMime) {
+				io.to(socket.id).emit('silent_mime_start', {
+					timeLimit: room.silentMime.timeLimit,
+					themeLabel: room.silentMime.themeLabel,
+					totalWords: room.silentMime.words.length,
+				});
+			}
+
+			// ===== EMOJI_COUNT =====
+			if (missionType === 'EMOJI_COUNT' && room.emojiCount) {
+				io.to(socket.id).emit('emoji_count_start', {
+					timeLimit: room.emojiCount.timeLimit,
+					maxLevel: room.emojiCount.maxLevel,
+					substitutions: room.emojiCount.substitutions,
+					currentLevel: room.emojiCount.currentLevel,
+				});
+			}
+
+			// ===== TICO_TECO_TACO =====
+			if (missionType === 'TICO_TECO_TACO' && room.ticoTecoTaco) {
+				io.to(socket.id).emit('ttt_start', {
+					timeLimit: room.ticoTecoTaco.timeLimit,
+					responseTimeLimit: room.ticoTecoTaco.responseTimeLimit,
+					targetCorrect: room.ticoTecoTaco.targetCorrect,
+				});
+			}
+		});
+		
+		// --- PLAYER READY ---
         socket.on('player_ready', ({ roomCode }) => {
             try {
                 const cleanCode = (roomCode || "").trim().toUpperCase();
@@ -229,7 +294,6 @@ function registerSocketHandlers(io) {
                     }
                 }
                 if (!player || !player.alive) return;
-
                 if (player.isReadyForPhase) return;
 
                 player.isReadyForPhase = true;
@@ -243,7 +307,7 @@ function registerSocketHandlers(io) {
                 room.players.forEach(p => p.isReadyForPhase = false);
                 room.readyCount = 0;
 
-                // ============ FASE 2: BANISHMENT ============
+                // FASE 2: BANISHMENT
                 if (room.phase === GAME_PHASES.PHASE_2_BANISHMENT) {
                     const debateTime = room.settings.debateTime || 60;
                     io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: debateTime });
@@ -252,7 +316,7 @@ function registerSocketHandlers(io) {
                     return;
                 }
 
-                // ============ FASE 3: ARMOURY ============
+                // FASE 3: ARMOURY
                 if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
                     if (!room.currentArsenalTask) {
                         const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
@@ -277,38 +341,31 @@ function registerSocketHandlers(io) {
                     return;
                 }
 
-                // ============ FASE 1: MISSION ============
+                // FASE 1: MISSION
                 const missionType = room.currentMissionData?.type;
                 const isSpecialMission = [
-                    'SILENT_MIME',
-                    'EMOJI_COUNT',
-                    'TICO_TECO_TACO',
-                    'MOST_SUSPECT',
+                    'SILENT_MIME', 'EMOJI_COUNT', 'TICO_TECO_TACO', 'MOST_SUSPECT',
                 ].includes(missionType);
 
                 if (isSpecialMission) {
-                    // Missões especiais gerem o seu próprio tempo no backend.
-                    // NÃO emitir timer, NÃO chamar startMissionTimer.
+                    // Missões especiais gerem o seu próprio tempo.
                     io.to(cleanCode).emit('phase_started', {
                         phase: room.phase,
                         timer: null,
                         roundNumber: room.roundNumber,
                     });
 
-                    // Delay generoso para garantir que o frontend montou
-                    // o componente antes de emitirmos o evento de início.
-                    console.log(`[player_ready] Missão especial detectada: ${missionType}. A aguardar 2s antes de iniciar.`);
+                    console.log(`[player_ready] Missão especial: ${missionType}. A iniciar em 2s...`);
                     setTimeout(() => {
                         if (missionType === 'SILENT_MIME')     startSilentMimeMission(room, io);
                         if (missionType === 'EMOJI_COUNT')     startEmojiCountMission(room, io);
                         if (missionType === 'TICO_TECO_TACO')  startTicoTecoTacoMission(room, io);
                         if (missionType === 'MOST_SUSPECT')    startMostSuspectMission(room, io);
                     }, 2000);
-
                     return;
                 }
 
-                // Missão normal (com timer global)
+                // Missão normal
                 io.to(cleanCode).emit('phase_started', {
                     phase: room.phase,
                     timer: room.currentMissionData.timeLimit,

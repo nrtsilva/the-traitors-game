@@ -59,6 +59,8 @@ export default function MissionSilentMime({ playerState, socket, roomData, playe
     socket.on('silent_mime_correct', onCorrect);
     socket.on('silent_mime_passed', onPassed);
 
+    socket.emit('mission_client_ready', { roomCode: roomData.roomCode });
+
     return () => {
       socket.off('silent_mime_start', onStart);
       socket.off('silent_mime_round', onRound);
@@ -66,7 +68,7 @@ export default function MissionSilentMime({ playerState, socket, roomData, playe
       socket.off('silent_mime_correct', onCorrect);
       socket.off('silent_mime_passed', onPassed);
     };
-  }, [socket]);
+  }, [socket, roomData?.roomCode]);
 
   // Countdown
   useEffect(() => {
