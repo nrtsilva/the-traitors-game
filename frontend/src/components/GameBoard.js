@@ -56,32 +56,39 @@ export default function GameBoard({
   const [displayTimer, setDisplayTimer] = useState(playerState.timer || 0);
   const timerInitializedRef = useRef(null);
 
+  // Extrair valores complexos para variáveis estáveis
+  const missionId = playerState.currentMission?.id;
+  const missionTimeLimit = playerState.currentMission?.timeLimit;
+  const isTimerActive = displayTimer > 0;
+
+  // Efeito 1: Inicializar o timer quando a missão muda
   useEffect(() => {
     if (playerState.phase === 'PHASE_1_MISSION') {
-      const key = `${playerState.roundNumber}-${playerState.currentMission?.id}`;
-      if (timerInitializedRef.current === key) return;  // já inicializado
+      const key = `${playerState.roundNumber}-${missionId}`;
+      if (timerInitializedRef.current === key) return; // já inicializado
       timerInitializedRef.current = key;
-      
+
       let initialTimer = playerState.timer || 0;
-      if (initialTimer === 0 && playerState.currentMission?.timeLimit) {
-        initialTimer = playerState.currentMission.timeLimit;
+      if (initialTimer === 0 && missionTimeLimit) {
+        initialTimer = missionTimeLimit;
       }
       setDisplayTimer(initialTimer);
     } else {
       timerInitializedRef.current = null;
       setDisplayTimer(playerState.timer || 0);
     }
-  }, [playerState.phase, playerState.roundNumber, playerState.currentMission?.id, playerState.timer]);
+  }, [playerState.phase, playerState.roundNumber, missionId, playerState.timer, missionTimeLimit]);
 
-  // Efeito 2: Decrementar
+  // Efeito 2: Decrementar (só quando ativo)
   useEffect(() => {
     if (playerState.phase !== 'PHASE_1_MISSION') return;
-    if (displayTimer <= 0) return;
+    if (!isTimerActive) return;
+
     const interval = setInterval(() => {
-      setDisplayTimer(prev => (prev <= 1 ? 0 : prev - 1));
+      setDisplayTimer((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
     return () => clearInterval(interval);
-  }, [playerState.phase, displayTimer > 0]);
+  }, [playerState.phase, isTimerActive]);
 
   // -------------------- ECRÃS PRIORITÁRIOS --------------------
 
@@ -89,11 +96,10 @@ export default function GameBoard({
   if (showFortune && fortuneData) {
     return <FortuneRevealScreen {...fortuneData} onContinue={onFortuneContinue} />;
   }
-  
+
   // 1. Missão Outcome (resultado da missão)
   if (missionOutcome) {
-    // Preparar dados da fortuna para o ecrã de resultado
-    const currentPlayer = playerState?.players?.find(p => p.id === playerId) || {};
+    const currentPlayer = playerState?.players?.find((p) => p.id === playerId) || {};
     return (
       <MissionOutcomeScreen
         {...missionOutcome}
@@ -127,7 +133,13 @@ export default function GameBoard({
   }
 
   // 6. Decoy (durante a noite, para não traidores)
-  if (playerState.phase === 'PHASE_4_MURDER' && !traitorChoices && !recruitInvitation && !recruitResult && !murderReveal) {
+  if (
+    playerState.phase === 'PHASE_4_MURDER' &&
+    !traitorChoices &&
+    !recruitInvitation &&
+    !recruitResult &&
+    !murderReveal
+  ) {
     return <DecoyScreen onDecoyAnswer={onDecoyAnswer} />;
   }
 
@@ -176,17 +188,25 @@ export default function GameBoard({
 
   // 13. Avaliação da missão
   if (isEvaluation) {
-    return <EvaluationScreen {...{ playerState, isTraitor: playerState.role === 'traitor', onEvaluation }} />;
+    return (
+      <EvaluationScreen
+        {...{ playerState, isTraitor: playerState.role === 'traitor', onEvaluation }}
+      />
+    );
   }
 
   // 14. Fase do Arsenal
   if (playerState.phase === 'PHASE_3_ARMOURY') {
-    return <ArsenalPhase {...{ playerState, socket, roomData, onArsenalResultSubmit, playerId }} />;
+    return (
+      <ArsenalPhase
+        {...{ playerState, socket, roomData, onArsenalResultSubmit, playerId }}
+      />
+    );
   }
 
   // 15. Fase de Votação (Expulsão)
   if (playerState.phase === 'PHASE_2_BANISHMENT') {
-    const voteTimer = displayTimer > 0 ? displayTimer : (playerState.timer || 0);
+    const voteTimer = displayTimer > 0 ? displayTimer : playerState.timer || 0;
     return <BanishmentVoteScreen {...{ playerState, onVote, timer: voteTimer }} />;
   }
 

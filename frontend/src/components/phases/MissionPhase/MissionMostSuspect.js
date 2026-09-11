@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 
 export default function MissionMostSuspect({ socket, roomData, playerId, playerState }) {
@@ -15,8 +14,6 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
   const [reveal, setReveal] = useState(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [timer, setTimer] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
-  const [error, setError] = useState('');
   const decisionLockedRef = useRef(false);
 
   // Socket listeners
@@ -48,7 +45,6 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
       setTotalNeeded((data.players || []).length);
       setDilemma(null);
       setReveal(null);
-      setElapsed(data.elapsed);
       decisionLockedRef.current = false;
     };
 
@@ -65,14 +61,12 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
     const onDilemma = (data) => {
       setPhase('dilemma');
       setDilemma(data);
-      setElapsed(data.elapsed);
     };
 
     const onReveal = (data) => {
       setPhase('reveal');
       setReveal(data);
       setCorrectCount(data.correctCount);
-      setElapsed(data.elapsed);
     };
 
     socket.on('most_suspect_start', onStart);
@@ -251,12 +245,6 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
           <p className="mt-4 text-[#E5C982] font-bold">
             +{reveal.correct ? '1' : '0'} ponto · Total: {reveal.correctCount}
           </p>
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border-2 border-red-500 rounded-lg text-red-300">
-          {error}
         </div>
       )}
 

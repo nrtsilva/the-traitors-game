@@ -697,6 +697,8 @@ function App() {
             <RoleReveal
               playerState={state.gameData}
               onContinue={handleRoleRevealContinue}
+              socket={socket}
+              roomData={state.roomData}        
             />
           )}
 

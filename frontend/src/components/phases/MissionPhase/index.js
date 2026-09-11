@@ -11,8 +11,6 @@ import MissionMostSuspect from './MissionMostSuspect';
 export default function MissionPhase(props) {
   const { 
     playerState, 
-    socket,
-    roomData,
     playerId,
     currentMission: missionFromProp
   } = props;

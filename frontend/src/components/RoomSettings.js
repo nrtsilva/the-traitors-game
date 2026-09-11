@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import RoundTable from './RoundTable';
 
 export default function RoomSettings({ socket, roomData, setRoomData, onBack }) {
   const settings = roomData.settings;
@@ -22,63 +23,124 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
 
   return (
     <div className="w-full max-w-lg bg-[#291923] p-8 rounded-md gold-border-3 shadow-soft slow-reveal">
-      <div className="text-center mb-8 border-b border-[#D8B66C]/50 pb-6">
+      <div className="text-center mb-6 border-b border-[#D8B66C]/50 pb-4">
         <h2 className="font-display text-3xl tracking-widest text-[#E5C982]">CONFIGURAÇÕES</h2>
-        <p className="font-ui text-sm text-[#F3EBDD]/70 mt-2 tracking-widest">Código da Sala: <span className="font-bold text-[#D8B66C] tracking-[0.3em]">{roomData.roomCode}</span></p>
+        <p className="font-ui text-sm text-[#F3EBDD]/70 mt-2 tracking-widest">
+          Código da Sala:{' '}
+          <span className="font-bold text-[#D8B66C] tracking-[0.3em]">
+            {roomData.roomCode}
+          </span>
+        </p>
       </div>
 
-      {/* Lista de Jogadores na sala */}
-      <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30 mb-6">
-        <h3 className="text-lg mb-3 font-display text-[#D8B66C]">Jogadores na sala ({roomData.players.length})</h3>
-        <ul className="space-y-2">
-          {roomData.players.map((player) => (
-            <li key={player.id} className="flex justify-between items-center border-b border-[#D8B66C]/10 pb-2">
-              <span className="text-[#F3EBDD] font-ui">{player.name}</span>
-              <span className="text-xs text-[#E5C982] tracking-widest">Conectado</span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-xs text-[#F3EBDD]/50 mt-3">Aguarda que os jogadores entrem com o código antes de iniciar.</p>
+      {/* ====== MESA REDONDA ANIMADA ====== */}
+      <div className="mb-6">
+        <RoundTable
+          players={roomData.players}
+          maxPlayers={settings.maxPlayers || 6}
+          hostId={roomData.hostId || roomData.players[0]?.id}
+        />
+
+        {/* Estado dos jogadores */}
+        <div className="text-center mt-4">
+          <p className="text-[#F3EBDD]/70 text-sm font-ui">
+            <span className="text-[#D8B66C] font-bold text-lg">{roomData.players.length}</span>
+            {' / '}
+            <span className="text-[#F3EBDD]">{settings.maxPlayers || 6}</span>
+            {' '}jogadores na sala
+          </p>
+          {roomData.players.length < (settings.maxPlayers || 6) && (
+            <p className="text-[#D8B66C]/70 text-xs mt-1 animate-pulse">
+              A aguardar mais jogadores...
+            </p>
+          )}
+          {roomData.players.length >= (settings.maxPlayers || 6) && (
+            <p className="text-[#E5C982] text-xs mt-1 font-bold">
+              ✅ Sala cheia! Podes iniciar o jogo.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6 font-ui">
-        {/* DESTAQUE: Presencial vs Remoto */}
+        {/* ====== PRESENCIAL vs REMOTO ====== */}
         <div className="bg-[#291923] p-6 rounded-sm border-2 border-[#E5C982] mb-6 shadow-lg">
-          <label className="block text-xl font-display font-bold mb-2 text-[#E5C982] text-center tracking-widest">ONDE ESTÃO OS JOGADORES?</label>
-          <p className="text-sm text-[#F3EBDD]/70 mb-4 text-center">Isto determina o tipo de missões geradas.</p>
+          <label className="block text-xl font-display font-bold mb-2 text-[#E5C982] text-center tracking-widest">
+            ONDE ESTÃO OS JOGADORES?
+          </label>
+          <p className="text-sm text-[#F3EBDD]/70 mb-4 text-center">
+            Isto determina o tipo de missões geradas.
+          </p>
           <div className="flex gap-4">
-            <button onClick={() => updateSetting('gameMode', 'in_person')} className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${settings.gameMode === 'in_person' ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]' : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'}`}>
-              <div className="text-3xl mb-2">🏠</div><div className="text-lg">Presencial</div><div className="text-xs font-normal mt-1 opacity-80">Mesmo espaço físico</div>
+            <button
+              onClick={() => updateSetting('gameMode', 'in_person')}
+              className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${
+                settings.gameMode === 'in_person'
+                  ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]'
+                  : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'
+              }`}
+            >
+              <div className="text-3xl mb-2">🏠</div>
+              <div className="text-lg">Presencial</div>
+              <div className="text-xs font-normal mt-1 opacity-80">Mesmo espaço físico</div>
             </button>
-            <button onClick={() => updateSetting('gameMode', 'remote')} className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${settings.gameMode === 'remote' ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]' : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'}`}>
-              <div className="text-3xl mb-2">💻</div><div className="text-lg">Remoto</div><div className="text-xs font-normal mt-1 opacity-80">Jogadores à distância</div>
+            <button
+              onClick={() => updateSetting('gameMode', 'remote')}
+              className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${
+                settings.gameMode === 'remote'
+                  ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]'
+                  : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'
+              }`}
+            >
+              <div className="text-3xl mb-2">💻</div>
+              <div className="text-lg">Remoto</div>
+              <div className="text-xs font-normal mt-1 opacity-80">Jogadores à distância</div>
             </button>
           </div>
         </div>
 
-        {/* Nº de Jogadores */}
+        {/* ====== Nº DE JOGADORES ====== */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
           <div className="flex justify-between mb-2">
-            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Número de Jogadores</label>
+            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">
+              Número de Jogadores
+            </label>
             <span className="font-bold text-[#D8B66C] text-lg">{settings.maxPlayers}</span>
           </div>
-          <input type="range" min="4" max="10" value={settings.maxPlayers} onChange={(e) => updateSetting('maxPlayers', parseInt(e.target.value))} className="w-full accent-[#D8B66C]" />
+          <input
+            type="range"
+            min="4"
+            max="10"
+            value={settings.maxPlayers}
+            onChange={(e) => updateSetting('maxPlayers', parseInt(e.target.value))}
+            className="w-full accent-[#D8B66C]"
+          />
+          <p className="text-xs text-[#F3EBDD]/50 mt-2">
+            A mesa redonda ajusta-se automaticamente ao número de jogadores.
+          </p>
         </div>
 
-        {/* Nº de Traidores */}
+        {/* ====== Nº DE TRAIDORES ====== */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30 flex justify-between items-center">
           <div>
-            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Número de Traidores</label>
-            {/* MENSAGEM ALTERADA */}
-            <p className="text-[#F3EBDD]/50 text-xs mt-1">Permite 2 traidores apenas para 7+.</p>
+            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">
+              Número de Traidores
+            </label>
+            <p className="text-[#F3EBDD]/50 text-xs mt-1">
+              Permite 2 traidores apenas para 7+.
+            </p>
           </div>
           <div className="flex gap-2">
-            {[1, 2].map(num => (
-              <button 
-                key={num} 
+            {[1, 2].map((num) => (
+              <button
+                key={num}
                 onClick={() => updateSetting('numTraitors', num)}
                 disabled={num === 2 && settings.maxPlayers <= 6}
-                className={`px-5 py-2 rounded-sm font-bold transition ${settings.numTraitors === num ? 'bg-[#D8B66C] text-[#291923]' : 'bg-[#412734] text-[#F3EBDD] border border-[#D8B66C]/30 disabled:opacity-40 disabled:cursor-not-allowed'}`}
+                className={`px-5 py-2 rounded-sm font-bold transition ${
+                  settings.numTraitors === num
+                    ? 'bg-[#D8B66C] text-[#291923]'
+                    : 'bg-[#412734] text-[#F3EBDD] border border-[#D8B66C]/30 disabled:opacity-40 disabled:cursor-not-allowed'
+                }`}
               >
                 {num}
               </button>
@@ -86,45 +148,82 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           </div>
         </div>
 
-        {/* NÚMERO DE FASES (AVENTURA) */}
+        {/* ====== Nº DE FASES ====== */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
           <div className="flex justify-between mb-2">
-            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Nº de Fases da Aventura</label>
+            <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">
+              Nº de Fases da Aventura
+            </label>
             <span className="font-bold text-[#D8B66C] text-lg">{settings.numPhases || 2}</span>
           </div>
-          <input 
-            type="range" min="1" max="4" 
-            value={settings.numPhases || 2} 
+          <input
+            type="range"
+            min="1"
+            max="4"
+            value={settings.numPhases || 2}
             onChange={(e) => updateSetting('numPhases', parseInt(e.target.value))}
-            className="w-full accent-[#D8B66C]" 
+            className="w-full accent-[#D8B66C]"
           />
-          <p className="text-xs text-[#F3EBDD]/50 mt-2">Missão → Mesa Redonda → Arsenal → Assassinato</p>
+          <p className="text-xs text-[#F3EBDD]/50 mt-2">
+            Missão → Expulsão → Arsenal → Assassinato
+          </p>
         </div>
 
-        {/* Opções Toggle */}
+        {/* ====== OPÇÕES TOGGLE ====== */}
         <div className="grid grid-cols-1 gap-3">
           {[
-            { key: 'recruitingActive', label: 'Traidor pode recrutar (apenas 7+)', disabled: settings.maxPlayers <= 6 },
-            { key: 'eliminatedAsSpectator', label: 'Eliminados ficam como espectadores' },
-            { key: 'soundEffects', label: 'Efeitos Sonoros' },
+            {
+              key: 'recruitingActive',
+              label: 'Traidor pode recrutar (apenas 7+)',
+              disabled: settings.maxPlayers <= 6,
+            },
+            {
+              key: 'eliminatedAsSpectator',
+              label: 'Eliminados ficam como espectadores',
+            },
+            {
+              key: 'soundEffects',
+              label: 'Efeitos Sonoros',
+            },
           ].map((opt) => (
-            <div key={opt.key} className="flex justify-between items-center bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
-              <span className={`text-[#F3EBDD] font-medium text-sm uppercase tracking-wider ${opt.disabled ? 'opacity-50' : ''}`}>{opt.label}</span>
-              <button 
+            <div
+              key={opt.key}
+              className="flex justify-between items-center bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30"
+            >
+              <span
+                className={`text-[#F3EBDD] font-medium text-sm uppercase tracking-wider ${
+                  opt.disabled ? 'opacity-50' : ''
+                }`}
+              >
+                {opt.label}
+              </span>
+              <button
                 onClick={() => updateSetting(opt.key, !settings[opt.key])}
                 disabled={opt.disabled}
-                className={`w-14 h-7 rounded-full p-1 transition ${settings[opt.key] ? 'bg-[#D8B66C]' : 'bg-[#412734] border border-[#D8B66C]/50'} ${opt.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`w-14 h-7 rounded-full p-1 transition ${
+                  settings[opt.key] ? 'bg-[#D8B66C]' : 'bg-[#412734] border border-[#D8B66C]/50'
+                } ${opt.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
-                <div className={`w-5 h-5 bg-[#F3EBDD] rounded-full shadow-md transform transition ${settings[opt.key] ? 'translate-x-7' : ''}`}></div>
+                <div
+                  className={`w-5 h-5 bg-[#F3EBDD] rounded-full shadow-md transform transition ${
+                    settings[opt.key] ? 'translate-x-7' : ''
+                  }`}
+                ></div>
               </button>
             </div>
           ))}
         </div>
 
-        {/* Tempo de Debate (Expulsão) */}
+        {/* ====== TEMPO DE DEBATE ====== */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
-          <label className="block mb-3 text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">Tempo de Debate</label>
-          <select value={settings.debateTime} onChange={(e) => updateSetting('debateTime', e.target.value)} className="w-full p-3 bg-[#291923] border border-[#D8B66C]/50 text-[#F3EBDD] rounded-sm focus:outline-none focus:border-[#E5C982]">
+          <label className="block mb-3 text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">
+            Tempo de Debate (Expulsão)
+          </label>
+          <select
+            value={settings.debateTime}
+            onChange={(e) => updateSetting('debateTime', e.target.value)}
+            className="w-full p-3 bg-[#291923] border border-[#D8B66C]/50 text-[#F3EBDD] rounded-sm focus:outline-none focus:border-[#E5C982]"
+          >
             <option value="0">Ilimitado</option>
             <option value="60">60 Segundos</option>
             <option value="90">90 Segundos</option>
@@ -133,16 +232,27 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
         </div>
       </div>
 
-      {/* MENSAGEM DE ERRO NA UI */}
+      {/* ====== MENSAGEM DE ERRO ====== */}
       {errorMessage && (
         <div className="mt-6 p-4 bg-red-900/40 border border-red-500 rounded-sm text-center">
           <p className="text-red-300 font-bold">{errorMessage}</p>
         </div>
       )}
 
+      {/* ====== BOTÕES ====== */}
       <div className="mt-8 flex gap-4 pt-6 border-t border-[#D8B66C]/50">
-        <button onClick={onBack} className="flex-1 py-3 bg-[#412734] border border-[#D8B66C]/50 text-[#F3EBDD] font-ui font-semibold uppercase tracking-widest text-sm rounded-sm hover:bg-[#291923] transition">Voltar</button>
-        <button onClick={handleStart} className="flex-1 py-3 bg-[#D8B66C] text-[#291923] font-ui font-bold uppercase tracking-widest text-sm rounded-sm hover:bg-[#E5C982] transition shadow-soft">Iniciar Jogo</button>
+        <button
+          onClick={onBack}
+          className="flex-1 py-3 bg-[#412734] border border-[#D8B66C]/50 text-[#F3EBDD] font-ui font-semibold uppercase tracking-widest text-sm rounded-sm hover:bg-[#291923] transition"
+        >
+          Voltar
+        </button>
+        <button
+          onClick={handleStart}
+          className="flex-1 py-3 bg-[#D8B66C] text-[#291923] font-ui font-bold uppercase tracking-widest text-sm rounded-sm hover:bg-[#E5C982] transition shadow-soft"
+        >
+          Iniciar Jogo
+        </button>
       </div>
     </div>
   );
