@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TraitorHoodedFigure from './TraitorHoodedFigure';
 
 export default function RoleReveal({ playerState, onContinue, socket, roomData }) {
   const [step, setStep] = useState(0);
@@ -9,7 +10,6 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
 
   const isTraitor = playerState.role === 'traitor';
 
-  // Revelação faseada
   useEffect(() => {
     const timers = [
       setTimeout(() => setStep(1), 1500),
@@ -19,26 +19,20 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Listeners do socket
   useEffect(() => {
     if (!socket) return;
-
     const onProgress = (data) => {
       setReadyCount(data.readyCount);
       setTotalPlayers(data.totalPlayers);
       setAllReady(data.readyCount >= data.totalPlayers);
     };
-
     const onAllReady = () => {
-      // Dar um instante para o jogador ver "Todos prontos!" antes de avançar
       setTimeout(() => {
         if (typeof onContinue === 'function') onContinue();
       }, 800);
     };
-
     socket.on('role_reveal_ready_progress', onProgress);
     socket.on('role_reveal_all_ready', onAllReady);
-
     return () => {
       socket.off('role_reveal_ready_progress', onProgress);
       socket.off('role_reveal_all_ready', onAllReady);
@@ -46,25 +40,39 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
   }, [socket, onContinue]);
 
   const handleReady = () => {
-    if (hasClicked) return;
+    if (hasClicked || !socket || !roomData) return;
     setHasClicked(true);
     socket.emit('role_reveal_ready', { roomCode: roomData.roomCode });
   };
 
   return (
     <div className="min-h-screen bg-[#291923] flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
+      {/* Vinheta subtil de fundo */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#D8B66C]/10 rounded-full blur-3xl pointer-events-none"></div>
+      {isTraitor && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-900/20 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+      )}
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-lg">
         <div className={`transition-opacity duration-1000 ${step >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+
           {step >= 1 && (
             <h2 className="font-display text-3xl tracking-[0.3em] text-[#F3EBDD]/80 mb-4 uppercase">
               Tu és...
             </h2>
           )}
 
+          {/* SVG do capuz (apenas se Traidor) */}
+          {isTraitor && step >= 2 && (
+            <div className="mb-4 animate-fadeIn">
+              <TraitorHoodedFigure size={220} />
+            </div>
+          )}
+
           {step >= 2 && (
-            <h1 className={`font-display text-7xl font-bold tracking-widest mb-8 ${isTraitor ? 'text-red-500' : 'text-[#E5C982]'}`}>
+            <h1 className={`font-display text-7xl font-bold tracking-widest mb-8 ${
+              isTraitor ? 'text-red-500' : 'text-[#E5C982]'
+            }`}>
               {isTraitor ? 'TRAIDOR' : 'FIEL'}
             </h1>
           )}

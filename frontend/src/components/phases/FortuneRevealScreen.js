@@ -48,7 +48,7 @@ export default function FortuneRevealScreen({
               <span className="block text-xs text-[#F3EBDD]/60">Moedas</span>
             </div>
             <div>
-              <span className="block text-5xl mb-2 animate-float" style={{ animationDelay: '0.6s' }}>💰</span>
+              <span className="block text-5xl mb-2 animate-float" style={{ animationDelay: '0.6s' }}>🟨</span>
               <span className="text-2xl font-bold text-[#D8B66C]">{commonBars}</span>
               <span className="block text-xs text-[#F3EBDD]/60">Barras</span>
             </div>
