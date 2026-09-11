@@ -99,7 +99,6 @@ export default function MissionEmojiCount({ playerState, socket, roomData }) {
 
   return (
     <div className="text-center max-w-3xl mx-auto">
-      <h1 className="text-4xl font-display font-bold text-[#E5C982] mb-2">🔢 CONTAGEM DOS EMOJIS</h1>
       <p className="text-[#F3EBDD]/60 text-sm mb-4">
         Contem em voz alta de 1 a 10. Substituam os números pelos emojis!
       </p>

@@ -119,7 +119,6 @@ export default function MissionMostSuspect({ socket, roomData, playerId, playerS
   if (!gameStarted) {
     return (
       <div className="text-center">
-        <h1 className="text-5xl font-bold text-[#E5C982] mb-8">🕵️ OS MAIS SUSPEITOS</h1>
         <p className="text-[#F3EBDD] animate-pulse">A preparar as perguntas...</p>
       </div>
     );

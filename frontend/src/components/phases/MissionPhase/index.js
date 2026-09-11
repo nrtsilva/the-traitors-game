@@ -96,21 +96,41 @@ export default function MissionPhase(props) {
           </div>
         </div>
       )}
-
+      
       {/* CARD DA MISSÃO */}
       <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent opacity-70"></div>
-        
+
         <h2 className="font-display text-4xl font-bold text-[#E5C982] mb-2 text-center tracking-widest">
           {mission.title}
         </h2>
         <div className="w-24 h-0.5 bg-[#D8B66C] mx-auto mb-6"></div>
 
-        <div className="text-[#F3EBDD] text-lg mb-8">
+        {/* Descrição principal */}
+        <div className="text-[#F3EBDD] text-lg mb-6">
           <MissionDescription description={mission.description} />
         </div>
 
-        <div className="mt-6">
+        {/* ====== REGRAS (destacadas) ====== */}
+        {mission.rules && mission.rules.length > 0 && (
+          <div className="mt-8 bg-[#412734]/60 border-2 border-[#D8B66C]/50 rounded-lg p-5 relative">
+            <div className="absolute -top-3 left-6 bg-[#291923] px-3">
+              <span className="text-[#E5C982] font-display text-sm tracking-widest">
+                ⚠️ REGRAS
+              </span>
+            </div>
+            <ul className="space-y-2 mt-2">
+              {mission.rules.map((rule, i) => (
+                <li key={i} className="flex items-start gap-3 text-[#F3EBDD]/90 text-sm leading-relaxed">
+                  <span className="text-[#D8B66C] mt-0.5">✦</span>
+                  <span>{rule}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="mt-8">
           {missionContent}
         </div>
       </div>

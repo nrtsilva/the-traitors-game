@@ -94,7 +94,6 @@ export default function MissionSilentMime({ playerState, socket, roomData, playe
   if (!gameStarted) {
     return (
       <div className="text-center">
-        <h1 className="text-5xl font-bold text-[#E5C982] mb-8">🤐 MÍMICA SILENCIOSA</h1>
         <p className="text-[#F3EBDD] animate-pulse">A preparar o tema...</p>
       </div>
     );

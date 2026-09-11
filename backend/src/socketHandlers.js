@@ -212,7 +212,7 @@ function registerSocketHandlers(io) {
                 io.to(cleanCode).emit('role_reveal_all_ready');
             }
         });
-
+		
         // --- PLAYER READY ---
         socket.on('player_ready', ({ roomCode }) => {
             try {
@@ -230,53 +230,91 @@ function registerSocketHandlers(io) {
                 }
                 if (!player || !player.alive) return;
 
-                if (!player.isReadyForPhase) {
-                    player.isReadyForPhase = true;
-                    room.readyCount++;
-                    const aliveCount = room.players.filter(p => p.alive).length;
-                    io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
+                if (player.isReadyForPhase) return;
 
-                    if (room.readyCount >= aliveCount) {
-                        room.players.forEach(p => p.isReadyForPhase = false);
-                        room.readyCount = 0;
+                player.isReadyForPhase = true;
+                room.readyCount++;
+                const aliveCount = room.players.filter(p => p.alive).length;
+                io.to(cleanCode).emit('player_status_update', { readyCount: room.readyCount, totalNeeded: aliveCount });
 
-                        if (room.phase === GAME_PHASES.PHASE_2_BANISHMENT) {
-                            const debateTime = room.settings.debateTime || 60;
-                            io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: debateTime });
-                            clearTimeout(room.phaseTimer);
-                            room.phaseTimer = setTimeout(() => processBanishment(room, io), debateTime * 1000);
-                        } else if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
-                            if (!room.currentArsenalTask) {
-                                const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
-                                const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
-                                room.currentArsenalTask = tarefaAleatoria;
-                                io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
+                if (room.readyCount < aliveCount) return;
 
-                                // Iniciar o jogo/desafio correspondente ao tipo de tarefa (uma única vez cada)
-                                if (tarefaAleatoria.type === 'WORD_COMBINATION') setTimeout(() => startWordGuesserGame(room, io), 1500);
-                                if (tarefaAleatoria.type === 'COLOR_REFLEX')     setTimeout(() => startColorReflexGame(room, io), 1500);
-                                if (tarefaAleatoria.type === 'PRECISION_TIMER')  setTimeout(() => startTimeStopGame(room, io), 1500);
-                                if (tarefaAleatoria.type === 'WORD_BUILDER')     setTimeout(() => startWordBuilderGame(room, io), 1500);
-                                if (tarefaAleatoria.type === 'WORD_ROULETTE')    setTimeout(() => startWordRouletteGame(room, io), 1500);
-                                if (tarefaAleatoria.type === 'EMOJI_GUESS')      setTimeout(() => startEmojiGuessGame(room, io), 1500);
-                                if (tarefaAleatoria.type === 'BLOW_SURVIVE')     setTimeout(() => startBlowSurviveGame(room, io), 2000);
-                                if (tarefaAleatoria.type === 'FIND_ORANGES')     setTimeout(() => startFindOrangesGame(room, io), 2000);
-                                if (tarefaAleatoria.type === 'SOUNDS_CODE')      setTimeout(() => startSoundsCodeGame(room, io), 2000);
-                                if (tarefaAleatoria.type === 'EIGHT_LETTERS')    setTimeout(() => startEightLettersGame(room, io), 2000);
-                            }
-                            return;
-                        } else {
-                            io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
-                            startMissionTimer(room, io);
-							
-							const missionType = room.currentMissionData.type;
-							if (missionType === 'MOST_SUSPECT')  setTimeout(() => startMostSuspectMission(room, io), 500);
-							if (missionType === 'SILENT_MIME')   setTimeout(() => startSilentMimeMission(room, io), 500);
-							if (missionType === 'EMOJI_COUNT')   setTimeout(() => startEmojiCountMission(room, io), 500);
-							if (missionType === 'TICO_TECO_TACO') setTimeout(() => startTicoTecoTacoMission(room, io), 500);
-                        }
-                    }
+                // ---- TODOS PRONTOS ----
+                room.players.forEach(p => p.isReadyForPhase = false);
+                room.readyCount = 0;
+
+                // ============ FASE 2: BANISHMENT ============
+                if (room.phase === GAME_PHASES.PHASE_2_BANISHMENT) {
+                    const debateTime = room.settings.debateTime || 60;
+                    io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: debateTime });
+                    clearTimeout(room.phaseTimer);
+                    room.phaseTimer = setTimeout(() => processBanishment(room, io), debateTime * 1000);
+                    return;
                 }
+
+                // ============ FASE 3: ARMOURY ============
+                if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
+                    if (!room.currentArsenalTask) {
+                        const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
+                        const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
+                        room.currentArsenalTask = tarefaAleatoria;
+                        io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
+
+                        const tipo = tarefaAleatoria.type;
+                        setTimeout(() => {
+                            if (tipo === 'WORD_COMBINATION')  startWordGuesserGame(room, io);
+                            if (tipo === 'COLOR_REFLEX')      startColorReflexGame(room, io);
+                            if (tipo === 'PRECISION_TIMER')   startTimeStopGame(room, io);
+                            if (tipo === 'WORD_BUILDER')      startWordBuilderGame(room, io);
+                            if (tipo === 'WORD_ROULETTE')     startWordRouletteGame(room, io);
+                            if (tipo === 'EMOJI_GUESS')       startEmojiGuessGame(room, io);
+                            if (tipo === 'BLOW_SURVIVE')      startBlowSurviveGame(room, io);
+                            if (tipo === 'FIND_ORANGES')      startFindOrangesGame(room, io);
+                            if (tipo === 'SOUNDS_CODE')       startSoundsCodeGame(room, io);
+                            if (tipo === 'EIGHT_LETTERS')     startEightLettersGame(room, io);
+                        }, 2000);
+                    }
+                    return;
+                }
+
+                // ============ FASE 1: MISSION ============
+                const missionType = room.currentMissionData?.type;
+                const isSpecialMission = [
+                    'SILENT_MIME',
+                    'EMOJI_COUNT',
+                    'TICO_TECO_TACO',
+                    'MOST_SUSPECT',
+                ].includes(missionType);
+
+                if (isSpecialMission) {
+                    // Missões especiais gerem o seu próprio tempo no backend.
+                    // NÃO emitir timer, NÃO chamar startMissionTimer.
+                    io.to(cleanCode).emit('phase_started', {
+                        phase: room.phase,
+                        timer: null,
+                        roundNumber: room.roundNumber,
+                    });
+
+                    // Delay generoso para garantir que o frontend montou
+                    // o componente antes de emitirmos o evento de início.
+                    console.log(`[player_ready] Missão especial detectada: ${missionType}. A aguardar 2s antes de iniciar.`);
+                    setTimeout(() => {
+                        if (missionType === 'SILENT_MIME')     startSilentMimeMission(room, io);
+                        if (missionType === 'EMOJI_COUNT')     startEmojiCountMission(room, io);
+                        if (missionType === 'TICO_TECO_TACO')  startTicoTecoTacoMission(room, io);
+                        if (missionType === 'MOST_SUSPECT')    startMostSuspectMission(room, io);
+                    }, 2000);
+
+                    return;
+                }
+
+                // Missão normal (com timer global)
+                io.to(cleanCode).emit('phase_started', {
+                    phase: room.phase,
+                    timer: room.currentMissionData.timeLimit,
+                    roundNumber: room.roundNumber,
+                });
+                startMissionTimer(room, io);
             } catch (error) {
                 console.error("Erro no player_ready:", error);
             }

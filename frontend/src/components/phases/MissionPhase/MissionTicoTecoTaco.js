@@ -107,7 +107,6 @@ export default function MissionTicoTecoTaco({ playerState, socket, roomData, pla
   if (!gameStarted) {
     return (
       <div className="text-center">
-        <h1 className="text-5xl font-bold text-[#E5C982] mb-8">🎵 TICO, TECO, TACO</h1>
         <p className="text-[#F3EBDD] animate-pulse">A preparar a primeira palavra...</p>
       </div>
     );

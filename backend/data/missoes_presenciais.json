@@ -88,17 +88,24 @@
   {
     "id": "presencial_silent_mime",
     "mode": "in_person",
-    "title": "Mímica Silenciosa",
+    "title": "🤐 Mímica Silenciosa",
     "type": "SILENT_MIME",
     "timeLimit": 120,
-    "description": "O sistema escolhe um tema e revela uma palavra secreta a UM jogador de cada vez.\n\n🎭 Esse jogador faz **mímica** da palavra enquanto só pode emitir **repetidamente o som da letra atribuída** (ex: \"K... K... K...\").\n\n🗣️ Os restantes tentam adivinhar em voz alta.\n\n🎯 **Objetivo:** adivinhar as 10 palavras em até 120 segundos.\n🟨 **Prémio:** 2 barras de ouro.\n\n⚠️ **Regras:**\n1. O jogador NUNCA pode falar (só pode emitir o som da letra).\n2. Não pode escrever, mostrar ou soletrar.\n3. Se ficarem bloqueados, cliquem **PASSAR** — o cronómetro continua.\n4. Rodízio de jogadores: cada ronda é feita por uma pessoa diferente.\n\n🛑 Quem não cumprir estas regras dá um erro à equipa (não acumulam a palavra).",
-    "reward": "2",
+    "description": "O sistema escolhe um tema e revela uma palavra secreta a **um jogador de cada vez**.\n\n🎭 Esse jogador faz **mímica** da palavra enquanto só pode emitir **repetidamente o som da letra atribuída**.\n\n🗣️ Os restantes tentam adivinhar em voz alta.\n\n🎯 **Objetivo:** adivinhar as 10 palavras em até 120 segundos.",
+    "rules": [
+	  "O jogador NUNCA pode falar (só pode emitir o som da letra).",
+	  "Não pode escrever, mostrar ou soletrar.",
+	  "Se ficarem bloqueados, cliquem PASSAR — o cronómetro continua.",
+	  "Rodízio de jogadores: cada ronda é feita por uma pessoa diferente.",
+	  "🛑 Quem não cumprir estas regras dá um erro à equipa (não acumulam a palavra)."
+    ],
+    "reward": "2 barras de ouro",
     "traitorSecretMissions": [
-      "Quando fores tu a fazer mímica, exagera os movimentos para fazer os outros rir em vez de adivinhar.",
-      "Quando alguém estiver a fazer mímica, sugere sempre palavras erradas para atrasar a equipa.",
-      "Finge que não percebeste qual é o som permitido e faz sons diferentes.",
-      "Boceja ostensivamente quando não for a tua vez de fazer mímica.",
-      "Diz 'passa, passa!' muito cedo, mesmo quando a equipa está quase a acertar."
+	  "Quando fores tu a fazer mímica, exagera os movimentos para fazer os outros rir em vez de adivinhar.",
+	  "Quando alguém estiver a fazer mímica, sugere sempre palavras erradas para atrasar a equipa.",
+	  "Finge que não percebeste qual é o som permitido e faz sons diferentes.",
+	  "Boceja ostensivamente quando não for a tua vez de fazer mímica.",
+	  "Diz 'passa, passa!' muito cedo, mesmo quando a equipa está quase a acertar."
     ]
   },
   {
