@@ -7,6 +7,7 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
   const [totalPlayers, setTotalPlayers] = useState(1);
   const [allReady, setAllReady] = useState(false);
   const [hasClicked, setHasClicked] = useState(false);
+  const [showOath, setShowOath] = useState(false);
 
   const isTraitor = playerState.role === 'traitor';
 
@@ -15,6 +16,8 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
       setTimeout(() => setStep(1), 1500),
       setTimeout(() => setStep(2), 3000),
       setTimeout(() => setStep(3), 4500),
+      // O juramento aparece 1s depois da descrição
+      setTimeout(() => setShowOath(true), 5500),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -62,12 +65,12 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
             </h2>
           )}
 
-          {/* SVG do capuz (apenas se Traidor) */}
+          {/* Figura do capuz (apenas se Traidor) 
           {isTraitor && step >= 2 && (
             <div className="mb-4 animate-fadeIn">
               <TraitorHoodedFigure size={220} />
             </div>
-          )}
+          )}*/}
 
           {step >= 2 && (
             <h1 className={`font-display text-7xl font-bold tracking-widest mb-8 ${
@@ -81,13 +84,38 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
             <div className="mt-4">
               {isTraitor ? (
                 <p className="text-[#F3EBDD] text-lg leading-relaxed">
-                  A tua missão é <span className="font-bold text-red-400">sabotar</span> as missões, eliminar os Fiéis e garantir que ninguém descobre a tua identidade. Mantém-te vivo até ao fim para reclamar todo o ouro!
+                  A tua missão é <span className="font-bold text-red-400">assassinar</span> outros jogadores e garantir que ninguém descobre a tua identidade. Mantém-te vivo até ao fim para reclamar todo o ouro!
                 </p>
               ) : (
                 <p className="text-[#F3EBDD] text-lg leading-relaxed">
                   A tua missão é <span className="font-bold text-[#D8B66C]">defender</span> o grupo, completar as missões para ganhar ouro e descobrir quem é o Traidor antes que seja demasiado tarde!
                 </p>
               )}
+            </div>
+          )}
+
+          {/* ====== JURAMENTO DO TRAIDOR ====== */}
+          {isTraitor && showOath && (
+            <div
+              className="mt-6 max-w-md mx-auto transition-all duration-1000"
+              style={{
+                opacity: showOath ? 1 : 0,
+                transform: showOath ? 'translateY(0)' : 'translateY(10px)',
+              }}
+            >
+              <div className="relative px-6 py-4 border-l-2 border-red-700/50">
+                <p className="text-red-300/60 text-[11px] uppercase tracking-[0.3em] font-ui mb-3 italic">
+                  Ao entrares no jogo, juras solenemente:
+                </p>
+                <ul className="space-y-1.5 text-left text-[#F3EBDD]/50 text-[13px] font-ui italic leading-relaxed">
+                  <li>— Comprometes-te a mentir e a enganar ao longo de todo o jogo?</li>
+                  <li>— Estás disposto a eliminar os teus colegas de jogo todas as noites?</li>
+                  <li>— E juras manter a tua identidade e a dos teus colegas Traidores em segredo?</li>
+                </ul>
+                <p className="text-red-300/40 text-[10px] uppercase tracking-widest font-ui mt-4 text-center">
+                  Clicar em "Entrar no Jogo" é um sim a todas as perguntas.
+                </p>
+              </div>
             </div>
           )}
 

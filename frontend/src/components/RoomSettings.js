@@ -4,6 +4,7 @@ import RoundTable from './RoundTable';
 export default function RoomSettings({ socket, roomData, setRoomData, onBack }) {
   const settings = roomData.settings;
   const [errorMessage, setErrorMessage] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const updateSetting = (key, value) => {
     const newSettings = { ...settings, [key]: value };
@@ -21,16 +22,60 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
     });
   };
 
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(roomData.roomCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback para browsers antigos
+      const textarea = document.createElement('textarea');
+      textarea.value = roomData.roomCode;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (e) {
+        console.error('Erro ao copiar:', e);
+      }
+      document.body.removeChild(textarea);
+    }
+  };
+
+  const isInPerson = settings.gameMode === 'in_person';
+  // Mostrar secção de traidores apenas a partir de 8 jogadores
+  const showTraitorsSection = (settings.maxPlayers || 6) >= 8;
+
   return (
     <div className="w-full max-w-lg bg-[#291923] p-8 rounded-md gold-border-3 shadow-soft slow-reveal">
+      {/* ====== CABEÇALHO ====== */}
       <div className="text-center mb-6 border-b border-[#D8B66C]/50 pb-4">
-        <h2 className="font-display text-3xl tracking-widest text-[#E5C982]">CONFIGURAÇÕES</h2>
-        <p className="font-ui text-sm text-[#F3EBDD]/70 mt-2 tracking-widest">
-          Código da Sala:{' '}
-          <span className="font-bold text-[#D8B66C] tracking-[0.3em]">
-            {roomData.roomCode}
-          </span>
-        </p>
+        <h2 className="font-display text-3xl tracking-widest text-[#E5C982]">
+          CONFIGURAÇÕES
+        </h2>
+
+        {/* Código da Sala com botão de copiar discreto */}
+        <div className="flex items-center justify-center gap-2 mt-2">
+          <p className="font-ui text-sm text-[#F3EBDD]/70 tracking-widest">
+            Código da Sala:{' '}
+            <span className="font-bold text-[#D8B66C] tracking-[0.3em]">
+              {roomData.roomCode}
+            </span>
+          </p>
+          <button
+            onClick={handleCopyCode}
+            className={`text-base transition-all duration-200 ${
+              copied
+                ? 'text-green-400 scale-110'
+                : 'text-[#D8B66C]/40 hover:text-[#E5C982] hover:scale-110'
+            }`}
+            title={copied ? 'Copiado!' : 'Copiar código'}
+          >
+            {copied ? '✓' : '⧉'}
+          </button>
+        </div>
       </div>
 
       {/* ====== MESA REDONDA ANIMADA ====== */}
@@ -41,7 +86,6 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           hostId={roomData.hostId || roomData.players[0]?.id}
         />
 
-        {/* Estado dos jogadores */}
         <div className="text-center mt-4">
           <p className="text-[#F3EBDD]/70 text-sm font-ui">
             <span className="text-[#D8B66C] font-bold text-lg">{roomData.players.length}</span>
@@ -63,42 +107,6 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
       </div>
 
       <div className="space-y-6 font-ui">
-        {/* ====== PRESENCIAL vs REMOTO ====== */}
-        <div className="bg-[#291923] p-6 rounded-sm border-2 border-[#E5C982] mb-6 shadow-lg">
-          <label className="block text-xl font-display font-bold mb-2 text-[#E5C982] text-center tracking-widest">
-            ONDE ESTÃO OS JOGADORES?
-          </label>
-          <p className="text-sm text-[#F3EBDD]/70 mb-4 text-center">
-            Isto determina o tipo de missões geradas.
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => updateSetting('gameMode', 'in_person')}
-              className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${
-                settings.gameMode === 'in_person'
-                  ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]'
-                  : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'
-              }`}
-            >
-              <div className="text-3xl mb-2">🏠</div>
-              <div className="text-lg">Presencial</div>
-              <div className="text-xs font-normal mt-1 opacity-80">Mesmo espaço físico</div>
-            </button>
-            <button
-              onClick={() => updateSetting('gameMode', 'remote')}
-              className={`flex-1 p-4 rounded-sm font-bold transition border-2 ${
-                settings.gameMode === 'remote'
-                  ? 'bg-[#D8B66C] text-[#291923] border-[#E5C982]'
-                  : 'bg-[#412734] text-[#F3EBDD] border-[#D8B66C]/30 hover:border-[#D8B66C]'
-              }`}
-            >
-              <div className="text-3xl mb-2">💻</div>
-              <div className="text-lg">Remoto</div>
-              <div className="text-xs font-normal mt-1 opacity-80">Jogadores à distância</div>
-            </button>
-          </div>
-        </div>
-
         {/* ====== Nº DE JOGADORES ====== */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
           <div className="flex justify-between mb-2">
@@ -120,33 +128,75 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           </p>
         </div>
 
-        {/* ====== Nº DE TRAIDORES ====== */}
-        <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30 flex justify-between items-center">
-          <div>
+        {/* ====== PRESENCIAL vs REMOTO (SLIDER) ====== */}
+        <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
+          <div className="flex justify-between items-center mb-3">
             <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">
-              Número de Traidores
+              Modo de Jogo
             </label>
-            <p className="text-[#F3EBDD]/50 text-xs mt-1">
-              Permite 2 traidores apenas para 7+.
-            </p>
+            <span className={`font-bold text-lg transition ${isInPerson ? 'text-[#D8B66C]' : 'text-[#E5C982]'}`}>
+              {isInPerson ? '🏠 Presencial' : '💻 Remoto'}
+            </span>
           </div>
-          <div className="flex gap-2">
-            {[1, 2].map((num) => (
-              <button
-                key={num}
-                onClick={() => updateSetting('numTraitors', num)}
-                disabled={num === 2 && settings.maxPlayers <= 6}
-                className={`px-5 py-2 rounded-sm font-bold transition ${
-                  settings.numTraitors === num
-                    ? 'bg-[#D8B66C] text-[#291923]'
-                    : 'bg-[#412734] text-[#F3EBDD] border border-[#D8B66C]/30 disabled:opacity-40 disabled:cursor-not-allowed'
-                }`}
-              >
-                {num}
-              </button>
-            ))}
+
+          <div className="relative">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="1"
+              value={isInPerson ? 0 : 1}
+              onChange={(e) =>
+                updateSetting('gameMode', parseInt(e.target.value) === 0 ? 'in_person' : 'remote')
+              }
+              className="w-full accent-[#D8B66C] cursor-pointer"
+            />
           </div>
+
+          <div className="flex justify-between mt-1 text-xs">
+            <span className={`transition ${isInPerson ? 'text-[#D8B66C] font-bold' : 'text-[#F3EBDD]/50'}`}>
+              🏠 Presencial
+            </span>
+            <span className={`transition ${!isInPerson ? 'text-[#D8B66C] font-bold' : 'text-[#F3EBDD]/50'}`}>
+              💻 Remoto
+            </span>
+          </div>
+
+          <p className="text-xs text-[#F3EBDD]/50 mt-3 text-center">
+            {isInPerson
+              ? 'Todos no mesmo espaço físico (missões presenciais).'
+              : 'Jogadores em locais diferentes (missões remotas).'}
+          </p>
         </div>
+
+        {/* ====== Nº DE TRAIDORES (só a partir de 8 jogadores) ====== */}
+        {showTraitorsSection && (
+          <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30 flex justify-between items-center">
+            <div>
+              <label className="text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">
+                Número de Traidores
+              </label>
+              <p className="text-[#F3EBDD]/50 text-xs mt-1">
+                Podes escolher entre 1 ou 2 traidores para este jogo.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {[1, 2].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => updateSetting('numTraitors', num)}
+                  className={`px-5 py-2 rounded-sm font-bold transition ${
+                    settings.numTraitors === num
+                      ? 'bg-[#D8B66C] text-[#291923]'
+                      : 'bg-[#412734] text-[#F3EBDD] border border-[#D8B66C]/30'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ====== Nº DE FASES ====== */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
@@ -165,7 +215,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
             className="w-full accent-[#D8B66C]"
           />
           <p className="text-xs text-[#F3EBDD]/50 mt-2">
-            Missão → Expulsão → Arsenal → Assassinato
+            Missão → Mesa Redonda → Arsenal → Conclave
           </p>
         </div>
 
@@ -174,8 +224,8 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
           {[
             {
               key: 'recruitingActive',
-              label: 'Traidor pode recrutar (apenas 7+)',
-              disabled: settings.maxPlayers <= 6,
+              label: 'Traidor pode recrutar (apenas 8+)',
+              disabled: settings.maxPlayers < 8,
             },
             {
               key: 'eliminatedAsSpectator',
@@ -217,7 +267,7 @@ export default function RoomSettings({ socket, roomData, setRoomData, onBack }) 
         {/* ====== TEMPO DE DEBATE ====== */}
         <div className="bg-[#291923]/80 p-4 rounded-sm border border-[#D8B66C]/30">
           <label className="block mb-3 text-[#F3EBDD] font-semibold uppercase tracking-widest text-sm">
-            Tempo de Debate (Expulsão)
+            Tempo de Debate (Mesa Redonda)
           </label>
           <select
             value={settings.debateTime}

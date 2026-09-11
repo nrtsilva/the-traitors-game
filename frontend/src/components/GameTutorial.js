@@ -4,33 +4,33 @@ const steps = [
   {
     title: "Bem-vindo à Mansão",
     /*description: "Bem-vindo ao The Traitors! Um jogo de dedução social, traição e estratégia. O objetivo é simples: acumular ouro para o cofre comunitário e desvendar (ou esconder) a identidade do Traidor. Vamos descobrir como se joga?",*/
-    description: "Bem-vindo ao The Traitors! Uma Aventura é composta por 1 a 4 fases. Cada fase inclui 4 etapas: Missão, Mesa Redonda, Arsenal e Assassinato. O objetivo é acumular ouro e desvendar (ou esconder) a identidade do Traidor. Vamos descobrir como se joga?",
+    description: "Bem-vindo ao The Traitors! Uma Aventura é composta por 1 a 4 fases. Cada fase inclui 4 etapas: Missão, Mesa Redonda, Arsenal e Conclave. O objetivo é acumular ouro e desvendar (ou esconder) a identidade do Traidor. Vamos descobrir como se joga?",
     icon: "🏰"
   },
   {
     title: "O Papel Secreto",
-    description: "No início, o sistema atribui secretamente a cada jogador um papel: Fiel ou Traidor. Os Fiéis trabalham em equipa para ganhar ouro e identificar o Traidor. Os Traidores (1 ou 2) tentam sabotar as missões e eliminar os Fiéis sem serem descobertos.",
+    description: "No início, o sistema atribui secretamente a cada jogador um papel: Fiel ou Traidor. Os Fiéis trabalham em equipa para ganhar ouro e identificar o Traidor. Os Traidores (1 ou 2) querem eliminar os Fiéis sem serem descobertos.",
     icon: "🎭"
   },
   {
     title: "As Missões",
-    description: "Nesta fase, todos os jogadores cooperam para completar desafios em equipa. O ouro ganho vai para o Cofre Comunitário. Se for o Traidor, terá uma tarefa secreta de sabotagem que deve tentar cumprir sem ser apanhado!",
+    description: "Nesta fase, todos os jogadores cooperam para completar desafios em equipa. O ouro ganho vai para o prémio total. Se for o Traidor, terá uma tarefa secreta que deve tentar cumprir sem ser apanhado!",
     icon: "⚔️"
   },
   {
     title: "Mesa Redonda",
     description: "Após a missão, o grupo reúne-se para discutir. Quem será o Traidor? Chega a altura de votar. A pessoa com mais votos é Expulsa da mansão e perde 2 peças de ouro (se as tiver). Mas atenção: se expulsarem um Fiel inocente, estão a ajudar o Traidor!",
-    icon: "🗳️"
+    icon: "👥"
   },
   {
     title: "O Arsenal",
-    description: "É um mini-jogo competitivo individual! Quem vencer recebe cartas de recompensa especiais: um Escudo (protege de um assassinato), uma Adaga (dobra o ouro ganho se expulsarem um Traidor), ou mais ouro para o seu baú pessoal.",
+    description: "É um mini-jogo competitivo individual! Quem vencer recebe cartas de recompensa especiais: um Escudo (protege de um assassinato), uma Adaga (dobra o teu voto na mesa redonda), ou mais ouro para o seu saldo pessoal.",
     icon: "🛡️"
   },
   {
-    title: "O Assassinato",
-    description: "Durante a noite, o Traidor pode assassinar um jogador. A vítima é eliminada e perde ouro, a menos que tenha um Escudo. Os Fiéis ficam no escuro, com os olhos vendados, enquanto o Traidor escolhe a sua vítima.",
-    icon: "🗡️"
+    title: "O Conclave",
+    description: "Durante a noite, os Traidores reúnem-se em segredo no Conclave. Aí, podem escolher Assassinar um Fiel ou, se as condições o permitirem, Recrutar um novo Traidor para o seu lado. A vítima é eliminada e perde ouro, a menos que tenha um Escudo. Os Fiéis ficam no escuro, com os olhos vendados, enquanto os Traidores decidem o seu próximo movimento.",
+    icon: "🌙"
   },
   {
     title: "Revelação Final",
