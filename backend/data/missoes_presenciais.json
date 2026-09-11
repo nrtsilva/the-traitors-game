@@ -4,7 +4,7 @@
     "mode": "in_person",
     "title": "Em Pézinhos de Lã",
     "type": "PHYSICAL_ACTION",
-    "timeLimit": 120,
+    "timeLimit": 0,
     "description": "Sentem-se em círculo no chão. Usando apenas os pés, passem um objeto leve de jogador para jogador, sem o deixar cair. Se cair, recomeçam do zero./n<b>Objetivo:</b> obter o maior número de passes consecutivos sem deixar cair. No final, o grupo regista o número total de passes conseguidos.",
     "reward": "Número de passes ÷ 4 (arredondado para baixo) em moedas.",
     "requiresNumberInput": true,

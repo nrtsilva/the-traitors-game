@@ -81,19 +81,21 @@ export default function MissionPhase(props) {
         </div>
       </div>
 
-      {/* TIMER EM DESTAQUE */}
-      <div className="text-center mb-8">
-        <div className="inline-block relative">
-          <div className="w-24 h-24 rounded-full border-4 border-[#D8B66C] flex items-center justify-center bg-[#291923] shadow-lg">
-            <span className="font-display text-4xl font-bold text-[#D8B66C]">
-              {playerState.timer || 0}
+      {/* TIMER EM DESTAQUE (só aparece se a missão tiver tempo definido) */}
+      {playerState.timer > 0 && (
+        <div className="text-center mb-8">
+          <div className="inline-block relative">
+            <div className="w-24 h-24 rounded-full border-4 border-[#D8B66C] flex items-center justify-center bg-[#291923] shadow-lg">
+              <span className="font-display text-4xl font-bold text-[#D8B66C]">
+                {playerState.timer}
+              </span>
+            </div>
+            <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-[#F3EBDD]/60 uppercase tracking-widest">
+              Tempo
             </span>
           </div>
-          <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-[#F3EBDD]/60 uppercase tracking-widest">
-            Tempo
-          </span>
         </div>
-      </div>
+      )}
 
       {/* CARD DA MISSÃO */}
       <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-8 shadow-2xl relative overflow-hidden">

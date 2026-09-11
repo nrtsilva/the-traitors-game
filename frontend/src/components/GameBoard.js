@@ -56,14 +56,16 @@ export default function GameBoard({
   const [displayTimer, setDisplayTimer] = useState(playerState.timer || 0);
   const timerInitializedRef = useRef(null);
 
-  // Extrair valores complexos para variáveis estáveis
+  // Valores derivados estáveis
   const missionId = playerState.currentMission?.id;
   const missionTimeLimit = playerState.currentMission?.timeLimit;
-  const isTimerActive = displayTimer > 0;
+  // Só mostramos o timer se a missão tiver tempo definido (> 0)
+  const missionHasTimer = !!missionTimeLimit && missionTimeLimit > 0;
+  const isTimerActive = missionHasTimer && displayTimer > 0;
 
   // Efeito 1: Inicializar o timer quando a missão muda
   useEffect(() => {
-    if (playerState.phase === 'PHASE_1_MISSION') {
+    if (playerState.phase === 'PHASE_1_MISSION' && missionHasTimer) {
       const key = `${playerState.roundNumber}-${missionId}`;
       if (timerInitializedRef.current === key) return; // já inicializado
       timerInitializedRef.current = key;
@@ -74,10 +76,11 @@ export default function GameBoard({
       }
       setDisplayTimer(initialTimer);
     } else {
+      // Sem timer na missão → display 0 (não aparece)
       timerInitializedRef.current = null;
-      setDisplayTimer(playerState.timer || 0);
+      setDisplayTimer(0);
     }
-  }, [playerState.phase, playerState.roundNumber, missionId, playerState.timer, missionTimeLimit]);
+  }, [playerState.phase, playerState.roundNumber, missionId, playerState.timer, missionTimeLimit, missionHasTimer]);
 
   // Efeito 2: Decrementar (só quando ativo)
   useEffect(() => {

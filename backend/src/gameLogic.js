@@ -164,7 +164,17 @@ function loadNewMission(room, io) {
 
 function startMissionTimer(room, io) {
     if (room.phaseTimer) clearTimeout(room.phaseTimer);
-    const timeLimitMs = (room.currentMissionData.timeLimit || 120) * 1000;
+    
+    const timeLimit = room.currentMissionData.timeLimit;
+    
+    // Se a missão não tiver tempo definido (0 ou undefined), não agenda timer
+    // A missão termina apenas por ação dos jogadores (Concluir Missão / Submeter Valor)
+    if (!timeLimit || timeLimit <= 0) {
+        console.log('[Missão] Sem limite de tempo — a missão só termina por ação dos jogadores.');
+        return;
+    }
+    
+    const timeLimitMs = timeLimit * 1000;
     room.phaseTimer = setTimeout(() => {
         finishMission(room, false, 0, io);
     }, timeLimitMs);
