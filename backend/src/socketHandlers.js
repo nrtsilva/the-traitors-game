@@ -153,19 +153,6 @@ function registerSocketHandlers(io) {
                     return callback({ success: false, message: "Erro ao carregar missão. Tente novamente." });
                 }
 
-                if (room.currentMissionData.type === 'SILENT_MIME') {
-                    setTimeout(() => startSilentMimeMission(room, io), 2000);
-                }
-                if (room.currentMissionData.type === 'EMOJI_COUNT') {
-                    setTimeout(() => startEmojiCountMission(room, io), 2000);
-                }
-                if (room.currentMissionData.type === 'TICO_TECO_TACO') {
-                    setTimeout(() => startTicoTecoTacoMission(room, io), 2000);
-                }
-				if (room.currentMissionData.type === 'MOST_SUSPECT') {
-					setTimeout(() => startMostSuspectMission(room, io), 2000);
-				}
-
                 console.log('[start_game] Missão carregada:', room.currentMissionData.title);
 
                 room.roundNumber = 1;
@@ -281,6 +268,12 @@ function registerSocketHandlers(io) {
                         } else {
                             io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
                             startMissionTimer(room, io);
+							
+							const missionType = room.currentMissionData.type;
+							if (missionType === 'MOST_SUSPECT')  setTimeout(() => startMostSuspectMission(room, io), 500);
+							if (missionType === 'SILENT_MIME')   setTimeout(() => startSilentMimeMission(room, io), 500);
+							if (missionType === 'EMOJI_COUNT')   setTimeout(() => startEmojiCountMission(room, io), 500);
+							if (missionType === 'TICO_TECO_TACO') setTimeout(() => startTicoTecoTacoMission(room, io), 500);
                         }
                     }
                 }

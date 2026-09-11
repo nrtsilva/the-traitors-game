@@ -1,6 +1,6 @@
 import React from 'react';
+import SunMoonEmblem from './SunMoonEmblem';
 
-// Cores dos avatares (rotativas)
 const AVATAR_COLORS = [
   '#D8B66C', '#B8935A', '#8B6F47', '#C9A961', '#A6824A',
   '#E5C982', '#D4AF6A', '#9C7A4A', '#BF9A5A', '#E0BA7A',
@@ -80,7 +80,7 @@ export default function RoundTable({ players = [], maxPlayers = 6, hostId = null
     <div className="relative w-full max-w-md aspect-square mx-auto mb-6">
       {/* Mesa central */}
       <div
-        className="absolute top-1/2 left-1/2 rounded-full border-4 border-[#D8B66C] shadow-2xl"
+        className="absolute top-1/2 left-1/2 rounded-full border-4 border-[#D8B66C] shadow-2xl flex items-center justify-center"
         style={{
           width: '44%',
           height: '44%',
@@ -90,8 +90,14 @@ export default function RoundTable({ players = [], maxPlayers = 6, hostId = null
           animation: 'tablePulse 3s ease-in-out infinite',
         }}
       >
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-3xl md:text-4xl opacity-40">🏰</span>
+        {/* Emblema Sol & Lua no centro */}
+        <div
+          className="flex items-center justify-center"
+          style={{
+            animation: 'emblemRotate 60s linear infinite',
+          }}
+        >
+          <SunMoonEmblem size={Math.round(180 * 0.44 * 1.1)} />
         </div>
       </div>
 
@@ -120,6 +126,10 @@ export default function RoundTable({ players = [], maxPlayers = 6, hostId = null
         @keyframes tablePulse {
           0%, 100% { box-shadow: 0 0 40px rgba(216, 182, 108, 0.3), inset 0 0 30px rgba(0,0,0,0.6); }
           50% { box-shadow: 0 0 60px rgba(216, 182, 108, 0.5), inset 0 0 30px rgba(0,0,0,0.6); }
+        }
+        @keyframes emblemRotate {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
         }
       `}</style>
     </div>

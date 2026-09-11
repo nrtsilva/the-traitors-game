@@ -498,8 +498,9 @@ function finishMostSuspectMission(room, io) {
     ms.active = false;
     if (ms.voteTimer) clearTimeout(ms.voteTimer);
     if (ms.endTimer) clearTimeout(ms.endTimer);
+	if (room.phaseTimer) clearTimeout(room.phaseTimer);
     
-    const elapsed = (Date.now() - ms.startTime) / 1000;
+	const elapsed = (Date.now() - ms.startTime) / 1000;
     const correct = ms.correctCount;
     
     // Calcular recompensa
