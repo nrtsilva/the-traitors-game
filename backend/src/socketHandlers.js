@@ -222,59 +222,61 @@ function registerSocketHandlers(io) {
 			const missionType = room.currentMissionData?.type;
 			if (!missionType) return;
 
-			console.log(`[mission_client_ready] Reenviar estado de ${missionType} para ${socket.id}`);
+			console.log(`[mission_client_ready] ${missionType} para ${socket.id}`);
 
-			// ===== MOST_SUSPECT =====
-			if (missionType === 'MOST_SUSPECT' && room.mostSuspect) {
-				io.to(socket.id).emit('most_suspect_start', {
-					timeLimit: room.mostSuspect.timeLimit,
-					totalQuestions: room.mostSuspect.questions.length,
-				});
-
-				// Se já houver pergunta em curso, reenviar também
-				if (room.mostSuspect.phase === 'voting' && room.mostSuspect.currentIndex < room.mostSuspect.questions.length) {
-					const q = room.mostSuspect.questions[room.mostSuspect.currentIndex];
-					if (q) {
-						const alivePlayers = room.players.filter(p => p.alive);
-						io.to(socket.id).emit('most_suspect_question', {
-							questionNumber: room.mostSuspect.currentIndex + 1,
-							totalQuestions: room.mostSuspect.questions.length,
-							questionId: q.id,
-							questionText: q.text,
-							players: alivePlayers.map(p => ({ id: p.id, name: p.name })),
-							correctCount: room.mostSuspect.correctCount,
-							elapsed: (Date.now() - room.mostSuspect.startTime) / 1000,
-						});
-					}
+			// ===== SILENT_MIME =====
+			if (missionType === 'SILENT_MIME') {
+				if (!room.silentMime) {
+					// Ainda não arrancou — inicia agora
+					console.log('[mission_client_ready] Forçar startSilentMimeMission');
+					startSilentMimeMission(room, io);
+				} else {
+					// Já arrancou — reenvia o estado
+					io.to(socket.id).emit('silent_mime_start', {
+						timeLimit: room.silentMime.timeLimit,
+						themeLabel: room.silentMime.themeLabel,
+						totalWords: room.silentMime.words.length,
+					});
 				}
 			}
 
-			// ===== SILENT_MIME =====
-			if (missionType === 'SILENT_MIME' && room.silentMime) {
-				io.to(socket.id).emit('silent_mime_start', {
-					timeLimit: room.silentMime.timeLimit,
-					themeLabel: room.silentMime.themeLabel,
-					totalWords: room.silentMime.words.length,
-				});
-			}
-
-			// ===== EMOJI_COUNT =====
-			if (missionType === 'EMOJI_COUNT' && room.emojiCount) {
-				io.to(socket.id).emit('emoji_count_start', {
-					timeLimit: room.emojiCount.timeLimit,
-					maxLevel: room.emojiCount.maxLevel,
-					substitutions: room.emojiCount.substitutions,
-					currentLevel: room.emojiCount.currentLevel,
-				});
+			// ===== EMOJI_COUNT (após corrigir o tipo) =====
+			if (missionType === 'EMOJI_COUNT') {
+				if (!room.emojiCount) {
+					startEmojiCountMission(room, io);
+				} else {
+					io.to(socket.id).emit('emoji_count_start', {
+						timeLimit: room.emojiCount.timeLimit,
+						maxLevel: room.emojiCount.maxLevel,
+						substitutions: room.emojiCount.substitutions,
+						currentLevel: room.emojiCount.currentLevel,
+					});
+				}
 			}
 
 			// ===== TICO_TECO_TACO =====
-			if (missionType === 'TICO_TECO_TACO' && room.ticoTecoTaco) {
-				io.to(socket.id).emit('ttt_start', {
-					timeLimit: room.ticoTecoTaco.timeLimit,
-					responseTimeLimit: room.ticoTecoTaco.responseTimeLimit,
-					targetCorrect: room.ticoTecoTaco.targetCorrect,
-				});
+			if (missionType === 'TICO_TECO_TACO') {
+				if (!room.ticoTecoTaco) {
+					startTicoTecoTacoMission(room, io);
+				} else {
+					io.to(socket.id).emit('ttt_start', {
+						timeLimit: room.ticoTecoTaco.timeLimit,
+						responseTimeLimit: room.ticoTecoTaco.responseTimeLimit,
+						targetCorrect: room.ticoTecoTaco.targetCorrect,
+					});
+				}
+			}
+
+			// ===== MOST_SUSPECT =====
+			if (missionType === 'MOST_SUSPECT') {
+				if (!room.mostSuspect) {
+					startMostSuspectMission(room, io);
+				} else {
+					io.to(socket.id).emit('most_suspect_start', {
+						timeLimit: room.mostSuspect.timeLimit,
+						totalQuestions: room.mostSuspect.questions.length,
+					});
+				}
 			}
 		});
 		
