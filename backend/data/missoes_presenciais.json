@@ -49,14 +49,15 @@
       "Suspirar fundo antes de começar a desenhar, como se a tarefa fosse difícil."
     ]
   },
-  {
+  {\
     "id": "presencial_most_suspect",
     "mode": "in_person",
     "title": "Os Mais Suspeitos",
     "type": "MOST_SUSPECT",
     "timeLimit": 300,
     "totalQuestions": 10,
-    "description": "Em cada ronda, é feita uma pergunta. Cada jogador responde secretamente, escolhendo outro jogador.\n\nDepois, o sistema apresenta dois jogadores ao grupo: um é o mais votado na pergunta e o outro é escolhido aleatoriamente. O grupo tem de decidir qual dos dois recebeu mais votos.\n\n✅ Correto = +1 ponto\n❌ Erro = 0 pontos\n\n🏆 Recompensa:\n• 0–4 respostas certas → 💀 0 barras\n• 5–9 respostas certas → 🪙 1 barra\n• 10 respostas certas → 🪙🪙🪙 3 barras\n\n🔗 Empate: se dois ou mais jogadores tiverem o mesmo número de votos, considera-se mais votado aquele que respondeu mais rapidamente.\n\n⏱️ Tempo total: 5 minutos.""reward": "De 1 a 3 Barras de Ouro",
+    "description": "Em cada ronda, é feita uma pergunta. Cada jogador responde secretamente, escolhendo outro jogador.\n\nDepois, o sistema apresenta dois jogadores ao grupo: um é o mais votado na pergunta e o outro é escolhido aleatoriamente. O grupo tem de decidir qual dos dois recebeu mais votos.\n\n✅ Correto = +1 ponto\n❌ Erro = 0 pontos\n\n🏆 Recompensa:\n• 0–4 respostas certas → 💀 0 barras\n• 5–9 respostas certas → 🪙 1 barra\n• 10 respostas certas → 🪙🪙🪙 3 barras\n\n🔗 Empate: se dois ou mais jogadores tiverem o mesmo número de votos, considera-se mais votado aquele que respondeu mais rapidamente.\n\n⏱️ Tempo total: 5 minutos.",
+	"reward": "De 1 a 3 Barras de Ouro",
     "traitorSecretMissions": [
       "Durante a fase de votação, escolhe sempre o mesmo jogador em todas as perguntas para depois os outros terem dificuldade em ler as tuas intenções.",
 	  "Defende com convicção a opção errada para o grupo errar.",
