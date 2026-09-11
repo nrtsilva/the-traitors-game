@@ -153,9 +153,21 @@ function App() {
       },
 
       mission_outcome: (data) => {
-        console.log('[App] mission_outcome:', data);
-        stop();
-        dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
+          // 1. Guardar o resultado da missão para o ecrã MissionOutcomeScreen
+          dispatch({ type: 'SET_MISSION_OUTCOME', payload: data });
+
+          // 2. Atualizar o prizeFund no gameData com os valores atualizados do servidor
+          const currentGame = gameDataRef.current || {};
+          dispatch({
+              type: 'SET_GAME_DATA',
+              payload: {
+                  ...currentGame,
+                  prizeFund: {
+                      bars: data.barsAdded ?? currentGame.prizeFund?.bars ?? 0,
+                      coins: data.coinsAdded ?? currentGame.prizeFund?.coins ?? 0,
+                  },
+              },
+          });
       },
 
       mission_evaluation: () => {

@@ -5,7 +5,7 @@
     "title": "Em Pézinhos de Lã",
     "type": "PHYSICAL_ACTION",
     "timeLimit": 0,
-    "description": "Sentem-se em círculo no chão. Usando apenas os pés, passem um objeto leve de jogador para jogador, sem o deixar cair. Se cair, recomeçam do zero./n<b>Objetivo:</b> obter o maior número de passes consecutivos sem deixar cair. No final, o grupo regista o número total de passes conseguidos.",
+    "description": "Sentem-se em círculo no chão. Usando apenas os pés, passem um objeto leve de jogador para jogador, sem o deixar cair. Se cair, recomeçam do zero.\n<b>Objetivo:</b> obter o maior número de passes consecutivos sem deixar cair. No final, o grupo regista o número total de passes conseguidos.",
     "reward": "Número de passes ÷ 4 (arredondado para baixo) em moedas.",
     "requiresNumberInput": true,
     "requiresUserOutcome": false,
@@ -57,7 +57,7 @@
     "timeLimit": 300,
     "totalQuestions": 10,
     "description": "Em cada ronda, é feita uma pergunta. Cada jogador responde **secretamente** escolhendo outro jogador.\n\nDepois, o sistema mostra **dois jogadores** ao grupo: um é o mais votado na pergunta, o outro é aleatório. O grupo tem de decidir **qual dos dois recebeu mais votos**.\n\n✅ Acerto = +1 ponto\n❌ Erro = 0 pontos\n\n🏆 **Recompensa:**\n• 5 acertos → 🪙 1 barra\n• 10 acertos → 🪙🪙🪙 3 barras\n• 0-4 acertos → 💀 0 barras\n\n🔗 **Empate:** se dois tiverem os mesmos votos, ganha quem respondeu mais rápido.\n\n⏱️ Tempo total: 5 minutos.",
-    "reward": "variavel",
+    "reward": "De 1 a 3 Barras de Ouro",
     "traitorSecretMissions": [
       "Durante a fase de votação, escolhe sempre o mesmo jogador em todas as perguntas para depois os outros terem dificuldade em ler as tuas intenções.",
 	  "Defende com convicção a opção errada para o grupo errar.",

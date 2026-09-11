@@ -102,17 +102,17 @@ export default function GameBoard({
 
   // 1. Missão Outcome (resultado da missão)
   if (missionOutcome) {
-    const currentPlayer = playerState?.players?.find((p) => p.id === playerId) || {};
-    return (
-      <MissionOutcomeScreen
-        {...missionOutcome}
-        playerName={currentPlayer.name || 'Jogador'}
-        gold={currentPlayer.gold ?? 0}
-        bars={currentPlayer.bars ?? 0}
-        commonCoins={playerState?.prizeFund?.coins ?? 0}
-        commonBars={playerState?.prizeFund?.bars ?? 0}
-      />
-    );
+      const currentPlayer = playerState?.players?.find((p) => p.id === playerId) || {};
+      return (
+          <MissionOutcomeScreen
+              {...missionOutcome}
+              playerName={currentPlayer.name || 'Jogador'}
+              gold={currentPlayer.gold ?? 0}
+              bars={currentPlayer.bars ?? 0}
+              commonCoins={missionOutcome.coinsAdded ?? playerState?.prizeFund?.coins ?? 0}
+              commonBars={missionOutcome.barsAdded ?? playerState?.prizeFund?.bars ?? 0}
+          />
+      );
   }
 
   // 2. Fim de Jogo
