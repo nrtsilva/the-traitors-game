@@ -78,27 +78,17 @@ export default function RoundTable({ players = [], maxPlayers = 6, hostId = null
 
   return (
     <div className="relative w-full max-w-md aspect-square mx-auto mb-6">
-      {/* Mesa central */}
+      {/* Mesa central — imagem maior */}
       <div
-        className="absolute top-1/2 left-1/2 rounded-full border-4 border-[#D8B66C] shadow-2xl flex items-center justify-center"
+        className="absolute top-1/2 left-1/2 flex items-center justify-center"
         style={{
-          width: '44%',
-          height: '44%',
+          width: '60%',
+          height: '60%',
           transform: 'translate(-50%, -50%)',
-          background: 'radial-gradient(circle, #412734 0%, #291923 70%)',
-          boxShadow: '0 0 40px rgba(216, 182, 108, 0.3), inset 0 0 30px rgba(0,0,0,0.6)',
-          animation: 'tablePulse 3s ease-in-out infinite',
+          filter: 'drop-shadow(0 0 30px rgba(216, 182, 108, 0.45))',
         }}
       >
-        {/* Emblema Sol & Lua no centro */}
-        <div
-          className="flex items-center justify-center"
-          style={{
-            animation: 'emblemRotate 60s linear infinite',
-          }}
-        >
-          <SunMoonEmblem size={Math.round(180 * 0.44 * 1.1)} />
-        </div>
+        <SunMoonEmblem size={230} />
       </div>
 
       {/* Cadeiras / jogadores */}
@@ -122,14 +112,6 @@ export default function RoundTable({ players = [], maxPlayers = 6, hostId = null
         @keyframes popIn {
           0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
           100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
-        @keyframes tablePulse {
-          0%, 100% { box-shadow: 0 0 40px rgba(216, 182, 108, 0.3), inset 0 0 30px rgba(0,0,0,0.6); }
-          50% { box-shadow: 0 0 60px rgba(216, 182, 108, 0.5), inset 0 0 30px rgba(0,0,0,0.6); }
-        }
-        @keyframes emblemRotate {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
         }
       `}</style>
     </div>
