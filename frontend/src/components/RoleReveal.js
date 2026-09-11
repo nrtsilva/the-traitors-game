@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import TraitorHoodedFigure from './TraitorHoodedFigure';
+// import TraitorHoodedFigure from './TraitorHoodedFigure';
 
 export default function RoleReveal({ playerState, onContinue, socket, roomData }) {
   const [step, setStep] = useState(0);
@@ -108,13 +108,10 @@ export default function RoleReveal({ playerState, onContinue, socket, roomData }
                   Ao entrares no jogo, juras solenemente:
                 </p>
                 <ul className="space-y-1.5 text-left text-[#F3EBDD]/50 text-[13px] font-ui italic leading-relaxed">
-                  <li>— Comprometes-te a mentir e a enganar ao longo de todo o jogo?</li>
-                  <li>— Estás disposto a eliminar os teus colegas de jogo todas as noites?</li>
-                  <li>— E juras manter a tua identidade e a dos teus colegas Traidores em segredo?</li>
+                  <li>Comprometo-me a mentir e a enganar ao longo de todo o jogo.</li>
+                  <li>Estou disposto a eliminar os meus colegas de jogo todas as noites.</li>
+                  <li>Juro manter a minha identidade e a dos teus colegas Traidores em segredo.</li>
                 </ul>
-                <p className="text-red-300/40 text-[10px] uppercase tracking-widest font-ui mt-4 text-center">
-                  Clicar em "Entrar no Jogo" é um sim a todas as perguntas.
-                </p>
               </div>
             </div>
           )}

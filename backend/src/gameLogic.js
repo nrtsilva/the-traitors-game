@@ -52,8 +52,8 @@ function finishMission(room, outcome, reward, io) {
 function startBanishmentPhase(room, io) {
     room.phase = GAME_PHASES.PHASE_2_BANISHMENT;
     room.phaseIntroData = {
-        title: "A Expulsão",
-        description: "Discutam em voz alta quem acham que é o Traidor. Quando todos estiverem prontos, votem para expulsar alguém.",
+        title: "Mesa Redonda",
+        description: "Discutam quem acham que é o Traidor. Quem teve um comportamento suspeito! Depois da discussão, votem para expulsar alguém.",
         secretMission: null,
         phase: room.phase
     };
