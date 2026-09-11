@@ -183,7 +183,8 @@ function startMurderPhase(room, io) {
     io.to(room.roomCode).emit('phase_started', {
         phase: room.phase,
         timer: null,
-        roundNumber: room.roundNumber
+        roundNumber: room.roundNumber,
+		phaseTitle: 'O Conclave'
     });
 
     io.to(room.roomCode).emit('blindfold_begin', { duration: 10 });
@@ -219,6 +220,320 @@ function startMurderPhase(room, io) {
             room.pendingDecoys = room.players.filter(p => p.alive).length;
         }
     }, 10000);
+}
+
+// ===== MISSÃO: OS MAIS SUSPEITOS =====
+let MOST_SUSPECT_QUESTIONS = [];
+try {
+    const p = path.join(__dirname, '..', 'data', 'most_suspect_questions.json');
+    const data = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    MOST_SUSPECT_QUESTIONS = data.questions || [];
+    console.log(`[MostSuspect] ${MOST_SUSPECT_QUESTIONS.length} perguntas carregadas.`);
+} catch (e) {
+    console.error('[MostSuspect] Erro ao carregar perguntas:', e.message);
+}
+
+function startMostSuspectMission(room, io) {
+    const timeLimit = room.currentMissionData.timeLimit || 300;
+    const numQuestions = room.currentMissionData.totalQuestions || 10;
+    
+    // Selecionar perguntas aleatórias
+    const shuffled = [...MOST_SUSPECT_QUESTIONS].sort(() => Math.random() - 0.5);
+    const selectedQuestions = shuffled.slice(0, Math.min(numQuestions, shuffled.length));
+    
+    room.mostSuspect = {
+        active: true,
+        timeLimit,
+        startTime: Date.now(),
+        questions: selectedQuestions,
+        currentIndex: 0,
+        correctCount: 0,
+        // Estados da fase atual
+        phase: 'voting',           // 'voting' | 'dilemma' | 'reveal' | 'finished'
+        votes: {},                 // playerId -> { targetId, timestamp }
+        voteCount: 0,
+        voteTimer: null,
+        dilemma: null,             // { optionA: {id, name}, optionB: {id, name}, correctAnswerId }
+        groupChoice: null,
+        endTimer: null,
+    };
+    
+    io.to(room.roomCode).emit('most_suspect_start', {
+        timeLimit,
+        totalQuestions: selectedQuestions.length,
+    });
+    
+    // Timer global
+    room.mostSuspect.endTimer = setTimeout(() => {
+        finishMostSuspectMission(room, io);
+    }, timeLimit * 1000);
+    
+    console.log(`[MostSuspect] Missão iniciada. ${selectedQuestions.length} perguntas, ${timeLimit}s`);
+    
+    // Iniciar primeira pergunta
+    setTimeout(() => startMostSuspectQuestion(room, io), 2000);
+}
+
+function startMostSuspectQuestion(room, io) {
+    const ms = room.mostSuspect;
+    if (!ms || !ms.active) return;
+    
+    if (ms.currentIndex >= ms.questions.length) {
+        finishMostSuspectMission(room, io);
+        return;
+    }
+    
+    const question = ms.questions[ms.currentIndex];
+    ms.phase = 'voting';
+    ms.votes = {};
+    ms.voteCount = 0;
+    ms.dilemma = null;
+    ms.groupChoice = null;
+    
+    // Lista dos jogadores vivos (alvo das votações)
+    const alivePlayers = room.players.filter(p => p.alive);
+    
+    io.to(room.roomCode).emit('most_suspect_question', {
+        questionNumber: ms.currentIndex + 1,
+        totalQuestions: ms.questions.length,
+        questionId: question.id,
+        questionText: question.text,
+        players: alivePlayers.map(p => ({ id: p.id, name: p.name })),
+        correctCount: ms.correctCount,
+        elapsed: (Date.now() - ms.startTime) / 1000,
+    });
+    
+    console.log(`[MostSuspect] Pergunta ${ms.currentIndex + 1}: "${question.text}"`);
+    
+    // Se ninguém votar em 30s, avança automaticamente (fallback)
+    if (ms.voteTimer) clearTimeout(ms.voteTimer);
+    ms.voteTimer = setTimeout(() => {
+        if (ms.phase === 'voting' && ms.voteCount < alivePlayers.length) {
+            console.log(`[MostSuspect] Timeout de votação. Forçando resultado...`);
+            computeMostSuspectDilemma(room, io);
+        }
+    }, 30000);
+}
+
+function submitMostSuspectVote(room, io, playerId, targetId) {
+    const ms = room.mostSuspect;
+    if (!ms || !ms.active || ms.phase !== 'voting') return;
+    
+    const voter = room.players.find(p => p.id === playerId);
+    const target = room.players.find(p => p.id === targetId);
+    if (!voter || !target || !voter.alive || !target.alive) return;
+    if (voter.id === target.id) return; // não pode votar em si próprio
+    
+    // Registar voto (substitui se já existir)
+    ms.votes[playerId] = {
+        targetId,
+        timestamp: Date.now(),
+    };
+    
+    // Contar votos únicos (jogadores que já votaram)
+    const alivePlayers = room.players.filter(p => p.alive);
+    const votedCount = Object.keys(ms.votes).length;
+    ms.voteCount = votedCount;
+    
+    io.to(playerId).emit('most_suspect_vote_confirmed', {
+        targetId,
+        targetName: target.name,
+    });
+    
+    io.to(room.roomCode).emit('most_suspect_vote_progress', {
+        votedCount,
+        totalNeeded: alivePlayers.length,
+    });
+    
+    console.log(`[MostSuspect] Voto de ${voter.name} → ${target.name} (${votedCount}/${alivePlayers.length})`);
+    
+    // Se todos votaram, avançar para o dilema
+    if (votedCount >= alivePlayers.length) {
+        if (ms.voteTimer) clearTimeout(ms.voteTimer);
+        computeMostSuspectDilemma(room, io);
+    }
+}
+
+function computeMostSuspectDilemma(room, io) {
+    const ms = room.mostSuspect;
+    if (!ms || !ms.active) return;
+    
+    const question = ms.questions[ms.currentIndex];
+    const alivePlayers = room.players.filter(p => p.alive);
+    
+    // Contar votos
+    const counts = {};     // targetId -> count
+    const fastest = {};    // targetId -> timestamp (menor = mais rápido)
+    
+    Object.entries(ms.votes).forEach(([voterId, vote]) => {
+        const tid = vote.targetId;
+        counts[tid] = (counts[tid] || 0) + 1;
+        if (!fastest[tid] || vote.timestamp < fastest[tid]) {
+            fastest[tid] = vote.timestamp;
+        }
+    });
+    
+    // Encontrar o mais votado (desempate pelo tempo mais rápido)
+    let maxCount = 0;
+    let candidates = [];   // [{ id, count, fastestTime }]
+    
+    Object.entries(counts).forEach(([id, count]) => {
+        if (count > maxCount) {
+            maxCount = count;
+            candidates = [{ id, count, fastestTime: fastest[id] }];
+        } else if (count === maxCount) {
+            candidates.push({ id, count, fastestTime: fastest[id] });
+        }
+    });
+    
+    if (candidates.length === 0) {
+        // Ninguém votou — avançar
+        ms.currentIndex++;
+        setTimeout(() => startMostSuspectQuestion(room, io), 2000);
+        return;
+    }
+    
+    // Desempate por tempo (menor timestamp = mais rápido)
+    candidates.sort((a, b) => a.fastestTime - b.fastestTime);
+    const winnerId = candidates[0].id;
+    const winnerCount = candidates[0].count;
+    
+    // Escolher um segundo jogador aleatório (que não seja o vencedor)
+    const others = alivePlayers.filter(p => p.id !== winnerId);
+    if (others.length === 0) {
+        // Só há um jogador — não há dilema, avançar
+        ms.currentIndex++;
+        setTimeout(() => startMostSuspectQuestion(room, io), 2000);
+        return;
+    }
+    const randomOther = others[Math.floor(Math.random() * others.length)];
+    
+    // Definir qual é o A e qual é o B (aleatoriamente)
+    const isAFirst = Math.random() < 0.5;
+    const optionA = isAFirst ? winnerId : randomOther.id;
+    const optionB = isAFirst ? randomOther.id : winnerId;
+    
+    ms.dilemma = {
+        optionA: { id: optionA, name: room.players.find(p => p.id === optionA)?.name || '?' },
+        optionB: { id: optionB, name: room.players.find(p => p.id === optionB)?.name || '?' },
+        correctAnswerId: winnerId,
+        winnerCount,
+    };
+    ms.phase = 'dilemma';
+    ms.groupChoice = null;
+    
+    // Tabela de votos visível para debug (opcional — para log do servidor)
+    const voteTable = Object.entries(counts).map(([id, c]) => {
+        const p = room.players.find(pl => pl.id === id);
+        return `${p?.name || '?'}: ${c}`;
+    }).join(', ');
+    console.log(`[MostSuspect] Resultado: ${voteTable} | Vencedor: ${room.players.find(p => p.id === winnerId)?.name} (${winnerCount} votos)`);
+    
+    io.to(room.roomCode).emit('most_suspect_dilemma', {
+        questionNumber: ms.currentIndex + 1,
+        totalQuestions: ms.questions.length,
+        questionText: question.text,
+        optionA: ms.dilemma.optionA,
+        optionB: ms.dilemma.optionB,
+        correctCount: ms.correctCount,
+        elapsed: (Date.now() - ms.startTime) / 1000,
+    });
+}
+
+function submitMostSuspectDecision(room, io, choiceId) {
+    // choiceId: 'A' ou 'B'
+    const ms = room.mostSuspect;
+    if (!ms || !ms.active || ms.phase !== 'dilemma' || !ms.dilemma) return;
+    
+    // Evitar duplo clique
+    if (ms.groupChoice !== null) return;
+    
+    const chosenId = choiceId === 'A' ? ms.dilemma.optionA.id : ms.dilemma.optionB.id;
+    const correct = chosenId === ms.dilemma.correctAnswerId;
+    
+    ms.groupChoice = choiceId;
+    ms.phase = 'reveal';
+    
+    if (correct) ms.correctCount++;
+    
+    const correctPlayer = room.players.find(p => p.id === ms.dilemma.correctAnswerId);
+    const chosenPlayer = room.players.find(p => p.id === chosenId);
+    
+    io.to(room.roomCode).emit('most_suspect_reveal', {
+        questionNumber: ms.currentIndex + 1,
+        totalQuestions: ms.questions.length,
+        questionText: ms.questions[ms.currentIndex].text,
+        chosen: choiceId,
+        chosenName: chosenPlayer ? chosenPlayer.name : '?',
+        correctAnswerId: ms.dilemma.correctAnswerId,
+        correctAnswerName: correctPlayer ? correctPlayer.name : '?',
+        correct,
+        correctCount: ms.correctCount,
+        votesForWinner: ms.dilemma.winnerCount,
+        elapsed: (Date.now() - ms.startTime) / 1000,
+    });
+    
+    console.log(`[MostSuspect] Escolha: ${choiceId} (${chosenPlayer?.name}) | Correto: ${correct ? '✅' : '❌'} (${ms.correctCount} pontos)`);
+    
+    // Avançar para a próxima pergunta após 3s
+    setTimeout(() => {
+        ms.currentIndex++;
+        startMostSuspectQuestion(room, io);
+    }, 3000);
+}
+
+function finishMostSuspectMission(room, io) {
+    const ms = room.mostSuspect;
+    if (!ms || !ms.active) return;
+    ms.active = false;
+    if (ms.voteTimer) clearTimeout(ms.voteTimer);
+    if (ms.endTimer) clearTimeout(ms.endTimer);
+    
+    const elapsed = (Date.now() - ms.startTime) / 1000;
+    const correct = ms.correctCount;
+    
+    // Calcular recompensa
+    let barsAwarded = 0;
+    let outcome = false;
+    let rewardLabel = '0';
+    
+    if (correct >= 10) {
+        barsAwarded = 3;
+        outcome = true;
+        rewardLabel = '3';
+    } else if (correct >= 5) {
+        barsAwarded = 1;
+        outcome = true;
+        rewardLabel = '1';
+    }
+    
+    if (barsAwarded > 0) {
+        // 1 barra = 5 moedas
+        room.prizeFund.coins += barsAwarded * 5;
+        convertCoinsToBars(room);
+    }
+    
+    io.to(room.roomCode).emit('mission_outcome', {
+        success: outcome,
+        reward: rewardLabel,
+        rewardLabel: barsAwarded === 3 ? '3 Barras de Ouro (PERFEITO!)'
+            : barsAwarded === 1 ? '1 Barra de Ouro'
+            : '0 Barras',
+        barsAdded: room.prizeFund.bars,
+        coinsAdded: room.prizeFund.coins,
+        title: room.currentMissionData.title,
+        elapsed,
+        correctCount: correct,
+        totalQuestions: ms.questions.length,
+    });
+    
+    console.log(`[MostSuspect] Fim. Acertos: ${correct}/${ms.questions.length} | Barras: ${barsAwarded}`);
+    
+    room.mostSuspect = null;
+    
+    setTimeout(() => {
+        io.to(room.roomCode).emit('mission_evaluation');
+    }, 3500);
 }
 
 // ===== ARSENAL: ENCONTRA AS LARANJAS =====
@@ -2959,6 +3274,7 @@ function proceedToNextRound(room, io) {
 module.exports = {
     loadNewMission,
     completeMission,
+	finishMission,
     startBanishmentPhase,
     startMissionTimer,
     startMurderPhase,
@@ -3001,4 +3317,7 @@ module.exports = {
     startEightLettersGame,
     handleEightLettersSubmit,
     handleEightLettersVote,
+	startMostSuspectMission,
+	submitMostSuspectVote,
+	submitMostSuspectDecision
 };

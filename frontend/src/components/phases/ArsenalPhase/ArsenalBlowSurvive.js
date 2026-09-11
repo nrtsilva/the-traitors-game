@@ -99,7 +99,7 @@ export default function ArsenalBlowSurvive({ socket, roomData, playerState }) {
           </p>
           <div className="mt-6 p-4 bg-[#D8B66C]/20 border border-[#D8B66C] rounded-lg">
             <p className="text-[#E5C982] text-lg font-bold">
-              🪙 +2 Barras de Ouro
+              🟨 +2 Barras de Ouro
             </p>
             <p className="text-xs text-[#F3EBDD]/60 mt-1">adicionadas ao Cofre Comum</p>
           </div>

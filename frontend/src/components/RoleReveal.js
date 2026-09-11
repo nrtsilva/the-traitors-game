@@ -1,29 +1,66 @@
 import React, { useState, useEffect } from 'react';
 
-export default function RoleReveal({ playerState, onContinue }) {
-  const [step, setStep] = useState(0); 
+export default function RoleReveal({ playerState, onContinue, socket, roomData }) {
+  const [step, setStep] = useState(0);
+  const [readyCount, setReadyCount] = useState(0);
+  const [totalPlayers, setTotalPlayers] = useState(1);
+  const [allReady, setAllReady] = useState(false);
+  const [hasClicked, setHasClicked] = useState(false);
 
   const isTraitor = playerState.role === 'traitor';
 
+  // Revelação faseada
   useEffect(() => {
     const timers = [
       setTimeout(() => setStep(1), 1500),
       setTimeout(() => setStep(2), 3000),
       setTimeout(() => setStep(3), 4500),
-      setTimeout(() => setStep(4), 6000)
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
+
+  // Listeners do socket
+  useEffect(() => {
+    if (!socket) return;
+
+    const onProgress = (data) => {
+      setReadyCount(data.readyCount);
+      setTotalPlayers(data.totalPlayers);
+      setAllReady(data.readyCount >= data.totalPlayers);
+    };
+
+    const onAllReady = () => {
+      // Dar um instante para o jogador ver "Todos prontos!" antes de avançar
+      setTimeout(() => {
+        if (typeof onContinue === 'function') onContinue();
+      }, 800);
+    };
+
+    socket.on('role_reveal_ready_progress', onProgress);
+    socket.on('role_reveal_all_ready', onAllReady);
+
+    return () => {
+      socket.off('role_reveal_ready_progress', onProgress);
+      socket.off('role_reveal_all_ready', onAllReady);
+    };
+  }, [socket, onContinue]);
+
+  const handleReady = () => {
+    if (hasClicked) return;
+    setHasClicked(true);
+    socket.emit('role_reveal_ready', { roomCode: roomData.roomCode });
+  };
 
   return (
     <div className="min-h-screen bg-[#291923] flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#D8B66C]/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-lg">
-        {/* PASSO 0,1,2,3,4: A Revelação (sem logo) */}
         <div className={`transition-opacity duration-1000 ${step >= 1 ? 'opacity-100' : 'opacity-0'}`}>
           {step >= 1 && (
-            <h2 className="font-display text-3xl tracking-[0.3em] text-[#F3EBDD]/80 mb-4 uppercase">Tu és...</h2>
+            <h2 className="font-display text-3xl tracking-[0.3em] text-[#F3EBDD]/80 mb-4 uppercase">
+              Tu és...
+            </h2>
           )}
 
           {step >= 2 && (
@@ -47,12 +84,30 @@ export default function RoleReveal({ playerState, onContinue }) {
           )}
 
           {step >= 3 && (
-            <button 
-              onClick={onContinue}
-              className="mt-10 py-4 px-10 bg-[#D8B66C] text-[#291923] font-ui font-bold text-lg uppercase tracking-[0.2em] rounded-sm hover:bg-[#E5C982] transition shadow-soft"
-            >
-              Entrar no Jogo
-            </button>
+            <div className="mt-10">
+              {!allReady ? (
+                <>
+                  <button
+                    onClick={handleReady}
+                    disabled={hasClicked}
+                    className={`py-4 px-10 font-ui font-bold text-lg uppercase tracking-[0.2em] rounded-sm transition shadow-soft ${
+                      hasClicked
+                        ? 'bg-[#412734] text-[#F3EBDD]/50 cursor-not-allowed'
+                        : 'bg-[#D8B66C] text-[#291923] hover:bg-[#E5C982]'
+                    }`}
+                  >
+                    {hasClicked ? 'Aguardando...' : 'Entrar no Jogo'}
+                  </button>
+                  <p className="text-sm text-[#F3EBDD]/60 mt-3">
+                    {readyCount}/{totalPlayers} jogadores prontos
+                  </p>
+                </>
+              ) : (
+                <p className="text-[#E5C982] animate-pulse font-display text-xl">
+                  Todos prontos! A entrar no jogo...
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

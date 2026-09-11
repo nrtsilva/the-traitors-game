@@ -3,8 +3,9 @@ const { rooms, createInitialRoomState, removePlayerFromRoom, convertCoinsToBars 
 const { getMissoesPorModo, getArsenalPorModo } = require('./missionLoader');
 const {
     loadNewMission,
-	completeMission,
-	startBanishmentPhase,
+    completeMission,
+    finishMission,
+    startBanishmentPhase,
     startMissionTimer,
     startMurderPhase,
     endMurderPhase,
@@ -17,11 +18,11 @@ const {
     handleColorReflexClick,
     startTimeStopGame,
     handleTimeStopAttempt,
-	startWordBuilderGame,
+    startWordBuilderGame,
     validateAndPlaceWord,
     removeLastWord,
     finishWordBuilderPlayer,
-	startWordRouletteGame,
+    startWordRouletteGame,
     submitWordRouletteGuess,
     startEmojiGuessGame,
     submitEmojiGuess,
@@ -46,6 +47,9 @@ const {
     startEightLettersGame,
     handleEightLettersSubmit,
     handleEightLettersVote,
+    startMostSuspectMission,
+    submitMostSuspectVote,
+    submitMostSuspectDecision,
 } = require('./gameLogic');
 
 function registerSocketHandlers(io) {
@@ -118,6 +122,9 @@ function registerSocketHandlers(io) {
                 const room = rooms[cleanCode];
                 if (!room || room.hostId !== socket.id) return;
 
+                room.roleRevealReady = 0;
+                room.totalAlivePlayers = room.players.filter(p => p.alive).length;
+
                 const minPlayers = 2;
                 if (room.players.length < minPlayers) {
                     return callback({
@@ -140,27 +147,26 @@ function registerSocketHandlers(io) {
 
                 // Carregar primeira missão
                 loadNewMission(room, io);
-				
-				// Verificar se a missão foi carregada
-				if (!room.currentMissionData) {
-					console.error('[start_game] Falha ao carregar missão! room.currentMissionData é undefined.');
-					return callback({ success: false, message: "Erro ao carregar missão. Tente novamente." });
-				}
-				
-				if (room.currentMissionData.type === 'SILENT_MIME') {
-					setTimeout(() => startSilentMimeMission(room, io), 2000);
-				}
-				
-				// Se a missão for EMOJI_COUNT, iniciar automaticamente
-				if (room.currentMissionData.type === 'EMOJI_COUNT') {
-					setTimeout(() => startEmojiCountMission(room, io), 2000);
-				}
-				
-				if (room.currentMissionData.type === 'TICO_TECO_TACO') {
-					setTimeout(() => startTicoTecoTacoMission(room, io), 2000);
+
+                if (!room.currentMissionData) {
+                    console.error('[start_game] Falha ao carregar missão! room.currentMissionData é undefined.');
+                    return callback({ success: false, message: "Erro ao carregar missão. Tente novamente." });
+                }
+
+                if (room.currentMissionData.type === 'SILENT_MIME') {
+                    setTimeout(() => startSilentMimeMission(room, io), 2000);
+                }
+                if (room.currentMissionData.type === 'EMOJI_COUNT') {
+                    setTimeout(() => startEmojiCountMission(room, io), 2000);
+                }
+                if (room.currentMissionData.type === 'TICO_TECO_TACO') {
+                    setTimeout(() => startTicoTecoTacoMission(room, io), 2000);
+                }
+				if (room.currentMissionData.type === 'MOST_SUSPECT') {
+					setTimeout(() => startMostSuspectMission(room, io), 2000);
 				}
 
-				console.log('[start_game] Missão carregada:', room.currentMissionData.title);
+                console.log('[start_game] Missão carregada:', room.currentMissionData.title);
 
                 room.roundNumber = 1;
                 room.totalRounds = room.settings.numPhases || 2;
@@ -185,7 +191,6 @@ function registerSocketHandlers(io) {
                         players: room.players.map(p => ({ id: p.id, name: p.name, alive: p.alive, role: (p.id === player.id) ? p.role : null, gold: p.gold, bars: p.bars })),
                         secretMissions: (player.role === 'traitor') ? player.secretMissions : []
                     };
-					console.log('[start_game] pState a enviar para', player.name, ':', pState);
                     io.to(player.id).emit('game_started', pState);
                 });
 
@@ -200,6 +205,24 @@ function registerSocketHandlers(io) {
             } catch (error) {
                 console.error("Erro no start_game:", error);
                 callback({ success: false, message: "Erro ao iniciar o jogo." });
+            }
+        });
+
+        // --- ROLE REVEAL READY (coletivo) ---
+        socket.on('role_reveal_ready', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room) return;
+
+            room.roleRevealReady = (room.roleRevealReady || 0) + 1;
+
+            io.to(cleanCode).emit('role_reveal_ready_progress', {
+                readyCount: room.roleRevealReady,
+                totalPlayers: room.totalAlivePlayers || room.players.filter(p => p.alive).length,
+            });
+
+            if (room.roleRevealReady >= (room.totalAlivePlayers || room.players.filter(p => p.alive).length)) {
+                io.to(cleanCode).emit('role_reveal_all_ready');
             }
         });
 
@@ -236,50 +259,26 @@ function registerSocketHandlers(io) {
                             clearTimeout(room.phaseTimer);
                             room.phaseTimer = setTimeout(() => processBanishment(room, io), debateTime * 1000);
                         } else if (room.phase === GAME_PHASES.PHASE_3_ARMOURY) {
-							if (!room.currentArsenalTask) {
-								const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
-								const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
-								room.currentArsenalTask = tarefaAleatoria;
-								io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
-        
-								if (tarefaAleatoria.type === 'WORD_COMBINATION') {
-									setTimeout(() => startWordGuesserGame(room, io), 1500);
-								}
-								if (tarefaAleatoria.type === 'COLOR_REFLEX') {
-									setTimeout(() => startColorReflexGame(room, io), 1500);
-								}
-								if (tarefaAleatoria.type === 'PRECISION_TIMER') {
-									setTimeout(() => startTimeStopGame(room, io), 1500);
-								}
-								if (tarefaAleatoria.type === 'WORD_BUILDER') {
-									setTimeout(() => startWordBuilderGame(room, io), 1500);
-								}
-								if (tarefaAleatoria.type === 'WORD_ROULETTE') {
-									setTimeout(() => startWordRouletteGame(room, io), 1500);
-								}								
-								if (tarefaAleatoria.type === 'EMOJI_GUESS') {
-									setTimeout(() => startEmojiGuessGame(room, io), 1500);
-								}
-								if (tarefaAleatoria.type === 'BLOW_SURVIVE') {
-									setTimeout(() => startBlowSurviveGame(room, io), 2000);
-								}
-								if (tarefaAleatoria.type === 'FIND_ORANGES') {
-									setTimeout(() => startFindOrangesGame(room, io), 2000);
-								}
-								if (tarefaAleatoria.type === 'SOUNDS_CODE') {
-									setTimeout(() => startSoundsCodeGame(room, io), 2000);
-								}
-								if (tarefaAleatoria.type === 'EIGHT_LETTERS') {
-									setTimeout(() => startEightLettersGame(room, io), 2000);
-								}
-								
-								// Se a tarefa é do tipo WORD_COMBINATION, iniciar o jogo especial
-								if (tarefaAleatoria.type === 'WORD_COMBINATION') {
-									startWordGuesserGame(room, io);
-								}
-							}
-							return;
-						} else {
+                            if (!room.currentArsenalTask) {
+                                const tarefasArsenal = getArsenalPorModo(room.settings.gameMode);
+                                const tarefaAleatoria = tarefasArsenal[Math.floor(Math.random() * tarefasArsenal.length)];
+                                room.currentArsenalTask = tarefaAleatoria;
+                                io.to(cleanCode).emit('arsenal_task', { task: tarefaAleatoria });
+
+                                // Iniciar o jogo/desafio correspondente ao tipo de tarefa (uma única vez cada)
+                                if (tarefaAleatoria.type === 'WORD_COMBINATION') setTimeout(() => startWordGuesserGame(room, io), 1500);
+                                if (tarefaAleatoria.type === 'COLOR_REFLEX')     setTimeout(() => startColorReflexGame(room, io), 1500);
+                                if (tarefaAleatoria.type === 'PRECISION_TIMER')  setTimeout(() => startTimeStopGame(room, io), 1500);
+                                if (tarefaAleatoria.type === 'WORD_BUILDER')     setTimeout(() => startWordBuilderGame(room, io), 1500);
+                                if (tarefaAleatoria.type === 'WORD_ROULETTE')    setTimeout(() => startWordRouletteGame(room, io), 1500);
+                                if (tarefaAleatoria.type === 'EMOJI_GUESS')      setTimeout(() => startEmojiGuessGame(room, io), 1500);
+                                if (tarefaAleatoria.type === 'BLOW_SURVIVE')     setTimeout(() => startBlowSurviveGame(room, io), 2000);
+                                if (tarefaAleatoria.type === 'FIND_ORANGES')     setTimeout(() => startFindOrangesGame(room, io), 2000);
+                                if (tarefaAleatoria.type === 'SOUNDS_CODE')      setTimeout(() => startSoundsCodeGame(room, io), 2000);
+                                if (tarefaAleatoria.type === 'EIGHT_LETTERS')    setTimeout(() => startEightLettersGame(room, io), 2000);
+                            }
+                            return;
+                        } else {
                             io.to(cleanCode).emit('phase_started', { phase: room.phase, timer: room.currentMissionData.timeLimit });
                             startMissionTimer(room, io);
                         }
@@ -289,51 +288,51 @@ function registerSocketHandlers(io) {
                 console.error("Erro no player_ready:", error);
             }
         });
-		
-		// --- 8 LETRAS: submeter respostas ---
-		socket.on('eight_letters_submit', ({ roomCode, answers }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.eightLetters) return;
-			handleEightLettersSubmit(room, io, socket.id, answers);
-		});
 
-		// --- 8 LETRAS: validar (aceitar/rejeitar) ---
-		socket.on('eight_letters_vote', ({ roomCode, vote }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.eightLetters) return;
-			handleEightLettersVote(room, io, vote);
-		});
-		
-		// --- SOUNDS CODE: supervisores registam resultado ---
-		socket.on('sounds_code_decision', ({ roomCode, result }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.soundsCode) return;
-			handleSoundsCodeDecision(room, io, result);
-		});
+        // --- 8 LETRAS: submeter respostas ---
+        socket.on('eight_letters_submit', ({ roomCode, answers }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.eightLetters) return;
+            handleEightLettersSubmit(room, io, socket.id, answers);
+        });
 
-		// --- SOUNDS CODE: confirmar vencedor ---
-		socket.on('sounds_code_confirm_winner', ({ roomCode, winnerId }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.soundsCode) return;
-			confirmSoundsCodeWinner(room, io, winnerId);
-		});		
-		
-		// --- TIME STOP: TENTATIVA DE PARAGEM ---
-		socket.on('time_stop_attempt', ({ roomCode, elapsedSeconds }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.timeStop) return;
-			
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			
-			handleTimeStopAttempt(room, io, socket.id, { elapsedSeconds });
-		});
-		
+        // --- 8 LETRAS: validar (aceitar/rejeitar) ---
+        socket.on('eight_letters_vote', ({ roomCode, vote }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.eightLetters) return;
+            handleEightLettersVote(room, io, vote);
+        });
+
+        // --- SOUNDS CODE: supervisores registam resultado ---
+        socket.on('sounds_code_decision', ({ roomCode, result }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.soundsCode) return;
+            handleSoundsCodeDecision(room, io, result);
+        });
+
+        // --- SOUNDS CODE: confirmar vencedor ---
+        socket.on('sounds_code_confirm_winner', ({ roomCode, winnerId }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.soundsCode) return;
+            confirmSoundsCodeWinner(room, io, winnerId);
+        });
+
+        // --- TIME STOP: TENTATIVA DE PARAGEM ---
+        socket.on('time_stop_attempt', ({ roomCode, elapsedSeconds }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.timeStop) return;
+
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+
+            handleTimeStopAttempt(room, io, socket.id, { elapsedSeconds });
+        });
+
         // --- SUBMETER AVALIAÇÃO ---
         socket.on('submit_evaluation', ({ roomCode, data }) => {
             try {
@@ -358,8 +357,7 @@ function registerSocketHandlers(io) {
 
                 if (allEvaluated) {
                     room.players.forEach(p => p.evaluation = undefined);
-                    // Após avaliação, avançar para Expulsão
-                    startBanishmentPhase(room, io); // Função importada de gameLogic
+                    startBanishmentPhase(room, io);
                 }
             } catch (error) {
                 console.error("Erro no submit_evaluation:", error);
@@ -425,15 +423,15 @@ function registerSocketHandlers(io) {
             }
         });
 
-		// --- FIND ORANGES: virar carta ---
-		socket.on('find_oranges_flip', ({ roomCode, cardId }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.findOranges) return;
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			handleFindOrangesFlip(room, io, socket.id, cardId);
-		});
+        // --- FIND ORANGES: virar carta ---
+        socket.on('find_oranges_flip', ({ roomCode, cardId }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.findOranges) return;
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+            handleFindOrangesFlip(room, io, socket.id, cardId);
+        });
 
         // --- MURDER CHOICE ---
         socket.on('traitor_murder_choice', ({ roomCode, targetPlayerId }, callback) => {
@@ -538,8 +536,6 @@ function registerSocketHandlers(io) {
             const cleanCode = (roomCode || "").trim().toUpperCase();
             const room = rooms[cleanCode];
             if (!room || room.phase !== GAME_PHASES.PHASE_1_MISSION) return;
-
-            // Chamar a função centralizada que lida com o fim da missão
             completeMission(room, outcome, io);
         });
 
@@ -565,215 +561,183 @@ function registerSocketHandlers(io) {
                 if (allSubmitted) {
                     const total = alivePlayers.reduce((sum, p) => sum + p.missionValue, 0);
                     const average = Math.round(total / alivePlayers.length);
-                    const reward = Math.floor(average / 4);
-                    room.prizeFund.coins += reward;
-                    convertCoinsToBars(room);
-                    convertBarsToCoins(room);
-                    room.players.forEach(p => p.missionValue = undefined);
-                    io.to(cleanCode).emit('mission_evaluation');
+					const reward = Math.floor(average / 4);
+					room.prizeFund.coins += reward;
+					convertCoinsToBars(room);
+					room.lastMissionReward = reward;
+					room.currentMissionData.requiresPlayerChoice = true;
+					room.players.forEach(p => p.missionValue = undefined);
+					completeMission(room, true, io);
                 }
             } catch (error) {
                 console.error("Erro no submit_mission_value:", error);
             }
         });
-		
-		// --- SUBMIT CATEGORY CHOICE (para missões do tipo CATEGORY_CHOICE) ---
-		socket.on('submit_category_choice', ({ roomCode, choice }, callback) => {
-			try {
-				const cleanCode = (roomCode || "").trim().toUpperCase();
-				const room = rooms[cleanCode];
-				
-				// Validações básicas
-				if (!room) {
-					console.error(`[submit_category_choice] Sala ${cleanCode} não encontrada.`);
-					return callback?.({ success: false, message: "Sala não encontrada." });
-				}
-				
-				if (room.phase !== GAME_PHASES.PHASE_1_MISSION) {
-					console.error(`[submit_category_choice] Sala ${cleanCode} não está na fase de missão.`);
-					return callback?.({ success: false, message: "A missão já terminou." });
-				}
-				
-				if (!room.currentMissionData?.requiresPlayerChoice) {
-					console.error(`[submit_category_choice] Missão atual não requer escolha dos jogadores.`);
-					return callback?.({ success: false, message: "Esta missão não pede escolhas." });
-				}
 
-				// Encontrar o jogador
-				let player = room.players.find(p => p.id === socket.id);
-				if (!player) {
-					// Se o socket ID mudou, tenta encontrar pelo nome ou outro identificador
-					player = room.players.find(p => p.alive && p.categoryChoice === undefined);
-					if (player) {
-						player.id = socket.id;
-						console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
-					}
-				}
-				
-				if (!player || !player.alive) {
-					console.error(`[submit_category_choice] Jogador não encontrado ou já eliminado.`);
-					return callback?.({ success: false, message: "Jogador não encontrado." });
-				}
+        // --- SUBMIT CATEGORY CHOICE (para missões do tipo CATEGORY_CHOICE) ---
+        socket.on('submit_category_choice', ({ roomCode, choice }, callback) => {
+            try {
+                const cleanCode = (roomCode || "").trim().toUpperCase();
+                const room = rooms[cleanCode];
 
-				// Validar a escolha (deve ser um número entre 0 e options.length-1)
-				const options = room.currentMissionData.options || [];
-				if (choice === undefined || choice === null || choice < 0 || choice >= options.length) {
-					console.error(`[submit_category_choice] Escolha inválida: ${choice}`);
-					return callback?.({ success: false, message: "Escolha inválida." });
-				}
+                if (!room) {
+                    console.error(`[submit_category_choice] Sala ${cleanCode} não encontrada.`);
+                    return callback?.({ success: false, message: "Sala não encontrada." });
+                }
+                if (room.phase !== GAME_PHASES.PHASE_1_MISSION) {
+                    console.error(`[submit_category_choice] Sala ${cleanCode} não está na fase de missão.`);
+                    return callback?.({ success: false, message: "A missão já terminou." });
+                }
+                if (!room.currentMissionData?.requiresPlayerChoice) {
+                    console.error(`[submit_category_choice] Missão atual não requer escolha dos jogadores.`);
+                    return callback?.({ success: false, message: "Esta missão não pede escolhas." });
+                }
 
-				// Guardar a escolha do jogador
-				player.categoryChoice = choice;
-				room.categoryChoicesCount = (room.categoryChoicesCount || 0) + 1;
+                let player = room.players.find(p => p.id === socket.id);
+                if (!player) {
+                    player = room.players.find(p => p.alive && p.categoryChoice === undefined);
+                    if (player) {
+                        player.id = socket.id;
+                        console.log(`[DEBUG] Socket ID mudou! Atualizando ${player.name} para ${socket.id}`);
+                    }
+                }
+                if (!player || !player.alive) {
+                    console.error(`[submit_category_choice] Jogador não encontrado ou já eliminado.`);
+                    return callback?.({ success: false, message: "Jogador não encontrado." });
+                }
 
-				const alivePlayers = room.players.filter(p => p.alive);
+                const options = room.currentMissionData.options || [];
+                if (choice === undefined || choice === null || choice < 0 || choice >= options.length) {
+                    console.error(`[submit_category_choice] Escolha inválida: ${choice}`);
+                    return callback?.({ success: false, message: "Escolha inválida." });
+                }
 
-				// Verificar se todos os jogadores vivos já submeteram
-				if (room.categoryChoicesCount >= alivePlayers.length) {
-					console.log(`[submit_category_choice] Todos os ${alivePlayers.length} jogadores submeteram. Calculando recompensa...`);
+                player.categoryChoice = choice;
+                room.categoryChoicesCount = (room.categoryChoicesCount || 0) + 1;
 
-					// Recolher todas as escolhas
-					const choices = alivePlayers.map(p => p.categoryChoice);
-					
-					// Calcular número de escolhas únicas
-					const uniqueChoices = new Set(choices);
-					const reward = uniqueChoices.size; // 1 moeda por escolha única
+                const alivePlayers = room.players.filter(p => p.alive);
 
-					// Adicionar recompensa ao cofre comum
-					room.prizeFund.coins += reward;
-					convertCoinsToBars(room);
-					convertBarsToCoins(room);
+                if (room.categoryChoicesCount >= alivePlayers.length) {
+                    const choices = alivePlayers.map(p => p.categoryChoice);
+                    const uniqueChoices = new Set(choices);
+                    const reward = uniqueChoices.size;
 
-					console.log(`[submit_category_choice] Recompensa: ${reward} moedas (${uniqueChoices.size} escolhas únicas).`);
+                    room.prizeFund.coins += reward;
+                    convertCoinsToBars(room);
+                    room.lastMissionReward = reward;
 
-					// Limpar estados para a próxima missão
-					room.players.forEach(p => p.categoryChoice = undefined);
-					room.categoryChoicesCount = 0;
+                    room.players.forEach(p => p.categoryChoice = undefined);
+                    room.categoryChoicesCount = 0;
 
-					// Se a função finishMission existir, podemos usá-la para emitir o resultado
-					// Caso contrário, emitir mission_evaluation diretamente
-					if (typeof finishMission === 'function') {
-						// Guardar o reward para usar no finishMission
-						room.lastMissionReward = reward;
-						// outcome = true, reward já calculado
-						finishMission(room, true, reward, io);
-					} else {
-						// Fallback: emitir avaliação diretamente
-						io.to(cleanCode).emit('mission_evaluation');
-					}
-				} else {
-					console.log(`[submit_category_choice] ${room.categoryChoicesCount}/${alivePlayers.length} jogadores submeteram.`);
-				}
+                    completeMission(room, true, io);
+                }
 
-				// Callback de sucesso
-				if (typeof callback === 'function') {
-					callback({ success: true });
-				}
-			} catch (error) {
-				console.error("Erro no submit_category_choice:", error);
-				if (typeof callback === 'function') {
-					callback({ success: false, message: error.message || "Erro interno." });
-				}
-			}
-		});
-		
-		// --- EMOJI GUESS: submeter palavra ---
-		socket.on('emoji_guess_submit', ({ roomCode, word }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.emojiGuess) return;
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			submitEmojiGuess(room, io, socket.id, word);
-		});
-		
-		// --- WORD ROULETTE: submeter palavra ---
-		socket.on('word_roulette_submit', ({ roomCode, word }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.wordRoulette) return;
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			submitWordRouletteGuess(room, io, socket.id, word);
-		});
-		
-		// --- TICO TECO TACO: ACERTOU ---
-		socket.on('ttt_correct', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.ticoTecoTaco) return;
-			handleTicoTecoTacoCorrect(room, io);
-		});
+                if (typeof callback === 'function') callback({ success: true });
+            } catch (error) {
+                console.error("Erro no submit_category_choice:", error);
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: error.message || "Erro interno." });
+                }
+            }
+        });
 
-		// --- TICO TECO TACO: ERROU ---
-		socket.on('ttt_error', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.ticoTecoTaco) return;
-			handleTicoTecoTacoError(room, io);
-		});
-		
-		// --- SILENT MIME: acertou ---
-		socket.on('silent_mime_correct', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.silentMime) return;
-			handleSilentMimeCorrect(room, io, socket.id);
-		});
+        // --- EMOJI GUESS: submeter palavra ---
+        socket.on('emoji_guess_submit', ({ roomCode, word }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.emojiGuess) return;
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+            submitEmojiGuess(room, io, socket.id, word);
+        });
 
-		// --- SILENT MIME: passar palavra ---
-		socket.on('silent_mime_pass', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.silentMime) return;
-			handleSilentMimePass(room, io);
-		});
-		
-		// --- JOGO WORD BUILDER: adicionar palavra ---
-		socket.on('word_builder_add', ({ roomCode, word, row, col, orientation }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.wordBuilder) return;
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			
-			const result = validateAndPlaceWord(room, io, socket.id, word, row, col, orientation);
-			if (!result.success) {
-				io.to(socket.id).emit('word_builder_error', { message: result.message });
-			}
-		});
+        // --- WORD ROULETTE: submeter palavra ---
+        socket.on('word_roulette_submit', ({ roomCode, word }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.wordRoulette) return;
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+            submitWordRouletteGuess(room, io, socket.id, word);
+        });
 
-		// --- JOGO WORD BUILDER: remover última palavra ---
-		socket.on('word_builder_remove_last', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.wordBuilder) return;
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			removeLastWord(room, io, socket.id);
-		});
+        // --- TICO TECO TACO: ACERTOU ---
+        socket.on('ttt_correct', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.ticoTecoTaco) return;
+            handleTicoTecoTacoCorrect(room, io);
+        });
 
-		// --- JOGO WORD BUILDER: terminar ---
-		socket.on('word_builder_finish', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.wordBuilder) return;
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			finishWordBuilderPlayer(room, io, socket.id);
-		});
-		
-		// --- JOGO "O QUE VEM A SEGUIR?" — SUBMETER RESPOSTA ---
-		socket.on('submit_word_guess', ({ roomCode, guess }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.wordGuesser) return;
-			
-			const player = room.players.find(p => p.id === socket.id);
-			if (!player || !player.alive) return;
-			
-			submitWordGuess(room, io, socket.id, guess);
-		});
+        // --- TICO TECO TACO: ERROU ---
+        socket.on('ttt_error', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.ticoTecoTaco) return;
+            handleTicoTecoTacoError(room, io);
+        });
+
+        // --- SILENT MIME: acertou ---
+        socket.on('silent_mime_correct', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.silentMime) return;
+            handleSilentMimeCorrect(room, io, socket.id);
+        });
+
+        // --- SILENT MIME: passar palavra ---
+        socket.on('silent_mime_pass', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.silentMime) return;
+            handleSilentMimePass(room, io);
+        });
+
+        // --- JOGO WORD BUILDER: adicionar palavra ---
+        socket.on('word_builder_add', ({ roomCode, word, row, col, orientation }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.wordBuilder) return;
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+
+            const result = validateAndPlaceWord(room, io, socket.id, word, row, col, orientation);
+            if (!result.success) {
+                io.to(socket.id).emit('word_builder_error', { message: result.message });
+            }
+        });
+
+        // --- JOGO WORD BUILDER: remover última palavra ---
+        socket.on('word_builder_remove_last', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.wordBuilder) return;
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+            removeLastWord(room, io, socket.id);
+        });
+
+        // --- JOGO WORD BUILDER: terminar ---
+        socket.on('word_builder_finish', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.wordBuilder) return;
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+            finishWordBuilderPlayer(room, io, socket.id);
+        });
+
+        // --- JOGO "O QUE VEM A SEGUIR?" — SUBMETER RESPOSTA ---
+        socket.on('submit_word_guess', ({ roomCode, guess }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.wordGuesser) return;
+
+            const player = room.players.find(p => p.id === socket.id);
+            if (!player || !player.alive) return;
+
+            submitWordGuess(room, io, socket.id, guess);
+        });
 
         // --- DRAWING (colaborativo) ---
         socket.on('drawing_update', ({ roomCode, drawing }) => {
@@ -821,30 +785,30 @@ function registerSocketHandlers(io) {
                 io.to(socket.id).emit('drawing_status', { type: 'guessing', isYourTurn: true, error: "Não foi dessa vez. Tenta novamente." });
             }
         });
-		
-		// --- EMOJI COUNT: PRÓXIMO NÍVEL ---
-		socket.on('emoji_count_next', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.emojiCount) return;
-			handleEmojiCountNext(room, io);
-		});
 
-		// --- EMOJI COUNT: REGISTAR ERRO ---
-		socket.on('emoji_count_error', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.emojiCount) return;
-			handleEmojiCountError(room, io);
-		});
+        // --- EMOJI COUNT: PRÓXIMO NÍVEL ---
+        socket.on('emoji_count_next', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.emojiCount) return;
+            handleEmojiCountNext(room, io);
+        });
 
-		// --- EMOJI COUNT: CONCLUIR MISSÃO ---
-		socket.on('emoji_count_complete', ({ roomCode }) => {
-			const cleanCode = (roomCode || "").trim().toUpperCase();
-			const room = rooms[cleanCode];
-			if (!room || !room.emojiCount) return;
-			handleEmojiCountComplete(room, io);
-		});
+        // --- EMOJI COUNT: REGISTAR ERRO ---
+        socket.on('emoji_count_error', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.emojiCount) return;
+            handleEmojiCountError(room, io);
+        });
+
+        // --- EMOJI COUNT: CONCLUIR MISSÃO ---
+        socket.on('emoji_count_complete', ({ roomCode }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.emojiCount) return;
+            handleEmojiCountComplete(room, io);
+        });
 
         // --- ARSENAL: STOP PLANK ---
         socket.on('stop_plank', ({ roomCode, elapsedTime }) => {
@@ -909,21 +873,37 @@ function registerSocketHandlers(io) {
             }
         });
 		
-		// --- BLOW SURVIVE: supervisores registam resultado ---
-		socket.on('blow_survive_decision', ({ roomCode, result }) => {
+		// --- MOST SUSPECT: votar num jogador ---
+		socket.on('most_suspect_vote', ({ roomCode, targetId }) => {
 			const cleanCode = (roomCode || "").trim().toUpperCase();
 			const room = rooms[cleanCode];
-			if (!room || !room.blowSurvive) return;
-			handleBlowSurviveDecision(room, io, result);
+			if (!room || !room.mostSuspect) return;
+			submitMostSuspectVote(room, io, socket.id, targetId);
 		});
 
-		// --- BLOW SURVIVE: confirmar vencedor final ---
-		socket.on('blow_survive_confirm_winner', ({ roomCode, winnerId }) => {
+		// --- MOST SUSPECT: escolher A ou B ---
+		socket.on('most_suspect_decision', ({ roomCode, choiceId }) => {
 			const cleanCode = (roomCode || "").trim().toUpperCase();
 			const room = rooms[cleanCode];
-			if (!room || !room.blowSurvive) return;
-			confirmBlowSurviveWinner(room, io, winnerId);
+			if (!room || !room.mostSuspect) return;
+			submitMostSuspectDecision(room, io, choiceId);
 		});
+
+        // --- BLOW SURVIVE: supervisores registam resultado ---
+        socket.on('blow_survive_decision', ({ roomCode, result }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.blowSurvive) return;
+            handleBlowSurviveDecision(room, io, result);
+        });
+
+        // --- BLOW SURVIVE: confirmar vencedor final ---
+        socket.on('blow_survive_confirm_winner', ({ roomCode, winnerId }) => {
+            const cleanCode = (roomCode || "").trim().toUpperCase();
+            const room = rooms[cleanCode];
+            if (!room || !room.blowSurvive) return;
+            confirmBlowSurviveWinner(room, io, winnerId);
+        });
 
         // --- DISCONNECT ---
         socket.on('disconnect', () => {

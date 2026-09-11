@@ -1,0 +1,28 @@
+{
+  "questions": [
+    { "id": "q_dangerous", "text": "🗡️ Quem é o jogador mais perigoso?" },
+    { "id": "q_secret", "text": "🤫 A quem confiarias um segredo?" },
+    { "id": "q_weak", "text": "💪 Quem é o jogador mais fraco?" },
+    { "id": "q_tactical", "text": "♟️ Quem é o jogador mais tático?" },
+    { "id": "q_deceive", "text": "🎭 Quem seria melhor a enganar os outros?" },
+    { "id": "q_smart", "text": "🧠 Quem é o jogador mais inteligente?" },
+    { "id": "q_leader", "text": "👑 Quem seria o melhor líder?" },
+    { "id": "q_liar", "text": "🕵️ Quem seria mais difícil de apanhar a mentir?" },
+    { "id": "q_steal", "text": "💰 Quem seria capaz de roubar o pote de ouro?" },
+    { "id": "q_traitor", "text": "🔥 Quem é mais provável de trair o grupo?" },
+    { "id": "q_pressure", "text": "🎯 Quem toma melhores decisões sob pressão?" },
+    { "id": "q_emotions", "text": "🧊 Quem consegue esconder melhor as suas emoções?" },
+    { "id": "q_convincing", "text": "🗣️ Quem é mais convincente quando fala?" },
+    { "id": "q_observer", "text": "👀 Quem observa mais os outros jogadores?" },
+    { "id": "q_steps_ahead", "text": "♟️ Quem está sempre a pensar vários passos à frente?" },
+    { "id": "q_best_traitor", "text": "😈 Quem seria o melhor Traidor?" },
+    { "id": "q_best_faithful", "text": "🛡️ Quem seria o melhor Fiel?" },
+    { "id": "q_chaos", "text": "💣 Quem seria mais provável de criar o caos?" },
+    { "id": "q_lie", "text": "🤥 Quem seria mais convincente a contar uma mentira?" },
+    { "id": "q_hard_read", "text": "🧩 Quem é mais difícil de perceber?" },
+    { "id": "q_winner", "text": "🏆 Quem teria mais hipóteses de chegar ao fim?" },
+    { "id": "q_first_out", "text": "🚪 Quem seria o primeiro jogador que eliminarias?" },
+    { "id": "q_ally", "text": "🤝 Em quem confiarias mais para estar ao teu lado numa missão?" },
+    { "id": "q_threat", "text": "⚠️ Quem representa a maior ameaça para o grupo?" }
+  ]
+}

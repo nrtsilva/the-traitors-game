@@ -18,8 +18,8 @@ export default function FortuneRevealScreen({
   return (
     <div className="fixed inset-0 bg-[#291923] flex items-center justify-center z-40 animate-fadeIn">
       <div className="max-w-md w-full text-center">
-        <div className="text-6xl mb-4">🏰</div>
-        <h2 className="font-display text-3xl text-[#E5C982] mb-8">A tua Fortuna, {playerName}</h2>
+        <div className="text-6xl mb-4">💰</div>
+        <h2 className="font-display text-3xl text-[#E5C982] mb-8">{playerName}, este é o teu saldo!</h2>
 
         <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-6 mb-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-[#D8B66C] to-transparent opacity-70"></div>
@@ -30,7 +30,7 @@ export default function FortuneRevealScreen({
               <span className="block text-xs text-[#F3EBDD]/60">Moedas</span>
             </div>
             <div>
-              <span className="block text-5xl mb-2 animate-float" style={{ animationDelay: '0.2s' }}>💰</span>
+              <span className="block text-5xl mb-2 animate-float">🟨</span>
               <span className="text-2xl font-bold text-[#D8B66C]">{bars}</span>
               <span className="block text-xs text-[#F3EBDD]/60">Barras</span>
             </div>

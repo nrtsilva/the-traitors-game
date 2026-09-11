@@ -3,10 +3,10 @@ import MissionCollaborativeDrawing from './MissionCollaborativeDrawing';
 import MissionNumberInput from './MissionNumberInput';
 import MissionDefault from './MissionDefault';
 import MissionDescription from '../../MissionDescription';
-import MissionCategoryChoice from './MissionCategoryChoice';
 import MissionEmojiCount from './MissionEmojiCount';
 import MissionSilentMime from './MissionSilentMime';
 import MissionTicoTecoTaco from './MissionTicoTecoTaco';
+import MissionMostSuspect from './MissionMostSuspect';
 
 export default function MissionPhase(props) {
   const { 
@@ -25,22 +25,10 @@ export default function MissionPhase(props) {
   }
 
   let missionContent = null;
-  if (mission.type === 'CATEGORY_CHOICE') {
-    missionContent = (
-      <MissionCategoryChoice 
-        {...props} 
-        onCategorySubmit={(choice) => {
-          if (socket && roomData) {
-            socket.emit('submit_category_choice', { 
-              roomCode: roomData.roomCode, 
-              choice 
-            });
-          }
-        }} 
-      />
-    );
-  } else if (mission.type === 'COLLABORATIVE_DRAWING') {
+  if (mission.type === 'COLLABORATIVE_DRAWING') {
     missionContent = <MissionCollaborativeDrawing {...props} playerId={playerId} />;
+  } else if (mission.type === 'MOST_SUSPECT') {
+    missionContent = <MissionMostSuspect {...props} playerId={playerId} />;
   } else if (mission.requiresNumberInput) {
     missionContent = <MissionNumberInput {...props} />;
   } else if (['WORD_GUESSER', 'PHYSICAL_OBJECT_HUNT', 'TEAM_ESTIMATION', 'PRICE_GUESS', 'NUMBER_GUESS', 'MEMORY_GAME', 'CATEGORY_GAME', 'TIMER_GUESS', 'FORBIDDEN_WORD', 'REMOTE_QUIZ', 'CODE_BREAKING', 'SOUND_GUESS', 'NAME_GAME', 'IMAGE_SEARCH', 'MAP_SEARCH', 'PHOTO_UPLOAD', 'STORY_BUILDING', 'SYNC_ANSWER', 'SYNC_ACTION', 'CHAT_ARGUMENT', 'DIGITAL_DRAWING', 'WHO_AM_I', 'YES_NO_GAME', 'GESTURE_GAME', 'ANONYMOUS_ANSWER', 'TRUTH_OR_LIE', 'SABOTAGE_BUILD', 'NO_LAUGH', 'ACCURACY_GAME', 'PHYSICAL_ACTION', 'RANKING'].includes(mission.type)) {
@@ -78,7 +66,7 @@ export default function MissionPhase(props) {
             </div>
             <div className="w-px h-10 bg-[#D8B66C]/30"></div>
             <div className="text-center">
-              <span className="text-3xl">💰</span>
+              <span className="text-3xl">🟨</span>
               <div className="text-2xl font-bold text-[#E5C982]">{playerState.prizeFund?.bars || 0} Barras</div>
               <div className="text-xs text-[#F3EBDD]/60">(1 Barra = 5 Moedas)</div>
             </div>

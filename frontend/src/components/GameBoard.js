@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState, useEffect, useRef } from 'react';
 import GameOverScreen from './phases/GameOverScreen';
 import BanishmentRevealScreen from './phases/BanishmentRevealScreen';
 import ArsenalResultScreen from './phases/ArsenalResultScreen';
@@ -55,33 +54,34 @@ export default function GameBoard({
 }) {
   // --- TIMER LOCAL PARA EXIBIÇÃO (apenas visual) ---
   const [displayTimer, setDisplayTimer] = useState(playerState.timer || 0);
+  const timerInitializedRef = useRef(null);
 
   useEffect(() => {
-    // Se fase for missão e timer for 0, usar timeLimit da missão
     if (playerState.phase === 'PHASE_1_MISSION') {
+      const key = `${playerState.roundNumber}-${playerState.currentMission?.id}`;
+      if (timerInitializedRef.current === key) return;  // já inicializado
+      timerInitializedRef.current = key;
+      
       let initialTimer = playerState.timer || 0;
-      // Se o timer for 0, tentar usar o timeLimit da missão
       if (initialTimer === 0 && playerState.currentMission?.timeLimit) {
         initialTimer = playerState.currentMission.timeLimit;
       }
       setDisplayTimer(initialTimer);
-      if (initialTimer > 0) {
-        const interval = setInterval(() => {
-          setDisplayTimer(prev => {
-            if (prev <= 1) {
-              clearInterval(interval);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-        return () => clearInterval(interval);
-      }
     } else {
-      // Para outras fases, usar o timer recebido
+      timerInitializedRef.current = null;
       setDisplayTimer(playerState.timer || 0);
     }
-  }, [playerState.phase, playerState.timer, playerState.currentMission]);
+  }, [playerState.phase, playerState.roundNumber, playerState.currentMission?.id, playerState.timer]);
+
+  // Efeito 2: Decrementar
+  useEffect(() => {
+    if (playerState.phase !== 'PHASE_1_MISSION') return;
+    if (displayTimer <= 0) return;
+    const interval = setInterval(() => {
+      setDisplayTimer(prev => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [playerState.phase, displayTimer > 0]);
 
   // -------------------- ECRÃS PRIORITÁRIOS --------------------
 

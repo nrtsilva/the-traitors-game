@@ -50,27 +50,20 @@
     ]
   },
   {
-    "id": "presencial_awkward",
+    "id": "presencial_most_suspect",
     "mode": "in_person",
-    "title": "Escolhas Únicas",
-    "type": "CATEGORY_CHOICE",
-    "timeLimit": 120,
-    "description": "Um jogador lê em voz alta 6 afirmações.**Cada jogador escolhe uma afirmação** (número de 1 a 6) e submete a sua escolha no jogo. Depois, o sistema conta quantas escolhas foram únicas. **Ganham 1 moeda por cada resposta única** para o pote comum.",
-    "reward": "1 moeda por cada resposta única",
-    "requiresPlayerChoice": true,
-    "options": [
-      "O meu maior medo",
-      "Uma coisa que nunca fiz",
-      "O que mais gosto de comer",
-      "O meu talento secreto",
-      "Um lugar onde gostaria de viajar",
-      "A minha maior vergonha"
-    ],
+    "title": "Os Mais Suspeitos",
+    "type": "MOST_SUSPECT",
+    "timeLimit": 300,
+    "totalQuestions": 10,
+    "description": "Em cada ronda, é feita uma pergunta. Cada jogador responde **secretamente** escolhendo outro jogador.\n\nDepois, o sistema mostra **dois jogadores** ao grupo: um é o mais votado na pergunta, o outro é aleatório. O grupo tem de decidir **qual dos dois recebeu mais votos**.\n\n✅ Acerto = +1 ponto\n❌ Erro = 0 pontos\n\n🏆 **Recompensa:**\n• 5 acertos → 🪙 1 barra\n• 10 acertos → 🪙🪙🪙 3 barras\n• 0-4 acertos → 💀 0 barras\n\n🔗 **Empate:** se dois tiverem os mesmos votos, ganha quem respondeu mais rápido.\n\n⏱️ Tempo total: 5 minutos.",
+    "reward": "variavel",
     "traitorSecretMissions": [
-    "Escolher a mesma opção que o jogador à sua direita (observando-o discretamente).",
-    "Dizer em voz alta 'Eu vou escolher a número 3!' para influenciar os outros.",
-    "Mudar de escolha depois de ver a reação dos outros, como se estivesse indeciso.",
-    "Perguntar 'Posso escolher duas?' para criar confusão."
+      "Durante a fase de votação, escolhe sempre o mesmo jogador em todas as perguntas para depois os outros terem dificuldade em ler as tuas intenções.",
+	  "Defende com convicção a opção errada para o grupo errar.",
+	  "Faz pelo menos 10 vezes o seguinte comentário 'eu acho que é o outro'.",
+	  "Ri-te sempre que o grupo acerta, como se estivesses surpreendido.",
+	  "Sugere empates falsos para destabilizar o grupo antes de decidirem."
     ]
   },
   {

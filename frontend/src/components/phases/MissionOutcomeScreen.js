@@ -50,7 +50,7 @@ export default function MissionOutcomeScreen({
         ) : (
           // Fortuna atualizada
           <>
-            <h3 className="font-display text-xl text-[#E5C982] mb-4">💵 A tua Fortuna, {playerName}</h3>
+            <h3 className="font-display text-xl text-[#E5C982] mb-4">💰 A tua Fortuna, {playerName}</h3>
 
             {/* Baú Individual */}
             <div className="bg-[#291923] border-2 border-[#D8B66C] rounded-lg p-4 mb-4 relative overflow-hidden">
@@ -62,7 +62,7 @@ export default function MissionOutcomeScreen({
                   <span className="block text-xs text-[#F3EBDD]/60">Moedas</span>
                 </div>
                 <div>
-                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.2s' }}>💰</span>
+                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.2s' }}>🟨</span>
                   <span className="text-xl font-bold text-[#D8B66C]">{bars}</span>
                   <span className="block text-xs text-[#F3EBDD]/60">Barras</span>
                 </div>
@@ -80,7 +80,7 @@ export default function MissionOutcomeScreen({
                   <span className="block text-xs text-[#F3EBDD]/60">Moedas</span>
                 </div>
                 <div>
-                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.6s' }}>💰</span>
+                  <span className="block text-4xl mb-1 animate-float" style={{ animationDelay: '0.6s' }}>🟨</span>
                   <span className="text-xl font-bold text-[#D8B66C]">{commonBars}</span>
                   <span className="block text-xs text-[#F3EBDD]/60">Barras</span>
                 </div>
